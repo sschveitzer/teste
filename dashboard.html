@@ -24,7 +24,6 @@
       <div class="tabs">
         <button class="tab active" data-tab="dashboard">Dashboard</button>
         <button class="tab" data-tab="lancamentos">Lançamentos</button>
-        <button class="tab" data-tab="categorias">Categorias</button>
         <button class="tab" data-tab="relatorios">Relatórios</button>
       </div>
       <div class="right">
@@ -37,6 +36,25 @@
   </div>
 
   <div class="container">
+<section id="config">
+  <div class="card">
+    <h3>Configurações</h3>
+    <div class="muted" style="margin-top:-4px">Gerencie suas categorias aqui. Sem backup/import/reset — focado só em categorias.</div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between">
+      <h3>Categorias</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+        <input id="cfgCatName" placeholder="Nova categoria..." />
+        <button class="btn" id="cfgAddCat">Adicionar</button>
+        <input id="catSearch" placeholder="Filtrar categorias..." style="min-width:200px" />
+      </div>
+    </div>
+    <ul id="listaCats" class="list" style="margin-top:12px"></ul>
+  </div>
+</section>
+
     <!-- Dashboard -->
     <section id="dashboard" class="active">
       <div class="grid cards">
@@ -89,20 +107,6 @@
           <button class="btn" id="btnNovo">Novo lançamento</button>
         </div>
         <ul id="listaLanc" class="list" style="margin-top:12px"></ul>
-      </div>
-    </section>
-
-    <!-- Categorias -->
-    <section id="categorias">
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <h3>Categorias</h3>
-          <div style="display:flex;gap:8px">
-            <input id="newCatName" placeholder="Nova categoria...">
-            <button class="btn" id="addCat">Adicionar</button>
-          </div>
-        </div>
-        <ul id="listaCats" class="list" style="margin-top:12px"></ul>
       </div>
     </section>
 
