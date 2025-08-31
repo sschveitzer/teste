@@ -113,8 +113,7 @@ window.onload = function () {
     qsa("section").forEach(s => s.classList.toggle("active", s.id === name));
   }
 
-  
-function toggleModal(show, titleOverride) {
+  function toggleModal(show, titleOverride) {
     const m = qs("#modalLanc");
     m.style.display = show ? "flex" : "none";
     if (show) {
@@ -131,7 +130,7 @@ function toggleModal(show, titleOverride) {
     } else {
       S.editingId = null;
     }
-  
+  }
 
   let modalTipo = "Despesa";
   function syncTipoTabs() {
@@ -348,7 +347,8 @@ function toggleModal(show, titleOverride) {
       el.classList.toggle("blurred", S.hide);
     });
 
-    // Casa (mês, 50/50) — usa marca #house nas observações
+    // Casa (mês, 50/50)
+    const txMonth = S.tx.filter(x => x.data?.startsWith(S.month));
     const casaTotal = txMonth.filter(isShared).reduce((a,b)=> a + Number(b.valor||0), 0);
     const elCasaTot = qs("#kpiCasaTotal");
     const elCasaCada = qs("#kpiCasaCada");
