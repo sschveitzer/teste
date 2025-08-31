@@ -98,6 +98,15 @@ window.onload = function () {
       { id: 1, month: S.month, hide: S.hide, dark: S.dark }
     ]);
   }
+  // ===== HOUSEHOLD (50/50) =====
+  function isShared(x){ return x && x.tipo==="Despesa" && /\b#house\b/i.test(x.obs || ""); }
+  function setSharedTag(obs, on){
+    let s = String(obs || "");
+    s = s.replace(/\s*#house\b/ig, "").trim();
+    if (on) s = (s ? (s + " ") : "") + "#house";
+    return s;
+  }
+
   // ========= UI =========
   function setTab(name) {
     qsa(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
@@ -116,6 +125,7 @@ window.onload = function () {
       modalTipo = "Despesa";
       syncTipoTabs();
       qs("#modalTitle").textContent = titleOverride || "Nova Despesa";
+      const chk=qs("#mShared"); if(chk) chk.checked=false;
       setTimeout(() => qs("#mValorBig").focus(), 0);
     } else {
       S.editingId = null;
@@ -154,7 +164,7 @@ window.onload = function () {
       data: isIsoDate(qs("#mData").value) ? qs("#mData").value : nowYMD(),
       descricao: (qs("#mDesc").value || "").trim(),
       valor: isFinite(valor) ? valor : 0,
-      obs: (qs("#mObs").value || "").trim()
+      obs: setSharedTag((qs("#mObs").value || "").trim(), !!qs("#mShared")?.checked)
     };
     if (!t.categoria) return alert("Selecione categoria");
     if (!t.descricao) return alert("Descrição obrigatória");
@@ -224,6 +234,7 @@ window.onload = function () {
     qs("#mDesc").value = x.descricao || "";
     qs("#mValorBig").value = fmtMoney(Number(x.valor) || 0);
     qs("#mObs").value = x.obs || "";
+    const chk=qs("#mShared"); if(chk) chk.checked = isShared(x);
     qs("#modalTitle").textContent = "Editar lançamento";
     qs("#modalLanc").style.display = "flex";
     setTimeout(() => qs("#mValorBig").focus(), 0);
@@ -232,87 +243,24 @@ window.onload = function () {
   // ========= CATEGORIAS =========
   function renderCategorias() {
     const ul = qs("#listaCats");
-    if (!ul) return;
-    const q = (qs("#catSearch")?.value || "").toLowerCase();
     ul.innerHTML = "";
-
-    // Sort by name
-    const cats = [...S.cats].sort((a,b)=>a.nome.localeCompare(b.nome))
-      .filter(c => c.nome.toLowerCase().includes(q));
-
-    const usage = Object.create(null);
-    S.tx.forEach(x => { const k = x.categoria || ""; usage[k] = (usage[k]||0)+1; });
-
-    cats.forEach(c => {
-      const count = usage[c.nome] || 0;
+    S.cats.forEach(c => {
       const li = document.createElement("li");
       li.className = "item";
       li.innerHTML = `
-        <div class="left">
-          <strong class="cat-name">${c.nome}</strong>
-          <span class="muted" style="margin-left:8px">(${count} uso${count===1?'':'s'})</span>
-        </div>
-        <div class="right" style="display:flex;gap:6px">
-          <button class="icon edit" title="Editar"><i class="ph ph-pencil-simple"></i></button>
-          <button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button>
-        </div>`;
-
-      // Delete with confirmation when in use
+        <div class="left"><strong>${c.nome}</strong></div>
+        <div><button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button></div>`;
       li.querySelector(".del").onclick = async () => {
-        if (count > 0) {
-          if (!confirm(`A categoria "${c.nome}" possui ${count} lançamento(s). Deseja realmente excluir?`)) return;
+        if (confirm("Excluir categoria?")) {
+          await deleteCat(c.nome);
+          loadAll();
         }
-        await deleteCat(c.nome);
-        await loadAll();
       };
-
-      // Inline edit / rename
-      li.querySelector(".edit").onclick = () => {
-        const wrapper = document.createElement("div");
-        wrapper.className = "inline-edit";
-        wrapper.innerHTML = `
-          <input class="inpName" value="${c.nome}" style="min-width:220px" />
-          <button class="btn save">Salvar</button>
-          <button class="btn secondary cancel">Cancelar</button>`;
-        li.replaceChildren(wrapper);
-
-        const inp = wrapper.querySelector(".inpName");
-        inp.focus(); inp.select();
-
-        wrapper.querySelector(".cancel").onclick = renderCategorias;
-        wrapper.querySelector(".save").onclick = async () => {
-          const novo = (inp.value || "").trim();
-          if (!novo) return alert("Informe um nome.");
-          if (novo.toLowerCase() === c.nome.toLowerCase()) return renderCategorias();
-          if (S.cats.some(x => x.nome.toLowerCase() == novo.toLowerCase())) {
-            return alert("Já existe uma categoria com esse nome.");
-          }
-          // rename: cria nova cat, atualiza transações e remove antiga
-          await renameCategory(c.nome, novo);
-          await loadAll();
-        };
-      };
-
       ul.append(li);
     });
   }
 
-  
-  // ========= CATEGORIAS HELPERS =========
-  async function renameCategory(oldName, newName) {
-    // 1) cria/garante nova categoria
-    await saveCat({ nome: newName });
-    // 2) atualiza todas as transações referenciando a antiga
-    if (oldName !== newName) {
-      await supabaseClient
-        .from("transactions")
-        .update({ categoria: newName })
-        .eq("categoria", oldName);
-    }
-    // 3) remove categoria antiga
-    await deleteCat(oldName);
-  }
-// ========= RELATÓRIOS =========
+  // ========= RELATÓRIOS =========
   function updateKpis() {
     const txMonth = S.tx.filter(x => x.data.startsWith(S.month));
     const receitas = txMonth
@@ -335,6 +283,15 @@ window.onload = function () {
     [kpiReceitas, kpiDespesas, kpiSaldo].forEach(el => {
       el.classList.toggle("blurred", S.hide);
     });
+
+    // Casa (mês, 50/50) — usa marca #house nas observações
+    const casaTotal = monthTx.filter(isShared).reduce((a,b)=> a + Number(b.valor||0), 0);
+    const elCasaTot = qs("#kpiCasaTotal");
+    const elCasaCada = qs("#kpiCasaCada");
+    if (elCasaTot) elCasaTot.textContent = fmtMoney(casaTotal);
+    if (elCasaCada) elCasaCada.textContent = "cada: " + fmtMoney(casaTotal/2);
+    [elCasaTot, elCasaCada].forEach(el => el && el.classList.toggle("blurred", S.hide));
+
   }
   let chartSaldo, chartPie, chartFluxo;
   function renderCharts() {
@@ -454,8 +411,15 @@ window.onload = function () {
     })
   );
 
-  // removido: handler antigo #addCat
-qs("#toggleDark").onclick = async () => {
+  qs("#addCat").onclick = async () => {
+    const nome = qs("#newCatName").value.trim();
+    if (!nome) return;
+    await saveCat({ nome });
+    qs("#newCatName").value = "";
+    loadAll();
+  };
+
+  qs("#toggleDark").onclick = async () => {
     S.dark = !S.dark;
     document.body.classList.toggle("dark", S.dark);
     await savePrefs();
@@ -465,21 +429,6 @@ qs("#toggleDark").onclick = async () => {
     render();
     await savePrefs();
   };
-
-  // ========= CONTROLES CONFIG/CATEGORIAS =========
-  const addBtnCfg = qs("#cfgAddCat");
-  if (addBtnCfg) addBtnCfg.onclick = async () => {
-    const nome = (qs("#cfgCatName")?.value || "").trim();
-    if (!nome) return;
-    if (S.cats.some(x => x.nome.toLowerCase() === nome.toLowerCase())) {
-      alert("Já existe uma categoria com esse nome."); return;
-    }
-    await saveCat({ nome });
-    qs("#cfgCatName").value = "";
-    await loadAll();
-  };
-  const catSearch = qs("#catSearch");
-  if (catSearch) catSearch.oninput = renderCategorias;
 
   // ========= START =========
   loadAll();
