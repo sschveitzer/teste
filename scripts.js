@@ -232,24 +232,87 @@ window.onload = function () {
   // ========= CATEGORIAS =========
   function renderCategorias() {
     const ul = qs("#listaCats");
+    if (!ul) return;
+    const q = (qs("#catSearch")?.value || "").toLowerCase();
     ul.innerHTML = "";
-    S.cats.forEach(c => {
+
+    // Sort by name
+    const cats = [...S.cats].sort((a,b)=>a.nome.localeCompare(b.nome))
+      .filter(c => c.nome.toLowerCase().includes(q));
+
+    const usage = Object.create(null);
+    S.tx.forEach(x => { const k = x.categoria || ""; usage[k] = (usage[k]||0)+1; });
+
+    cats.forEach(c => {
+      const count = usage[c.nome] || 0;
       const li = document.createElement("li");
       li.className = "item";
       li.innerHTML = `
-        <div class="left"><strong>${c.nome}</strong></div>
-        <div><button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button></div>`;
+        <div class="left">
+          <strong class="cat-name">${c.nome}</strong>
+          <span class="muted" style="margin-left:8px">(${count} uso${count===1?'':'s'})</span>
+        </div>
+        <div class="right" style="display:flex;gap:6px">
+          <button class="icon edit" title="Editar"><i class="ph ph-pencil-simple"></i></button>
+          <button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button>
+        </div>`;
+
+      // Delete with confirmation when in use
       li.querySelector(".del").onclick = async () => {
-        if (confirm("Excluir categoria?")) {
-          await deleteCat(c.nome);
-          loadAll();
+        if (count > 0) {
+          if (!confirm(`A categoria "${c.nome}" possui ${count} lançamento(s). Deseja realmente excluir?`)) return;
         }
+        await deleteCat(c.nome);
+        await loadAll();
       };
+
+      // Inline edit / rename
+      li.querySelector(".edit").onclick = () => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "inline-edit";
+        wrapper.innerHTML = `
+          <input class="inpName" value="${c.nome}" style="min-width:220px" />
+          <button class="btn save">Salvar</button>
+          <button class="btn secondary cancel">Cancelar</button>`;
+        li.replaceChildren(wrapper);
+
+        const inp = wrapper.querySelector(".inpName");
+        inp.focus(); inp.select();
+
+        wrapper.querySelector(".cancel").onclick = renderCategorias;
+        wrapper.querySelector(".save").onclick = async () => {
+          const novo = (inp.value || "").trim();
+          if (!novo) return alert("Informe um nome.");
+          if (novo.toLowerCase() === c.nome.toLowerCase()) return renderCategorias();
+          if (S.cats.some(x => x.nome.toLowerCase() == novo.toLowerCase())) {
+            return alert("Já existe uma categoria com esse nome.");
+          }
+          // rename: cria nova cat, atualiza transações e remove antiga
+          await renameCategory(c.nome, novo);
+          await loadAll();
+        };
+      };
+
       ul.append(li);
     });
   }
 
-  // ========= RELATÓRIOS =========
+  
+  // ========= CATEGORIAS HELPERS =========
+  async function renameCategory(oldName, newName) {
+    // 1) cria/garante nova categoria
+    await saveCat({ nome: newName });
+    // 2) atualiza todas as transações referenciando a antiga
+    if (oldName !== newName) {
+      await supabaseClient
+        .from("transactions")
+        .update({ categoria: newName })
+        .eq("categoria", oldName);
+    }
+    // 3) remove categoria antiga
+    await deleteCat(oldName);
+  }
+// ========= RELATÓRIOS =========
   function updateKpis() {
     const txMonth = S.tx.filter(x => x.data.startsWith(S.month));
     const receitas = txMonth
@@ -391,8 +454,7 @@ window.onload = function () {
     })
   );
 
-  qs("#addCat").onclick = async () => {
-    const nome = qs("#newCatName").value.trim();
+  // (removido) antigo handler #addCat
     if (!nome) return;
     await saveCat({ nome });
     qs("#newCatName").value = "";
@@ -409,6 +471,21 @@ window.onload = function () {
     render();
     await savePrefs();
   };
+
+  // ========= CONTROLES CONFIG/CATEGORIAS =========
+  const addBtnCfg = qs("#cfgAddCat");
+  if (addBtnCfg) addBtnCfg.onclick = async () => {
+    const nome = (qs("#cfgCatName")?.value || "").trim();
+    if (!nome) return;
+    if (S.cats.some(x => x.nome.toLowerCase() === nome.toLowerCase())) {
+      alert("Já existe uma categoria com esse nome."); return;
+    }
+    await saveCat({ nome });
+    qs("#cfgCatName").value = "";
+    await loadAll();
+  };
+  const catSearch = qs("#catSearch");
+  if (catSearch) catSearch.oninput = renderCategorias;
 
   // ========= START =========
   loadAll();
