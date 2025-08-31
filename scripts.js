@@ -113,16 +113,25 @@ window.onload = function () {
     qsa("section").forEach(s => s.classList.toggle("active", s.id === name));
   }
 
-  function toggleModal(show, titleOverride) {
+  
+function toggleModal(show, titleOverride) {
     const m = qs("#modalLanc");
     m.style.display = show ? "flex" : "none";
-    \1
-      const chk=qs("#mShared"); if(chk) chk.checked=false;
+    if (show) {
+      qs("#mData").value = nowYMD();
+      rebuildCatSelect();
+      qs("#mDesc").value = "";
+      qs("#mObs").value = "";
+      qs("#mValorBig").value = "";
+      modalTipo = "Despesa";
+      syncTipoTabs();
+      qs("#modalTitle").textContent = titleOverride || "Nova Despesa";
+      const chk = qs("#mShared"); if (chk) chk.checked = false;
       setTimeout(() => qs("#mValorBig").focus(), 0);
     } else {
       S.editingId = null;
     }
-  }
+  
 
   let modalTipo = "Despesa";
   function syncTipoTabs() {
