@@ -98,15 +98,6 @@ window.onload = function () {
       { id: 1, month: S.month, hide: S.hide, dark: S.dark }
     ]);
   }
-  // ===== HOUSEHOLD (50/50) =====
-  function isShared(x){ return x && x.tipo==="Despesa" && /\b#house\b/i.test(x.obs || ""); }
-  function setSharedTag(obs, on){
-    let s = String(obs || "");
-    s = s.replace(/\s*#house\b/ig, "").trim();
-    if (on) s = (s ? (s + " ") : "") + "#house";
-    return s;
-  }
-
   // ========= UI =========
   function setTab(name) {
     qsa(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
@@ -125,7 +116,6 @@ window.onload = function () {
       modalTipo = "Despesa";
       syncTipoTabs();
       qs("#modalTitle").textContent = titleOverride || "Nova Despesa";
-      const chk = qs("#mShared"); if (chk) chk.checked = false;
       setTimeout(() => qs("#mValorBig").focus(), 0);
     } else {
       S.editingId = null;
@@ -164,7 +154,7 @@ window.onload = function () {
       data: isIsoDate(qs("#mData").value) ? qs("#mData").value : nowYMD(),
       descricao: (qs("#mDesc").value || "").trim(),
       valor: isFinite(valor) ? valor : 0,
-      obs: setSharedTag((qs("#mObs").value || "").trim(), !!qs("#mShared")?.checked)
+      obs: (qs("#mObs").value || "").trim()
     };
     if (!t.categoria) return alert("Selecione categoria");
     if (!t.descricao) return alert("Descrição obrigatória");
@@ -234,7 +224,6 @@ window.onload = function () {
     qs("#mDesc").value = x.descricao || "";
     qs("#mValorBig").value = fmtMoney(Number(x.valor) || 0);
     qs("#mObs").value = x.obs || "";
-    const chk = qs("#mShared"); if (chk) chk.checked = isShared(x);
     qs("#modalTitle").textContent = "Editar lançamento";
     qs("#modalLanc").style.display = "flex";
     setTimeout(() => qs("#mValorBig").focus(), 0);
@@ -326,10 +315,10 @@ window.onload = function () {
 // ========= RELATÓRIOS =========
   function updateKpis() {
     const txMonth = S.tx.filter(x => x.data.startsWith(S.month));
-    const receitas = txMonth
+    const receitas = txMonthPie
       .filter(x => x.tipo === "Receita")
       .reduce((a, b) => a + Number(b.valor), 0);
-    const despesas = txMonth
+    const despesas = txMonthPie
       .filter(x => x.tipo === "Despesa")
       .reduce((a, b) => a + Number(b.valor), 0);
     const saldo = receitas - despesas;
@@ -346,15 +335,6 @@ window.onload = function () {
     [kpiReceitas, kpiDespesas, kpiSaldo].forEach(el => {
       el.classList.toggle("blurred", S.hide);
     });
-
-    // Casa (mês, 50/50)
-    const txMonth = S.tx.filter(x => x.data?.startsWith(S.month));
-    const casaTotal = txMonth.filter(isShared).reduce((a,b)=> a + Number(b.valor||0), 0);
-    const elCasaTot = qs("#kpiCasaTotal");
-    const elCasaCada = qs("#kpiCasaCada");
-    if (elCasaTot) elCasaTot.textContent = fmtMoney(casaTotal);
-    if (elCasaCada) elCasaCada.textContent = "cada: " + fmtMoney(casaTotal/2);
-    [elCasaTot, elCasaCada].forEach(el => el && el.classList.toggle("blurred", S.hide));
   }
   let chartSaldo, chartPie, chartFluxo;
   function renderCharts() {
@@ -388,9 +368,9 @@ window.onload = function () {
     if (chartPie) chartPie.destroy();
     const ctxPie = qs("#chartPie");
     if (ctxPie) {
-      const txMonth = S.tx.filter(x => x.data.startsWith(S.month));
+      const txMonthPie = S.tx.filter(x => x.data.startsWith(S.month));
       const porCat = {};
-      txMonth
+      txMonthPie
         .filter(x => x.tipo === "Despesa")
         .forEach(x => {
           porCat[x.categoria] = (porCat[x.categoria] || 0) + Number(x.valor);
