@@ -454,14 +454,8 @@ window.onload = function () {
     })
   );
 
-  // (removido) antigo handler #addCat
-    if (!nome) return;
-    await saveCat({ nome });
-    qs("#newCatName").value = "";
-    loadAll();
-  };
-
-  qs("#toggleDark").onclick = async () => {
+  // removido: handler antigo #addCat
+qs("#toggleDark").onclick = async () => {
     S.dark = !S.dark;
     document.body.classList.toggle("dark", S.dark);
     await savePrefs();
