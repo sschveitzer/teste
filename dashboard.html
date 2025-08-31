@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FinanceAPP V3.7.10</title>
+  <link rel="icon" href="data:,">
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.0.0/dist/umd/supabase.min.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>  
+
+  <!-- Ícones Phosphor -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="nav">
+    <div class="wrap">
+      <div class="badge"><i class="ph ph-wallet"></i> FinanceAPP <span style="opacity:.9;font-weight:600">V3.7.10</span></div>
+      <div class="tabs">
+        <button class="tab active" data-tab="dashboard">Dashboard</button>
+        <button class="tab" data-tab="lancamentos">Lançamentos</button>
+        <button class="tab" data-tab="categorias">Categorias</button>
+        <button class="tab" data-tab="relatorios">Relatórios</button>
+        <button class="tab" data-tab="config">Config</button>
+      </div>
+      <div class="right">
+        <select id="monthSelect" title="Mês"></select>
+        <label class="switch"><input type="checkbox" id="toggleHide"> Esconder valores</label>
+        <button class="icon" id="toggleDark" title="Dark"><i class="ph ph-moon"></i></button>
+        <button class="icon" id="logoutBtn" title="Sair"><i class="ph ph-sign-out"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Dashboard -->
+    <section id="dashboard" class="active">
+      <div class="grid cards">
+        <div class="card">
+          <div class="kpi earn">
+            <i class="ph ph-trend-up icon"></i>
+            <div><div class="muted">Receitas (mês)</div><div id="kpiReceitas" class="value">R$ 0,00</div></div>
+            <span class="chip" id="kpiReceitasDelta">+0.0%</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="kpi exp">
+            <i class="ph ph-trend-down icon"></i>
+            <div><div class="muted">Despesas (mês)</div><div id="kpiDespesas" class="value">R$ 0,00</div></div>
+            <span class="chip" id="kpiDespesasDelta">+0.0%</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="kpi balance">
+            <i class="ph ph-wallet icon"></i>
+            <div><div class="muted">Saldo (mês)</div><div id="kpiSaldo" class="value">R$ 0,00</div></div>
+            <span class="chip" id="kpiSaldoDelta">+0.0%</span>
+          </div>
+        </div>
+      </div>
+      <div class="grid two" style="margin-top:16px">
+        <div class="card"><h3>Saldo acumulado (12 meses)</h3><canvas id="chartSaldo"></canvas></div>
+        <div class="card"><h3>Despesas por categoria</h3><canvas id="chartPie"></canvas></div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h3>Últimos lançamentos</h3>
+        <div style="display:flex;gap:10px;margin-bottom:10px">
+          <select id="filterTipo">
+            <option value="todos">Todos</option>
+            <option value="Receita">Receitas</option>
+            <option value="Despesa">Despesas</option>
+            <option value="Transferência">Transferências</option>
+          </select>
+          <input type="text" id="searchLanc" placeholder="Buscar...">
+        </div>
+        <ul id="listaRecentes" class="list"></ul>
+      </div>
+    </section>
+
+    <!-- Lançamentos -->
+    <section id="lancamentos">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h3>Lançamentos</h3>
+          <button class="btn" id="btnNovo">Novo lançamento</button>
+        </div>
+        <ul id="listaLanc" class="list" style="margin-top:12px"></ul>
+      </div>
+    </section>
+
+    <!-- Categorias -->
+    <section id="categorias">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h3>Categorias</h3>
+          <div style="display:flex;gap:8px">
+            <input id="newCatName" placeholder="Nova categoria...">
+            <button class="btn" id="addCat">Adicionar</button>
+          </div>
+        </div>
+        <ul id="listaCats" class="list" style="margin-top:12px"></ul>
+      </div>
+    </section>
+
+    <!-- Relatórios -->
+    <section id="relatorios">
+      <div class="grid two">
+        <div class="card"><h3>Fluxo por mês</h3><canvas id="chartFluxo"></canvas></div>
+        <div class="card"><h3>Top categorias (12 meses)</h3>
+          <table id="tblTop"><thead><tr><th>Categoria</th><th>Total</th></tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Config -->
+    <section id="config">
+      <div class="card">
+        <h3>Backup</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn secondary" id="btnExport">Exportar</button>
+          <label class="btn secondary" for="fileImport" style="cursor:pointer">Importar</label>
+          <input type="file" id="fileImport" accept="application/json" style="display:none">
+          <button class="btn" id="btnReset" style="background:#ef4444">Resetar tudo</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Modal Lançamento -->
+  <div class="modal" id="modalLanc">
+    <div class="content">
+      <div class="title">
+        <h3 id="modalTitle">Nova Despesa</h3>
+        <button class="close icon" id="closeModal"><i class="ph ph-x"></i></button>
+      </div>
+      <input id="mValorBig" class="amount" placeholder="R$ 0,00" inputmode="numeric">
+      <div class="typetabs" id="tipoTabs">
+        <button type="button" data-type="Despesa" class="active">Despesa</button>
+        <button type="button" data-type="Receita">Receita</button>
+        <button type="button" data-type="Transferência">Transferência</button>
+      </div>
+      <div class="row3">
+        <div><label>Categoria</label><select id="mCategoria"></select></div>
+        <div><label>Data</label><input type="date" id="mData"></div>
+        <div><label>Descrição</label><input type="text" id="mDesc" placeholder="Descrição"></div>
+      </div>
+      <div style="margin-top:10px"><label>Observações</label><textarea id="mObs" rows="3"></textarea></div>
+      <div class="actions">
+        <div class="left">Atalhos: <b>N</b> novo • <b>Enter</b> salvar • <b>Esc</b> cancelar</div>
+        <div class="right"><button class="btn-cancel" id="cancelar">Cancelar</button><button class="btn-save" id="salvar">Salvar</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Botão flutuante -->
+  <button class="fab" id="fab" title="Nova despesa"><i class="ph ph-plus"></i></button>
+
+  <!-- JS: checagem de sessão -->
+  <script>
+    const supabase = window.supabase.createClient(
+      "https://ppoufxezqmbxzflijmpx.supabase.co", // seu Project URL
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwb3VmeGV6cW1ieHpmbGlqbXB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1NzY1MTgsImV4cCI6MjA3MjE1MjUxOH0.7wntt2EbXsb16Zob9F81XFUKognKHKn0jxP6UdfF_ZY"   // sua anon key
+    );
+
+    // Se não estiver logado → volta pro login
+    supabase.auth.getSession().then(({ data }) => {
+      if (!data.session) {
+        window.location.href = "index.html";
+      }
+    });
+
+    // Logout
+    document.addEventListener("DOMContentLoaded", () => {
+      const btnLogout = document.getElementById("logoutBtn");
+      if (btnLogout) {
+        btnLogout.addEventListener("click", async () => {
+          await supabase.auth.signOut();
+          window.location.href = "index.html";
+        });
+      }
+    });
+  </script>
+  
+  <!-- JS -->
+  <script src="scripts.js"></script>
+</body>
+</html>

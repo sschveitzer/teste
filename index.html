@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Login - FinanceAPP</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.0.0/dist/umd/supabase.min.js"></script>
+</head>
+<body style="display:flex;align-items:center;justify-content:center;height:100vh">
+  <div class="card" style="max-width:360px;width:100%">
+    <h2 style="margin-bottom:12px">Entrar</h2>
+    <form id="login-form" style="display:flex;flex-direction:column;gap:10px">
+      <input type="email" id="email" placeholder="Email" required>
+      <input type="password" id="password" placeholder="Senha" required>
+      <button class="btn" type="submit">Entrar</button>
+    </form>
+    <p id="errorMsg" style="color:red;font-size:13px;margin-top:8px"></p>
+  </div>
+
+  <script>
+    const supabase = window.supabase.createClient(
+      "https://ppoufxezqmbxzflijmpx.supabase.co", // ✅ seu Project URL
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwb3VmeGV6cW1ieHpmbGlqbXB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1NzY1MTgsImV4cCI6MjA3MjE1MjUxOH0.7wntt2EbXsb16Zob9F81XFUKognKHKn0jxP6UdfF_ZY"   // ✅ sua anon key
+    );
+
+    document.getElementById("login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        document.getElementById("errorMsg").textContent = "Erro: " + error.message;
+      } else {
+        window.location.href = "dashboard.html";
+      }
+    });
+  </script>
+</body>
+</html>
