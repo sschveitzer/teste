@@ -410,30 +410,26 @@ window.onload = function () {
   }
 
   // ========= CATEGORIAS =========
-  
-  
-  
-
-
 function renderCategorias() {
   const ul = qs("#listaCats");
   if (!ul) return;
   ul.innerHTML = "";
 
   const cats = Array.isArray(S.cats) ? [...S.cats] : [];
-  cats.sort((a,b) => String(a.nome || "").localeCompare(String(b.nome || "")));
+  cats.sort((a, b) => String(a.nome || "").localeCompare(String(b.nome || "")));
 
   if (!cats.length) {
     const li = document.createElement("li");
     li.className = "item";
     li.innerHTML = '<div class="left"><strong>Nenhuma categoria</strong><div class="muted">Adicione uma no campo acima.</div></div>';
-    ul.append(li);
+    ul.appendChild(li);
     return;
   }
 
   cats.forEach(c => {
     const li = document.createElement("li");
     li.className = "item";
+
     const left = document.createElement("div");
     left.className = "left";
     const strong = document.createElement("strong");
@@ -458,7 +454,6 @@ function renderCategorias() {
     ul.appendChild(li);
   });
 }
-
   cats.forEach(c => {
     const txs = S.tx.filter(x => x.categoria === c.nome);
     const qtd = txs.length;
@@ -478,7 +473,7 @@ function renderCategorias() {
         <button class="btn-acao edit" title="Renomear"><i class="ph ph-pencil-simple"></i></button>
         <button class="btn-acao del" title="Excluir"><i class="ph ph-trash"></i></button>
       </div>
-    `;
+   ';
 
     const btnEdit = li.querySelector(".edit");
     if (btnEdit) btnEdit.onclick = () => renameCategoryFlow(c.nome);
@@ -885,6 +880,7 @@ function renderCategorias() {
 
   
   // Delegation for Config checkboxes (inside onload to access S/savePrefs/render)
+  // Delegação para Aparência (Config)
   document.addEventListener('change', async (e) => {
     if (!e.target) return;
     if (e.target.matches('#cfgDark')) {
@@ -899,7 +895,7 @@ function renderCategorias() {
     }
   });
 
-  // Config button
+  // Engrenagem da barra (abre Config)
   const btnConfigTop = document.getElementById('btnConfig');
   if (btnConfigTop) btnConfigTop.addEventListener('click', () => setTab('config'));
 // ========= START =========
