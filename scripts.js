@@ -403,15 +403,89 @@ window.onload = function () {
     if (!ul) return;
     ul.classList.add("lanc-grid");
     ul.innerHTML = "";
-    const list = [...S.cats].sort((a,b)=>a.nome.localeCompare(b.nome));
+
+    const list = Array.isArray(S.cats) ? [...S.cats].sort((a,b)=> (a.nome||"").localeCompare(b.nome||"")) : [];
     if (!list.length) {
       const li = document.createElement("li");
       li.className = "item";
-      li.innerHTML = `<div class="left"><strong>Nenhuma categoria</strong><div class="muted">Use o campo acima para criar.</div></div>`;
-      ul.append(li);
+      const left = document.createElement("div");
+      left.className = "left";
+      const strong = document.createElement("strong");
+      strong.textContent = "Nenhuma categoria";
+      const muted = document.createElement("div");
+      muted.className = "muted";
+      muted.style.fontSize = "12px";
+      muted.textContent = "Use o campo acima para criar.";
+      left.appendChild(strong);
+      left.appendChild(muted);
+      li.appendChild(left);
+      ul.appendChild(li);
       return;
     }
+
     list.forEach(c => {
+      const li = document.createElement("li");
+      li.className = "item";
+
+      const left = document.createElement("div");
+      left.className = "left";
+      const titleWrap = document.createElement("div");
+      const strong = document.createElement("strong");
+      strong.textContent = c.nome;
+      titleWrap.appendChild(strong);
+      const subtitle = document.createElement("div");
+      subtitle.className = "muted";
+      subtitle.style.fontSize = "12px";
+      subtitle.textContent = "Categoria";
+      left.appendChild(titleWrap);
+      left.appendChild(subtitle);
+
+      const right = document.createElement("div");
+      right.style.display = "flex";
+      right.style.gap = "6px";
+      right.style.alignItems = "center";
+
+      const btnEdit = document.createElement("button");
+      btnEdit.className = "icon edit";
+      btnEdit.title = "Renomear";
+      const iEdit = document.createElement("i");
+      iEdit.className = "ph ph-pencil-simple";
+      btnEdit.appendChild(iEdit);
+
+      const btnDel = document.createElement("button");
+      btnDel.className = "icon del";
+      btnDel.title = "Excluir";
+      const iDel = document.createElement("i");
+      iDel.className = "ph ph-trash";
+      btnDel.appendChild(iDel);
+
+      btnEdit.onclick = async () => {
+        const novo = (prompt("Novo nome da categoria:", c.nome) || "").trim();
+        if (!novo || novo === c.nome) return;
+        await saveCat({ nome: novo });
+        if (typeof updateTxCategory === "function") {
+          await updateTxCategory(c.nome, novo);
+        }
+        await deleteCat(c.nome);
+        await loadAll();
+      };
+
+      btnDel.onclick = async () => {
+        if (confirm("Excluir categoria? Transações existentes manterão o nome antigo.")) {
+          await deleteCat(c.nome);
+          await loadAll();
+        }
+      };
+
+      right.appendChild(btnEdit);
+      right.appendChild(btnDel);
+
+      li.appendChild(left);
+      li.appendChild(right);
+      ul.appendChild(li);
+    });
+  }
+list.forEach(c => {
       const li = document.createElement("li");
       li.className = "item";
       li.innerHTML = `
