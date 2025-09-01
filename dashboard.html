@@ -29,8 +29,7 @@
       </div>
       <div class="right">
         <select id="monthSelect" title="Mês"></select>
-        <label class="switch"><input type="checkbox" id="toggleHide"> Esconder valores</label>
-        <button class="icon" id="toggleDark" title="Dark"><i class="ph ph-moon"></i></button>
+        <!-- Ícone de Config substitui os controles rápidos na topbar -->
         <button class="icon" id="btnConfig" title="Configurações"><i class="ph ph-gear"></i></button>
         <button class="icon" id="logoutBtn" title="Sair"><i class="ph ph-sign-out"></i></button>
       </div>
@@ -119,7 +118,20 @@
 
     <!-- Config -->
     <section id="config">
+      <!-- Preferências de aparência movidas para dentro de Config -->
       <div class="card">
+        <h3>Aparência</h3>
+        <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center">
+          <label class="switch" title="Ativa o modo escuro">
+            <input type="checkbox" id="cfgDark"> Modo escuro
+          </label>
+          <label class="switch" title="Oculta valores monetários nos cards e listas">
+            <input type="checkbox" id="cfgHide"> Esconder valores
+          </label>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
         <h3>Backup</h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn secondary" id="btnExport">Exportar</button>
@@ -129,7 +141,7 @@
         </div>
       </div>
 
-      <!-- NOVO: Lista de transações recorrentes -->
+      <!-- Lista de transações recorrentes -->
       <div class="card" style="margin-top:16px">
         <h3>Transações recorrentes</h3>
         <ul id="listaRecorrentes" class="list"></ul>
@@ -181,7 +193,7 @@
         </div>
       </div>
 
-      <!-- NOVO: Recorrência -->
+      <!-- Recorrência -->
       <div class="field span-2" style="margin-top:8px">
         <label><input type="checkbox" id="mRepetir"> Repetir este lançamento</label>
 
