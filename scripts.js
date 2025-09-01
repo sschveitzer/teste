@@ -789,115 +789,115 @@ function renderCategorias() {
   if (selPer) selPer.addEventListener("change", syncRecurrenceFields);
 
   // ====== UX additions: currency mask, keyboard and focus handling ======
-  (function enhanceModalUX(){
-    const modal = document.getElementById('modalLanc');
-    const dialog = modal ? modal.querySelector('.content') : null;
-    const valorInput = document.getElementById('mValorBig');
-    const formError = document.getElementById('formError');
-    const btnSalvar = document.getElementById('salvar');
-    const btnCancelar = document.getElementById('cancelar');
+(function enhanceModalUX(){
+  const modal = document.getElementById('modalLanc');
+  const dialog = modal ? modal.querySelector('.content') : null;
+  const valorInput = document.getElementById('mValorBig');
+  const formError = document.getElementById('formError');
+  const btnSalvar = document.getElementById('salvar');
+  const btnCancelar = document.getElementById('cancelar');
 
-    // currency mask with raw cents
-    let rawCents = 0;
-    const br = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' });
-    const setAmount = () => { if (valorInput) valorInput.value = rawCents ? br.format(rawCents/100) : ''; };
+  // currency mask with raw cents
+  let rawCents = 0;
+  const br = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' });
+  const setAmount = () => { if (valorInput) valorInput.value = rawCents ? br.format(rawCents/100) : ''; };
 
-    if (valorInput) {
-      valorInput.addEventListener('beforeinput', (e) => {
-        if (e.inputType === 'deleteContentBackward') {
-          rawCents = Math.floor(rawCents/10);
-          setAmount();
-          e.preventDefault();
-        }
-      });
-      valorInput.addEventListener('input', (e) => {
-        const d = (e.data ?? '').replace(/\D/g,'');
-        if (d) {
-          rawCents = Math.min(9999999999, rawCents*10 + Number(d));
-          setAmount();
-        } else if (!e.data && !valorInput.value) {
-          rawCents = 0;
-        }
-        // keep caret at end
-        requestAnimationFrame(() => {
-          const len = valorInput.value.length;
-          valorInput.setSelectionRange(len,len);
-        });
-      });
-      valorInput.addEventListener('focus', () => {
-        if (!valorInput.value) setAmount();
-        requestAnimationFrame(() => {
-          const len = valorInput.value.length;
-          valorInput.setSelectionRange(len,len);
-        });
-      });
-    }
-
-    // validate before save
-    function validateModal(){
-      if (!formError) return true;
-      formError.hidden = true; formError.textContent = '';
-      const problems = [];
-      if (rawCents <= 0 && parseMoneyMasked(valorInput.value) <= 0) problems.push('Informe um valor maior que zero.');
-      if (!document.getElementById('mCategoria').value) problems.push('Selecione uma categoria.');
-      if (!document.getElementById('mData').value) problems.push('Informe a data.');
-      if (problems.length){
-        formError.textContent = problems.join(' ');
-        formError.hidden = false;
-        return false;
+  if (valorInput) {
+    valorInput.addEventListener('beforeinput', (e) => {
+      if (e.inputType === 'deleteContentBackward') {
+        rawCents = Math.floor(rawCents/10);
+        setAmount();
+        e.preventDefault();
       }
-      return true;
-    }
-
-    // Enter to save, Esc to cancel (not inside textarea)
-    if (dialog){
-      dialog.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && document.activeElement && document.activeElement.tagName !== 'TEXTAREA') {
-          e.preventDefault();
-          if (validateModal()) btnSalvar?.click();
-        }
-        if (e.key === 'Escape') {
-          e.preventDefault();
-          btnCancelar?.click();
-        }
+    });
+    valorInput.addEventListener('input', (e) => {
+      const d = (e.data ?? '').replace(/\D/g,'');
+      if (d) {
+        rawCents = Math.min(9999999999, rawCents*10 + Number(d));
+        setAmount();
+      } else if (!e.data && !valorInput.value) {
+        rawCents = 0;
+      }
+      // keep caret at end
+      requestAnimationFrame(() => {
+        const len = valorInput.value.length;
+        valorInput.setSelectionRange(len,len);
       });
-
-      // focus trap
-      dialog.addEventListener('keydown', (e) => {
-        if (e.key !== 'Tab') return;
-        const focusables = dialog.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-        const list = Array.from(focusables).filter(el => !el.disabled);
-        if (!list.length) return;
-        const first = list[0], last = list[list.length - 1];
-        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+    valorInput.addEventListener('focus', () => {
+      if (!valorInput.value) setAmount();
+      requestAnimationFrame(() => {
+        const len = valorInput.value.length;
+        valorInput.setSelectionRange(len,len);
       });
-    }
+    });
+  }
 
-    // expose getter if needed by other code
-    window.__getValorCentavos = () => rawCents;
-  })();
-
-  
-  // Delegation for Config checkboxes (inside onload to access S/savePrefs/render)
-  // Delegação para Aparência (Config)
-  document.addEventListener('change', async (e) => {
-    if (!e.target) return;
-    if (e.target.matches('#cfgDark')) {
-      S.dark = !!e.target.checked;
-      document.body.classList.toggle('dark', S.dark);
-      await savePrefs();
+  // validate before save
+  function validateModal(){
+    if (!formError) return true;
+    formError.hidden = true; formError.textContent = '';
+    const problems = [];
+    if (rawCents <= 0 && parseMoneyMasked(valorInput.value) <= 0) problems.push('Informe um valor maior que zero.');
+    if (!document.getElementById('mCategoria').value) problems.push('Selecione uma categoria.');
+    if (!document.getElementById('mData').value) problems.push('Informe a data.');
+    if (problems.length){
+      formError.textContent = problems.join(' ');
+      formError.hidden = false;
+      return false;
     }
-    if (e.target.matches('#cfgHide')) {
-      S.hide = !!e.target.checked;
-      render();
-      await savePrefs();
-    }
-  });
+    return true;
+  }
 
-  // Engrenagem da barra (abre Config)
-  const btnConfigTop = document.getElementById('btnConfig');
-  if (btnConfigTop) btnConfigTop.addEventListener('click', () => setTab('config'));
+  // Enter to save, Esc to cancel (not inside textarea)
+  if (dialog){
+    dialog.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && document.activeElement && document.activeElement.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        if (validateModal()) btnSalvar?.click();
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        btnCancelar?.click();
+      }
+    });
+
+    // focus trap
+    dialog.addEventListener('keydown', (e) => {
+      if (e.key !== 'Tab') return;
+      const focusables = dialog.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+      const list = Array.from(focusables).filter(el => !el.disabled);
+      if (!list.length) return;
+      const first = list[0], last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+  }
+
+  // expose getter if needed by other code
+  window.__getValorCentavos = () => rawCents;
+})();
+
+// ===== Preferências dentro de Config (delegação p/ não quebrar com re-render) =====
+document.addEventListener('change', async (e) => {
+  const t = e.target;
+  if (!t) return;
+  if (t.matches('#cfgDark')) {
+    S.dark = !!t.checked;
+    document.body.classList.toggle('dark', S.dark);
+    await savePrefs();
+  }
+  if (t.matches('#cfgHide')) {
+    S.hide = !!t.checked;
+    render();
+    await savePrefs();
+  }
+});
+
+// Ícone da engrenagem (topbar) abre a aba Config
+const btnConfigTop = document.getElementById('btnConfig');
+if (btnConfigTop) btnConfigTop.addEventListener('click', () => setTab('config'));
+
 // ========= START =========
-  loadAll();
+loadAll();
 };
