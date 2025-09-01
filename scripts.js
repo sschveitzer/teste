@@ -420,58 +420,7 @@ function renderCategorias() {
   S.cats.forEach(c => {
     const li = document.createElement("li");
     li.className = "item";
-    li.innerHTML = `<div class="left"><strong>${c.nome}</strong></div>
-      <div><button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button></div>`;
-    const btnDel = li.querySelector(".del");
-    if (btnDel) btnDel.onclick = async () => {
-      if (confirm("Excluir categoria?")) {
-        await deleteCat(c.nome);
-        loadAll();
-      }
-    };
-    ul.append(li);
-  });
-  }
-
-
-    cats.forEach(c => {
-      const txs = S.tx.filter(x => x.categoria === c.nome);
-      const qtd = txs.length;
-      const totalDesp = txs
-        .filter(x => x.tipo === "Despesa")
-        .reduce((a,b) => a + Number(b.valor), 0);
-      const totalRec = txs
-        .filter(x => x.tipo === "Receita")
-        .reduce((a,b) => a + Number(b.valor), 0);
-
-      const li = document.createElement("li");
-      li.className = "item";
-      li.setAttribute("data-cat", c.nome);
-      li.innerHTML = `
-        <div class="chip">Categoria</div>
-        <div class="titulo">${c.nome}</div>
-        <div class="subinfo">${qtd} lançamento${qtd===1?'':'s'}</div>
-        <div class="valor">${fmtMoney(totalDesp)} <span class="muted">(despesas)</span></div>
-        ${ totalRec > 0 ? `<div class="valor" style="margin-top:4px">${fmtMoney(totalRec)} <span class="muted">(receitas)</span></div>` : ''}
-        <div class="right">
-          <button class="btn-acao edit" title="Renomear"><i class="ph ph-pencil-simple"></i></button>
-          <button class="btn-acao del" title="Excluir"><i class="ph ph-trash"></i></button>
-        </div>
-      `;
-
-      const btnEdit = li.querySelector(".edit");
-      if (btnEdit) btnEdit.onclick = () => renameCategoryFlow(c.nome);
-      const btnDel = li.querySelector(".del");
-      if (btnDel) btnDel.onclick = async () => {
-        if (confirm("Excluir categoria? Isso não altera lançamentos já existentes.")) {
-          await deleteCat(c.nome);
-          loadAll();
-        }
-      };
-
-      ul.append(li);
-    });
-  }
+    li.innerHTML = `<div class="left"><strong>${c.nome}
   // ========= RELATÓRIOS / KPIs / GRÁFICOS =========
   function updateKpis() {
     const txMonth = S.tx.filter(x => x.data && x.data.startsWith(S.month));
@@ -860,25 +809,25 @@ function renderCategorias() {
     window.__getValorCentavos = () => rawCents;
   })();
 
-  // ========= START =========
+  
+  // Delegation for Config checkboxes (inside onload to access S/savePrefs/render)
+  document.addEventListener('change', async (e) => {
+    if (!e.target) return;
+    if (e.target.matches('#cfgDark')) {
+      S.dark = !!e.target.checked;
+      document.body.classList.toggle('dark', S.dark);
+      await savePrefs();
+    }
+    if (e.target.matches('#cfgHide')) {
+      S.hide = !!e.target.checked;
+      render();
+      await savePrefs();
+    }
+  });
+
+  // Config button
+  const btnConfigTop = document.getElementById('btnConfig');
+  if (btnConfigTop) btnConfigTop.addEventListener('click', () => setTab('config'));
+// ========= START =========
   loadAll();
 };
-
-// Delegation for Config checkboxes
-document.addEventListener('change', async (e) => {
-  if (!e.target) return;
-  if (e.target.matches('#cfgDark')) {
-    S.dark = !!e.target.checked;
-    document.body.classList.toggle('dark', S.dark);
-    await savePrefs();
-  }
-  if (e.target.matches('#cfgHide')) {
-    S.hide = !!e.target.checked;
-    render();
-    await savePrefs();
-  }
-});
-
-// Config button
-const btnConfig = document.getElementById('btnConfig');
-if (btnConfig) btnConfig.addEventListener('click', () => setTab('config'));
