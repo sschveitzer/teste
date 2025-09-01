@@ -891,7 +891,7 @@ list.forEach(c => {
       const problems = [];
       if (rawCents <= 0 && parseMoneyMasked(valorInput.value) <= 0) problems.push('Informe um valor maior que zero.');
       if (!document.getElementById('mCategoria').value) problems.push('Selecione uma categoria.');
-      if (!document.getElementById('mData').value) problems.push('Informe a data.')
+      if (!document.getElementById('mData').value) problems.push('Informe a data.');
       if (problems.length){
         formError.textContent = problems.join(' ');
         formError.hidden = false;
