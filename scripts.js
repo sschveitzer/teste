@@ -423,16 +423,17 @@ window.onload = function () {
           <button class="icon edit" title="Renomear"><i class="ph ph-pencil-simple"></i></button>
           <button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button>
         </div>`;
-      li.querySelector(".edit").onclick = async () => {
+      const btnEdit = li.querySelector(".edit");
+      const btnDel  = li.querySelector(".del");
+      if (btnEdit) btnEdit.onclick = async () => {
         const novo = prompt("Novo nome da categoria:", c.nome)?.trim();
         if (!novo || novo === c.nome) return;
-        // cria nova, migra transações, apaga antiga
         await saveCat({ nome: novo });
         await updateTxCategory(c.nome, novo);
         await deleteCat(c.nome);
         await loadAll();
       };
-      li.querySelector(".del").onclick = async () => {
+      if (btnDel) btnDel.onclick = async () => {
         if (confirm("Excluir categoria? Transações existentes manterão o nome antigo.")) {
           await deleteCat(c.nome);
           await loadAll();
@@ -441,6 +442,13 @@ window.onload = function () {
       ul.append(li);
     });
   }
+</strong></div>
+        <div><button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button></div>`;
+      li.querySelector(".del").onclick = async () => {
+        if (confirm("Excluir categoria?")) {
+          await deleteCat(c.nome);
+          loadAll();
+        }
       };
       ul.append(li);
     });
