@@ -653,3 +653,41 @@ body.dark .error { background:#3b1f20; border-color:#ef4444; color:#fecaca; }
 @media (prefers-reduced-motion: reduce){
   #listaLanc.lanc-grid > li.item{ transition: none; }
 }
+/* === Ajuste de alinhamento dos cards de Lançamentos === */
+
+/* garante coluna e ignora o justify original do tema */
+#listaLanc.lanc-grid > li.item{
+  display:flex;
+  flex-direction: column;     /* conteúdo em coluna */
+  align-items: stretch;       /* largura total */
+  justify-content: initial;   /* anula 'space-between' herdado */
+}
+
+/* tudo do conteúdo fica alinhado à esquerda */
+#listaLanc .left,
+#listaLanc .chip,
+#listaLanc .titulo,
+#listaLanc .subinfo,
+#listaLanc .valor{
+  text-align: left;
+}
+
+/* área dos botões: embaixo e à direita */
+#listaLanc li.item .right{
+  margin-top: 12px;           /* espaço abaixo do valor */
+  align-self: flex-end;       /* alinha o bloco no canto direito */
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* se os botões forem links/ícones sem classe, dá tamanho de toque */
+#listaLanc li.item .right > *{
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  background: var(--card);
+}
