@@ -431,11 +431,6 @@ function renderCategorias() {
     };
     ul.append(li);
   });
-
-
-      };
-      ul.append(li);
-    });
   }
 
 
