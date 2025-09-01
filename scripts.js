@@ -477,12 +477,6 @@ function renderCategorias() {
       ul.append(li);
     });
   }
-
-      };
-      ul.append(li);
-    });
-  }
-
   // ========= RELATÓRIOS / KPIs / GRÁFICOS =========
   function updateKpis() {
     const txMonth = S.tx.filter(x => x.data && x.data.startsWith(S.month));
