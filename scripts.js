@@ -332,18 +332,20 @@ window.onload = function () {
         <button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button>`;
     li.innerHTML = `
       <div class="left">
-        <div class="tag">\${x.tipo}</div>
+        <div class="tag">${x.tipo}</div>
         <div>
-          <div><strong>\${x.descricao || "-"}</strong></div>
-          <div class="muted" style="font-size:12px">\${x.categoria} • \${x.data}</div>
+          <div><strong>${x.descricao || "-"}</strong></div>
+          <div class="muted" style="font-size:12px">${x.categoria} • ${x.data}</div>
         </div>
       </div>
       <div style="display:flex;gap:6px;align-items:center">
-        <div class="\${S.hide ? "blurred" : ""}" style="font-weight:700">\${fmtMoney(v)}</div>\${actions}
+        <div class="${S.hide ? "blurred" : ""}" style="font-weight:700">${fmtMoney(v)}</div>${actions}
       </div>`;
     if (!readOnly) {
-      li.querySelector(".edit").onclick = () => openEdit(x.id);
-      li.querySelector(".del").onclick = () => delTx(x.id);
+      const btnEdit = li.querySelector(".edit");
+      const btnDel  = li.querySelector(".del");
+      if (btnEdit) btnEdit.onclick = () => openEdit(x.id);
+      if (btnDel)  btnDel.onclick  = () => delTx(x.id);
     }
     return li;
   }
@@ -398,7 +400,7 @@ window.onload = function () {
       const li = document.createElement("li");
       li.className = "item";
       li.innerHTML = `
-        <div class="left"><strong>\${c.nome}</strong></div>
+        <div class="left"><strong>${c.nome}</strong></div>
         <div><button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button></div>`;
       li.querySelector(".del").onclick = async () => {
         if (confirm("Excluir categoria?")) {
@@ -601,17 +603,17 @@ window.onload = function () {
       const li = document.createElement("li");
       li.className = "item";
       const status = r.ativo ? '<span class="tag">Ativo</span>' : '<span class="tag">Pausado</span>';
-      const prox = r.proxima_data ? `• próxima: \${r.proxima_data}` : '';
+      const prox = r.proxima_data ? `• próxima: ${r.proxima_data}` : '';
       li.innerHTML = `
         <div class="left">
-          <div class="tag">\${r.periodicidade}</div>
+          <div class="tag">${r.periodicidade}</div>
           <div>
-            <div><strong>\${r.descricao}</strong> \${status}</div>
-            <div class="muted" style="font-size:12px">\${r.categoria} • \${fmtMoney(r.valor)} \${prox}</div>
+            <div><strong>${r.descricao}</strong> ${status}</div>
+            <div class="muted" style="font-size:12px">${r.categoria} • ${fmtMoney(r.valor)} ${prox}</div>
           </div>
         </div>
         <div style="display:flex;gap:6px;align-items:center">
-          <button class="icon toggle" title="\${r.ativo ? 'Pausar' : 'Ativar'}"><i class="ph \${r.ativo ? 'ph-pause' : 'ph-play'}"></i></button>
+          <button class="icon toggle" title="${r.ativo ? 'Pausar' : 'Ativar'}"><i class="ph ${r.ativo ? 'ph-pause' : 'ph-play'}"></i></button>
           <button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button>
         </div>
       `;
@@ -629,37 +631,11 @@ window.onload = function () {
     });
   }
 
-  // ===== Preferências dentro de Config =====
-  function wireConfigPanel() {
-    const cfgDark = qs("#cfgDark");
-    const cfgHide = qs("#cfgHide");
-
-    // refletir estado atual ao abrir
-    if (cfgDark) cfgDark.checked = !!S.dark;
-    if (cfgHide) cfgHide.checked = !!S.hide;
-
-    if (cfgDark && !cfgDark.__wired) {
-      cfgDark.__wired = true;
-      cfgDark.onchange = async (e) => {
-        S.dark = !!e.target.checked;
-        document.body.classList.toggle("dark", S.dark);
-        await savePrefs();
-      };
-    }
-
-    if (cfgHide && !cfgHide.__wired) {
-      cfgHide.__wired = true;
-      cfgHide.onchange = async (e) => {
-        S.hide = !!e.target.checked;
-        render();
-        await savePrefs();
-      };
-    }
-  }
-
   // ========= RENDER PRINCIPAL =========
   function render() {
     document.body.classList.toggle("dark", S.dark);
+    const hideToggle = qs("#toggleHide");
+    if (hideToggle) hideToggle.checked = S.hide;
 
     renderRecentes();
     renderLancamentos();
@@ -668,9 +644,6 @@ window.onload = function () {
     updateKpis();
     renderCharts();
     renderRecorrentes();
-
-    // conecta os switches dentro de Config
-    wireConfigPanel();
   }
 
   // ========= EVENTOS =========
@@ -703,9 +676,19 @@ window.onload = function () {
     loadAll();
   };
 
-  // Ícone de Config na topbar (abre a aba Config)
-  const btnConfig = document.getElementById("btnConfig");
-  if (btnConfig) btnConfig.onclick = () => setTab("config");
+  const btnDark = qs("#toggleDark");
+  if (btnDark) btnDark.onclick = async () => {
+    S.dark = !S.dark;
+    document.body.classList.toggle("dark", S.dark);
+    await savePrefs();
+  };
+
+  const toggleHide = qs("#toggleHide");
+  if (toggleHide) toggleHide.onchange = async e => {
+    S.hide = e.target.checked;
+    render();
+    await savePrefs();
+  };
 
   // Recorrência: mostrar/ocultar campos conforme checkbox/periodicidade
   const chkRepetir = qs("#mRepetir");
