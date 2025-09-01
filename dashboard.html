@@ -24,12 +24,14 @@
       <div class="tabs">
         <button class="tab active" data-tab="dashboard">Dashboard</button>
         <button class="tab" data-tab="lancamentos">Lançamentos</button>
+        <button class="tab" data-tab="categorias">Categorias</button>
         <button class="tab" data-tab="relatorios">Relatórios</button>
+        <button class="tab" data-tab="config">Config</button>
       </div>
       <div class="right">
         <select id="monthSelect" title="Mês"></select>
-        <!-- Ícone de Config na topbar -->
-        <button class="icon" id="btnConfig" title="Configurações"><i class="ph ph-gear"></i></button>
+        <label class="switch"><input type="checkbox" id="toggleHide"> Esconder valores</label>
+        <button class="icon" id="toggleDark" title="Dark"><i class="ph ph-moon"></i></button>
         <button class="icon" id="logoutBtn" title="Sair"><i class="ph ph-sign-out"></i></button>
       </div>
     </div>
@@ -91,6 +93,20 @@
       </div>
     </section>
 
+    <!-- Categorias -->
+    <section id="categorias">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h3>Categorias</h3>
+          <div style="display:flex;gap:8px">
+            <input id="newCatName" placeholder="Nova categoria...">
+            <button class="btn" id="addCat">Adicionar</button>
+          </div>
+        </div>
+        <ul id="listaCats" class="list cats-grid" style="margin-top:12px"></ul>
+      </div>
+    </section>
+
     <!-- Relatórios -->
     <section id="relatorios">
       <div class="grid two">
@@ -103,21 +119,7 @@
 
     <!-- Config -->
     <section id="config">
-      <!-- Preferências de aparência -->
       <div class="card">
-        <h3>Aparência</h3>
-        <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center">
-          <label class="switch" title="Ativa o modo escuro">
-            <input type="checkbox" id="cfgDark"> Modo escuro
-          </label>
-          <label class="switch" title="Oculta valores monetários nos cards e listas">
-            <input type="checkbox" id="cfgHide"> Esconder valores
-          </label>
-        </div>
-      </div>
-
-      <!-- Backup -->
-      <div class="card" style="margin-top:16px">
         <h3>Backup</h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn secondary" id="btnExport">Exportar</button>
@@ -127,19 +129,7 @@
         </div>
       </div>
 
-      <!-- Categorias (movidas para Config) -->
-      <div class="card" style="margin-top:16px">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <h3>Categorias</h3>
-          <div style="display:flex;gap:8px">
-            <input id="newCatName" placeholder="Nova categoria...">
-            <button class="btn" id="addCat">Adicionar</button>
-          </div>
-        </div>
-        <ul id="listaCats" class="list" style="margin-top:12px"></ul>
-      </div>
-
-      <!-- Transações recorrentes -->
+      <!-- NOVO: Lista de transações recorrentes -->
       <div class="card" style="margin-top:16px">
         <h3>Transações recorrentes</h3>
         <ul id="listaRecorrentes" class="list"></ul>
@@ -191,7 +181,7 @@
         </div>
       </div>
 
-      <!-- Recorrência -->
+      <!-- NOVO: Recorrência -->
       <div class="field span-2" style="margin-top:8px">
         <label><input type="checkbox" id="mRepetir"> Repetir este lançamento</label>
 
