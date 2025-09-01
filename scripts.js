@@ -690,7 +690,27 @@ window.onload = function () {
     await savePrefs();
   };
 
-  // Recorrência: mostrar/ocultar campos conforme checkbox/periodicidade
+    // Ícone de Config na topbar (abre a aba Config) — robust wiring
+  function wireBtnConfig(){
+    const btn = document.getElementById('btnConfig');
+    if (btn && !btn.__wired){
+      btn.__wired = true;
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        setTab('config');
+      });
+    }
+  }
+  // tenta agora e também garante por delegação (caso o botão seja recriado)
+  wireBtnConfig();
+  document.addEventListener('click', (e) => {
+    const target = e.target && e.target.closest ? e.target.closest('#btnConfig') : null;
+    if (target){
+      e.preventDefault();
+      setTab('config');
+    }
+  });
+// Recorrência: mostrar/ocultar campos conforme checkbox/periodicidade
   const chkRepetir = qs("#mRepetir");
   const recurrenceBox = qs("#recurrenceFields");
   const selPer = qs("#mPeriodicidade");
