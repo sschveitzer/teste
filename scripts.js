@@ -413,15 +413,89 @@ window.onload = function () {
   
   
   
+
+
 function renderCategorias() {
   const ul = qs("#listaCats");
   if (!ul) return;
   ul.innerHTML = "";
-  S.cats.forEach(c => {
+
+  const cats = Array.isArray(S.cats) ? [...S.cats] : [];
+  cats.sort((a,b) => String(a.nome || "").localeCompare(String(b.nome || "")));
+
+  if (!cats.length) {
     const li = document.createElement("li");
     li.className = "item";
-    li.innerHTML = `<div class="left"><strong>${c.nome}
-  // ========= RELATÓRIOS / KPIs / GRÁFICOS =========
+    li.innerHTML = '<div class="left"><strong>Nenhuma categoria</strong><div class="muted">Adicione uma no campo acima.</div></div>';
+    ul.append(li);
+    return;
+  }
+
+  cats.forEach(c => {
+    const li = document.createElement("li");
+    li.className = "item";
+    const left = document.createElement("div");
+    left.className = "left";
+    const strong = document.createElement("strong");
+    strong.textContent = c.nome;
+    left.appendChild(strong);
+
+    const right = document.createElement("div");
+    const btn = document.createElement("button");
+    btn.className = "icon del";
+    btn.title = "Excluir";
+    btn.innerHTML = '<i class="ph ph-trash"></i>';
+    btn.addEventListener("click", async () => {
+      if (confirm("Excluir categoria?")) {
+        await deleteCat(c.nome);
+        await loadAll();
+      }
+    });
+    right.appendChild(btn);
+
+    li.appendChild(left);
+    li.appendChild(right);
+    ul.appendChild(li);
+  });
+}
+
+  cats.forEach(c => {
+    const txs = S.tx.filter(x => x.categoria === c.nome);
+    const qtd = txs.length;
+    const totalDesp = txs.filter(x => x.tipo === "Despesa").reduce((a,b) => a + Number(b.valor), 0);
+    const totalRec  = txs.filter(x => x.tipo === "Receita").reduce((a,b) => a + Number(b.valor), 0);
+
+    const li = document.createElement("li");
+    li.className = "item";
+    li.setAttribute("data-cat", c.nome);
+    li.innerHTML = `
+      <div class="chip">Categoria</div>
+      <div class="titulo">${c.nome}</div>
+      <div class="subinfo">${qtd} lançamento${qtd === 1 ? '' : 's'}</div>
+      <div class="valor">${fmtMoney(totalDesp)} <span class="muted">(despesas)</span></div>
+      ${ totalRec > 0 ? `<div class="valor" style="margin-top:4px">${fmtMoney(totalRec)} <span class="muted">(receitas)</span></div>` : '' }
+      <div class="right">
+        <button class="btn-acao edit" title="Renomear"><i class="ph ph-pencil-simple"></i></button>
+        <button class="btn-acao del" title="Excluir"><i class="ph ph-trash"></i></button>
+      </div>
+    `;
+
+    const btnEdit = li.querySelector(".edit");
+    if (btnEdit) btnEdit.onclick = () => renameCategoryFlow(c.nome);
+
+    const btnDel = li.querySelector(".del");
+    if (btnDel) btnDel.onclick = async () => {
+      if (confirm("Excluir categoria? Isso não altera lançamentos já existentes.")) {
+        await deleteCat(c.nome);
+        await loadAll();
+      }
+    };
+
+    ul.append(li);
+  });
+}
+
+// ========= RELATÓRIOS / KPIs / GRÁFICOS =========
   function updateKpis() {
     const txMonth = S.tx.filter(x => x.data && x.data.startsWith(S.month));
     const receitas = txMonth
