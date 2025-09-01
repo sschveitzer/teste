@@ -2,14 +2,15 @@ window.onload = function () {
   // Usa o supabase já criado no dashboard.html
   const supabaseClient = window.supabaseClient || supabase;
 
-  // Estado global
+  // ========= ESTADO GLOBAL =========
   let S = {
     month: nowYMD().slice(0, 7),
     hide: false,
     dark: false,
     editingId: null,
     tx: [],
-    cats: []
+    cats: [],
+    recs: [] // NOVO: recorrências
   };
 
   // ========= HELPERS =========
@@ -18,6 +19,11 @@ window.onload = function () {
   }
   function nowYMD() {
     const d = new Date();
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 10);
+  }
+  function toYMD(d) {
     return new Date(d.getTime() - d.getTimezoneOffset() * 60000)
       .toISOString()
       .slice(0, 10);
@@ -35,6 +41,34 @@ window.onload = function () {
     if (!str) return 0;
     return Number(str.replace(/\./g, "").replace(",", ".").replace(/[^\d.-]/g, "")) || 0;
   }
+  function addDays(ymd, days) {
+    const [y, m, d] = ymd.split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    dt.setDate(dt.getDate() + days);
+    return toYMD(dt);
+  }
+  function lastDayOfMonth(y, m) {
+    return new Date(y, m, 0).getDate(); // m = 1..12
+  }
+  function incMonthly(ymd, diaMes, ajusteFimMes = true) {
+    const [y, m] = ymd.split("-").map(Number);
+    let yy = y, mm = m + 1;
+    if (mm > 12) { mm = 1; yy += 1; }
+    const ld = lastDayOfMonth(yy, mm);
+    const day = ajusteFimMes ? Math.min(diaMes, ld) : diaMes;
+    return toYMD(new Date(yy, mm - 1, day));
+  }
+  function incWeekly(ymd) {
+    return addDays(ymd, 7);
+  }
+  function incYearly(ymd, diaMes, mes, ajusteFimMes = true) {
+    const [y] = ymd.split("-").map(Number);
+    const yy = y + 1;
+    const ld = lastDayOfMonth(yy, mes);
+    const day = ajusteFimMes ? Math.min(diaMes, ld) : diaMes;
+    return toYMD(new Date(yy, mes - 1, day));
+  }
+
   const qs = s => document.querySelector(s);
   const qsa = s => [...document.querySelectorAll(s)];
 
@@ -48,7 +82,7 @@ window.onload = function () {
       console.error("Erro ao carregar transações:", txError);
       S.tx = [];
     } else {
-      S.tx = tx;
+      S.tx = tx || [];
     }
 
     // Categorias
@@ -59,7 +93,7 @@ window.onload = function () {
       console.error("Erro ao carregar categorias:", catsError);
       S.cats = [];
     } else {
-      S.cats = cats;
+      S.cats = cats || [];
     }
 
     // Preferências
@@ -76,6 +110,20 @@ window.onload = function () {
       S.hide = prefs.hide;
       S.dark = prefs.dark;
     }
+
+    // Recorrências
+    const { data: recs, error: recErr } = await supabaseClient
+      .from("recurrences")
+      .select("*");
+    if (recErr) {
+      console.error("Erro ao carregar recorrências:", recErr);
+      S.recs = [];
+    } else {
+      S.recs = recs || [];
+    }
+
+    // Materializa recorrências vencidas
+    await applyRecurrences();
 
     render();
   }
@@ -98,7 +146,19 @@ window.onload = function () {
       { id: 1, month: S.month, hide: S.hide, dark: S.dark }
     ]);
   }
-  // ========= UI =========
+
+  // Recorrências
+  async function saveRec(r) {
+    return await supabaseClient.from("recurrences").upsert([r]).select().single();
+  }
+  async function deleteRec(id) {
+    return await supabaseClient.from("recurrences").delete().eq("id", id);
+  }
+  async function toggleRecAtivo(id, ativo) {
+    return await supabaseClient.from("recurrences").update({ ativo }).eq("id", id);
+  }
+
+  // ========= UI BÁSICA =========
   function setTab(name) {
     qsa(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
     qsa("section").forEach(s => s.classList.toggle("active", s.id === name));
@@ -116,6 +176,29 @@ window.onload = function () {
       modalTipo = "Despesa";
       syncTipoTabs();
       qs("#modalTitle").textContent = titleOverride || "Nova Despesa";
+
+      // Reset de recorrência
+      const chk = qs("#mRepetir");
+      const box = qs("#recurrenceFields");
+      if (chk && box) {
+        chk.checked = false;
+        box.style.display = "none";
+      }
+      const inpIni = qs("#mInicio");
+      const inpFim = qs("#mFim");
+      const inpDM = qs("#mDiaMes");
+      const selDW = qs("#mDiaSemana");
+      const selM = qs("#mMes");
+      const selPer = qs("#mPeriodicidade");
+      const chkAdj = qs("#mAjusteFimMes");
+      if (inpIni) inpIni.value = nowYMD();
+      if (inpFim) inpFim.value = "";
+      if (inpDM) inpDM.value = new Date().getDate();
+      if (selDW) selDW.value = String(new Date().getDay() || 1);
+      if (selM) selM.value = String(new Date().getMonth() + 1);
+      if (selPer) selPer.value = "Mensal";
+      if (chkAdj) chkAdj.checked = true;
+
       setTimeout(() => qs("#mValorBig").focus(), 0);
     } else {
       S.editingId = null;
@@ -134,6 +217,7 @@ window.onload = function () {
 
   function rebuildCatSelect(selected) {
     const sel = qs("#mCategoria");
+    if (!sel) return;
     sel.innerHTML = '<option value="">Selecione…</option>';
     S.cats.forEach(c => {
       const o = document.createElement("option");
@@ -160,8 +244,73 @@ window.onload = function () {
     if (!t.descricao) return alert("Descrição obrigatória");
     if (!(t.valor > 0)) return alert("Informe o valor");
 
-    await saveTx(t);
-    loadAll();
+    const chkRepetir = qs("#mRepetir");
+    if (S.editingId || !chkRepetir?.checked) {
+      await saveTx(t);
+      await loadAll();
+      return toggleModal(false);
+    }
+
+    // Criar recorrência
+    const selPer = qs("#mPeriodicidade");
+    const per = selPer.value;
+    const diaMes = Number(qs("#mDiaMes").value) || new Date().getDate();
+    const dow = Number(qs("#mDiaSemana").value || 1);
+    const mes = Number(qs("#mMes").value || (new Date().getMonth() + 1));
+    const inicio = isIsoDate(qs("#mInicio").value) ? qs("#mInicio").value : nowYMD();
+    const fim = isIsoDate(qs("#mFim").value) ? qs("#mFim").value : null;
+    const ajuste = !!qs("#mAjusteFimMes").checked;
+
+    // define próxima data inicial baseada no "início"
+    let proxima = inicio;
+    if (per === "Mensal") {
+      // se início já passou no mês, usamos o próximo mês
+      const ld = lastDayOfMonth(Number(inicio.slice(0,4)), Number(inicio.slice(5,7)));
+      const day = (ajuste ? Math.min(diaMes, ld) : diaMes);
+      const candidate = toYMD(new Date(Number(inicio.slice(0,4)), Number(inicio.slice(5,7)) - 1, day));
+      proxima = (candidate < inicio) ? incMonthly(candidate, diaMes, ajuste) : candidate;
+    } else if (per === "Semanal") {
+      // próxima semana a partir do início
+      proxima = incWeekly(inicio);
+    } else if (per === "Anual") {
+      const ld = lastDayOfMonth(Number(inicio.slice(0,4)), mes);
+      const day = (ajuste ? Math.min(diaMes, ld) : diaMes);
+      const candidate = toYMD(new Date(Number(inicio.slice(0,4)), mes - 1, day));
+      proxima = (candidate < inicio) ? incYearly(candidate, diaMes, mes, ajuste) : candidate;
+    }
+
+    const rec = {
+      tipo: t.tipo,
+      categoria: t.categoria,
+      descricao: t.descricao,
+      valor: t.valor,
+      obs: t.obs,
+      periodicidade: per,
+      proxima_data: proxima,
+      fim_em: fim,
+      ativo: true,
+      ajuste_fim_mes: ajuste,
+      dia_mes: diaMes,
+      dia_semana: dow,
+      mes: mes
+    };
+
+    const { data: saved, error } = await saveRec(rec);
+    if (error) {
+      console.error(error);
+      return alert("Erro ao salvar recorrência.");
+    }
+
+    // Se o lançamento original é para a mesma data da próxima ocorrência, já materializa a primeira
+    if (t.data === rec.proxima_data) {
+      await materializeOne(saved, rec.proxima_data);
+      if (per === "Mensal") rec.proxima_data = incMonthly(rec.proxima_data, diaMes, ajuste);
+      else if (per === "Semanal") rec.proxima_data = incWeekly(rec.proxima_data);
+      else if (per === "Anual") rec.proxima_data = incYearly(rec.proxima_data, diaMes, mes, ajuste);
+      await saveRec({ ...saved, proxima_data: rec.proxima_data });
+    }
+
+    await loadAll();
     toggleModal(false);
   }
 
@@ -193,14 +342,17 @@ window.onload = function () {
         <div class="${S.hide ? "blurred" : ""}" style="font-weight:700">${fmtMoney(v)}</div>${actions}
       </div>`;
     if (!readOnly) {
-      li.querySelector(".edit").onclick = () => openEdit(x.id);
-      li.querySelector(".del").onclick = () => delTx(x.id);
+      const btnEdit = li.querySelector(".edit");
+      const btnDel  = li.querySelector(".del");
+      if (btnEdit) btnEdit.onclick = () => openEdit(x.id);
+      if (btnDel)  btnDel.onclick  = () => delTx(x.id);
     }
     return li;
   }
 
   function renderRecentes() {
     const ul = qs("#listaRecentes");
+    if (!ul) return;
     const list = [...S.tx].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 10);
     ul.innerHTML = "";
     list.forEach(x => ul.append(itemTx(x, true)));
@@ -208,6 +360,7 @@ window.onload = function () {
 
   function renderLancamentos() {
     const ul = qs("#listaLanc");
+    if (!ul) return;
     const list = [...S.tx].sort((a, b) => b.data.localeCompare(a.data));
     ul.innerHTML = "";
     list.forEach(x => ul.append(itemTx(x, false)));
@@ -225,6 +378,15 @@ window.onload = function () {
     qs("#mValorBig").value = fmtMoney(Number(x.valor) || 0);
     qs("#mObs").value = x.obs || "";
     qs("#modalTitle").textContent = "Editar lançamento";
+
+    // Edição: esconde blocos de recorrência, pois estamos apenas editando essa instância
+    const chk = qs("#mRepetir");
+    const box = qs("#recurrenceFields");
+    if (chk && box) {
+      chk.checked = false;
+      box.style.display = "none";
+    }
+
     qs("#modalLanc").style.display = "flex";
     setTimeout(() => qs("#mValorBig").focus(), 0);
   }
@@ -232,6 +394,7 @@ window.onload = function () {
   // ========= CATEGORIAS =========
   function renderCategorias() {
     const ul = qs("#listaCats");
+    if (!ul) return;
     ul.innerHTML = "";
     S.cats.forEach(c => {
       const li = document.createElement("li");
@@ -239,8 +402,7 @@ window.onload = function () {
       li.innerHTML = `
         <div class="left"><strong>${c.nome}</strong></div>
         <div><button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button></div>`;
-      const btnDel = li.querySelector('.del');
-      if (btnDel) btnDel.onclick = async () => {
+      li.querySelector(".del").onclick = async () => {
         if (confirm("Excluir categoria?")) {
           await deleteCat(c.nome);
           loadAll();
@@ -250,9 +412,9 @@ window.onload = function () {
     });
   }
 
-  // ========= RELATÓRIOS =========
+  // ========= RELATÓRIOS / KPIs / GRÁFICOS =========
   function updateKpis() {
-    const txMonth = S.tx.filter(x => x.data.startsWith(S.month));
+    const txMonth = S.tx.filter(x => x.data && x.data.startsWith(S.month));
     const receitas = txMonth
       .filter(x => x.tipo === "Receita")
       .reduce((a, b) => a + Number(b.valor), 0);
@@ -265,36 +427,35 @@ window.onload = function () {
     const kpiDespesas = qs("#kpiDespesas");
     const kpiSaldo = qs("#kpiSaldo");
 
-    kpiReceitas.textContent = fmtMoney(receitas);
-    kpiDespesas.textContent = fmtMoney(despesas);
-    kpiSaldo.textContent = fmtMoney(saldo);
+    if (kpiReceitas) kpiReceitas.textContent = fmtMoney(receitas);
+    if (kpiDespesas) kpiDespesas.textContent = fmtMoney(despesas);
+    if (kpiSaldo) kpiSaldo.textContent = fmtMoney(saldo);
 
-    // aplica blur se hide = true
     [kpiReceitas, kpiDespesas, kpiSaldo].forEach(el => {
-      el.classList.toggle("blurred", S.hide);
+      if (el) el.classList.toggle("blurred", S.hide);
     });
   }
+
   let chartSaldo, chartPie, chartFluxo;
   function renderCharts() {
+    // Saldo acumulado (12 meses)
     if (chartSaldo) chartSaldo.destroy();
     const ctxSaldo = qs("#chartSaldo");
-    if (ctxSaldo) {
+    if (ctxSaldo && window.Chart) {
       const months = [];
       const saldoData = [];
       const d = new Date();
       for (let i = 11; i >= 0; i--) {
         const cur = new Date(d.getFullYear(), d.getMonth() - i, 1);
         const ym = cur.toISOString().slice(0, 7);
-        const txs = S.tx.filter(x => x.data.startsWith(ym));
+        const txs = S.tx.filter(x => x.data && x.data.startsWith(ym));
         const receitas = txs
           .filter(x => x.tipo === "Receita")
           .reduce((a, b) => a + Number(b.valor), 0);
         const despesas = txs
           .filter(x => x.tipo === "Despesa")
           .reduce((a, b) => a + Number(b.valor), 0);
-        months.push(
-          cur.toLocaleDateString("pt-BR", { month: "short" })
-        );
+        months.push(cur.toLocaleDateString("pt-BR", { month: "short" }));
         saldoData.push(receitas - despesas);
       }
       chartSaldo = new Chart(ctxSaldo, {
@@ -303,10 +464,11 @@ window.onload = function () {
       });
     }
 
+    // Pizza por categoria (mês atual)
     if (chartPie) chartPie.destroy();
     const ctxPie = qs("#chartPie");
-    if (ctxPie) {
-      const txMonth = S.tx.filter(x => x.data.startsWith(S.month));
+    if (ctxPie && window.Chart) {
+      const txMonth = S.tx.filter(x => x.data && x.data.startsWith(S.month));
       const porCat = {};
       txMonth
         .filter(x => x.tipo === "Despesa")
@@ -319,11 +481,13 @@ window.onload = function () {
       });
     }
 
+    // Fluxo por mês
     if (chartFluxo) chartFluxo.destroy();
     const ctxFluxo = qs("#chartFluxo");
-    if (ctxFluxo) {
+    if (ctxFluxo && window.Chart) {
       const porMes = {};
       S.tx.forEach(x => {
+        if (!x.data) return;
         const ym = x.data.slice(0, 7);
         porMes[ym] =
           (porMes[ym] || 0) +
@@ -343,8 +507,9 @@ window.onload = function () {
   // ========= SELECTOR DE MESES =========
   function buildMonthSelect() {
     const sel = qs("#monthSelect");
+    if (!sel) return;
     sel.innerHTML = "";
-    const mesesDisponiveis = [...new Set(S.tx.map(x => x.data.slice(0, 7)))];
+    const mesesDisponiveis = [...new Set(S.tx.filter(x=>x.data).map(x => x.data.slice(0, 7)))];
     mesesDisponiveis.sort((a, b) => b.localeCompare(a));
     mesesDisponiveis.forEach(m => {
       const opt = document.createElement("option");
@@ -364,27 +529,154 @@ window.onload = function () {
     };
   }
 
+  // ========= RECORRÊNCIAS =========
+  async function materializeOne(rec, occDate) {
+    const t = {
+      id: gid(),
+      tipo: rec.tipo,
+      categoria: rec.categoria,
+      data: occDate,
+      descricao: rec.descricao,
+      valor: Number(rec.valor) || 0,
+      obs: rec.obs ? (rec.obs + " (recorrente)") : "Recorrente",
+      recurrence_id: rec.id,
+      occurrence_date: occDate
+    };
+    await saveTx(t);
+  }
+
+  async function applyRecurrences() {
+    if (!Array.isArray(S.recs) || !S.recs.length) return;
+    const today = nowYMD();
+
+    for (const r of S.recs) {
+      if (!r.ativo) continue;
+      if (r.fim_em && r.fim_em < today) continue;
+
+      let next = r.proxima_data || today;
+      let changed = false;
+
+      while (next <= today) {
+        if (r.fim_em && next > r.fim_em) break;
+        await materializeOne(r, next);
+        changed = true;
+
+        if (r.periodicidade === "Mensal") {
+          next = incMonthly(next, r.dia_mes || 1, r.ajuste_fim_mes ?? true);
+        } else if (r.periodicidade === "Semanal") {
+          next = incWeekly(next);
+        } else if (r.periodicidade === "Anual") {
+          next = incYearly(next, r.dia_mes || 1, r.mes || 1, r.ajuste_fim_mes ?? true);
+        } else {
+          break;
+        }
+      }
+
+      if (changed) {
+        await saveRec({ ...r, proxima_data: next });
+      }
+    }
+
+    // Recarrega transações após gerar
+    const { data: tx } = await supabaseClient.from("transactions").select("*");
+    S.tx = tx || [];
+  }
+
+  function renderRecorrentes() {
+    const ul = qs("#listaRecorrentes");
+    if (!ul) return;
+    ul.innerHTML = "";
+
+    if (!S.recs.length) {
+      const li = document.createElement("li");
+      li.className = "item";
+      li.innerHTML = `<div class="left"><strong>Nenhuma recorrência</strong><div class="muted">Crie um lançamento e marque “Repetir”.</div></div>`;
+      ul.append(li);
+      return;
+    }
+
+    const list = [...S.recs].sort((a, b) =>
+      (a.proxima_data || "").localeCompare(b.proxima_data || "")
+    );
+
+    list.forEach(r => {
+      const li = document.createElement("li");
+      li.className = "item";
+      const status = r.ativo ? '<span class="tag">Ativo</span>' : '<span class="tag">Pausado</span>';
+      const prox = r.proxima_data ? `• próxima: ${r.proxima_data}` : '';
+      li.innerHTML = `
+        <div class="left">
+          <div class="tag">${r.periodicidade}</div>
+          <div>
+            <div><strong>${r.descricao}</strong> ${status}</div>
+            <div class="muted" style="font-size:12px">${r.categoria} • ${fmtMoney(r.valor)} ${prox}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="icon toggle" title="${r.ativo ? 'Pausar' : 'Ativar'}"><i class="ph ${r.ativo ? 'ph-pause' : 'ph-play'}"></i></button>
+          <button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button>
+        </div>
+      `;
+      li.querySelector(".toggle").onclick = async () => {
+        await toggleRecAtivo(r.id, !r.ativo);
+        await loadAll();
+      };
+      li.querySelector(".del").onclick = async () => {
+        if (confirm("Excluir recorrência?")) {
+          await deleteRec(r.id);
+          await loadAll();
+        }
+      };
+      ul.append(li);
+    });
+  }
+
+  
+  // Delegation: handle changes on Config switches even if DOM is re-rendered
+  document.addEventListener('change', async (e) => {
+    const t = e.target;
+    if (!t) return;
+    if (t.matches && t.matches('#cfgDark')) {
+      S.dark = !!t.checked;
+      document.body.classList.toggle('dark', S.dark);
+      await savePrefs();
+    }
+    if (t.matches && t.matches('#cfgHide')) {
+      S.hide = !!t.checked;
+      render();
+      await savePrefs();
+    }
+  });
+
   // ========= RENDER PRINCIPAL =========
   function render() {
     document.body.classList.toggle("dark", S.dark);
-    qs("#toggleHide").checked = S.hide;
+    const hideToggle = qs("#toggleHide");
+    if (hideToggle) hideToggle.checked = S.hide;
+
     renderRecentes();
     renderLancamentos();
     renderCategorias();
     buildMonthSelect();
     updateKpis();
     renderCharts();
+    renderRecorrentes();
   }
 
   // ========= EVENTOS =========
   qsa(".tab").forEach(btn =>
     btn.addEventListener("click", () => setTab(btn.dataset.tab))
   );
-  qs("#fab").onclick = () => toggleModal(true);
-  qs("#btnNovo").onclick = () => toggleModal(true);
-  qs("#closeModal").onclick = () => toggleModal(false);
-  qs("#cancelar").onclick = () => toggleModal(false);
-  qs("#salvar").onclick = addOrUpdate;
+  const fab = qs("#fab");
+  if (fab) fab.onclick = () => toggleModal(true);
+  const btnNovo = qs("#btnNovo");
+  if (btnNovo) btnNovo.onclick = () => toggleModal(true);
+  const btnClose = qs("#closeModal");
+  if (btnClose) btnClose.onclick = () => toggleModal(false);
+  const btnCancelar = qs("#cancelar");
+  if (btnCancelar) btnCancelar.onclick = () => toggleModal(false);
+  const btnSalvar = qs("#salvar");
+  if (btnSalvar) btnSalvar.onclick = addOrUpdate;
   qsa("#tipoTabs button").forEach(b =>
     b.addEventListener("click", () => {
       modalTipo = b.dataset.type;
@@ -392,7 +684,8 @@ window.onload = function () {
     })
   );
 
-  qs("#addCat").onclick = async () => {
+  const btnAddCat = qs("#addCat");
+  if (btnAddCat) btnAddCat.onclick = async () => {
     const nome = qs("#newCatName").value.trim();
     if (!nome) return;
     await saveCat({ nome });
@@ -400,17 +693,61 @@ window.onload = function () {
     loadAll();
   };
 
-  if (qs("#toggleDark")) qs("#toggleDark").onclick = async () => {
+  const btnDark = qs("#toggleDark");
+  if (btnDark) btnDark.onclick = async () => {
     S.dark = !S.dark;
     document.body.classList.toggle("dark", S.dark);
     await savePrefs();
   };
-  if (qs("#toggleHide")) qs("#toggleHide").onchange = async e => {
+
+  const toggleHide = qs("#toggleHide");
+  if (toggleHide) toggleHide.onchange = async e => {
     S.hide = e.target.checked;
     render();
     await savePrefs();
   };
-// ====== UX additions: currency mask, keyboard and focus handling ======
+
+    // Ícone de Config na topbar (abre a aba Config) — robust wiring
+  function wireBtnConfig(){
+    const btn = document.getElementById('btnConfig');
+    if (btn && !btn.__wired){
+      btn.__wired = true;
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        setTab('config');
+      });
+    }
+  }
+  // tenta agora e também garante por delegação (caso o botão seja recriado)
+  wireBtnConfig();
+  document.addEventListener('click', (e) => {
+    const target = e.target && e.target.closest ? e.target.closest('#btnConfig') : null;
+    if (target){
+      e.preventDefault();
+      setTab('config');
+    }
+  });
+// Recorrência: mostrar/ocultar campos conforme checkbox/periodicidade
+  const chkRepetir = qs("#mRepetir");
+  const recurrenceBox = qs("#recurrenceFields");
+  const selPer = qs("#mPeriodicidade");
+  const fldDM = qs("#fieldDiaMes");
+  const fldDW = qs("#fieldDiaSemana");
+  const fldM = qs("#fieldMes");
+  function syncRecurrenceFields() {
+    if (!chkRepetir || !recurrenceBox) return;
+    const on = chkRepetir.checked;
+    recurrenceBox.style.display = on ? "block" : "none";
+    if (!on) return;
+    const per = selPer?.value || "Mensal";
+    if (fldDM) fldDM.style.display = (per === "Mensal" || per === "Anual") ? "block" : "none";
+    if (fldDW) fldDW.style.display = (per === "Semanal") ? "block" : "none";
+    if (fldM)  fldM.style.display  = (per === "Anual") ? "block" : "none";
+  }
+  if (chkRepetir) chkRepetir.addEventListener("change", syncRecurrenceFields);
+  if (selPer) selPer.addEventListener("change", syncRecurrenceFields);
+
+  // ====== UX additions: currency mask, keyboard and focus handling ======
   (function enhanceModalUX(){
     const modal = document.getElementById('modalLanc');
     const dialog = modal ? modal.querySelector('.content') : null;
@@ -500,26 +837,6 @@ window.onload = function () {
     window.__getValorCentavos = () => rawCents;
   })();
 
-  
-  // ===== Config: delegated listeners for appearance switches =====
-  document.addEventListener('change', async (e) => {
-    const t = e.target;
-    if (!t) return;
-    if (t.matches('#cfgDark')) {
-      S.dark = !!t.checked;
-      document.body.classList.toggle('dark', S.dark);
-      await savePrefs();
-    }
-    if (t.matches('#cfgHide')) {
-      S.hide = !!t.checked;
-      render();
-      await savePrefs();
-    }
-  });
-
-  // ===== Gear button: open Config section =====
-  const btnConfigTop = document.getElementById('btnConfig');
-  if (btnConfigTop) btnConfigTop.addEventListener('click', () => setTab('config'));
-// ========= START =========
+  // ========= START =========
   loadAll();
 };
