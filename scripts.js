@@ -128,7 +128,13 @@ window.onload = function () {
     render();
   }
 
-  // ========= SAVE =========
+  
+  // Atualiza categoria nas transações (rename)
+  async function updateTxCategory(oldName, newName) {
+    if (!oldName || !newName || oldName === newName) return;
+    await supabaseClient.from("transactions").update({ categoria: newName }).eq("categoria", oldName);
+  }
+// ========= SAVE =========
   async function saveTx(t) {
     return await supabaseClient.from("transactions").upsert([t]);
   }
@@ -395,18 +401,46 @@ window.onload = function () {
   function renderCategorias() {
     const ul = qs("#listaCats");
     if (!ul) return;
+    ul.classList.add("lanc-grid");
     ul.innerHTML = "";
-    S.cats.forEach(c => {
+    const list = [...S.cats].sort((a,b)=>a.nome.localeCompare(b.nome));
+    if (!list.length) {
+      const li = document.createElement("li");
+      li.className = "item";
+      li.innerHTML = `<div class="left"><strong>Nenhuma categoria</strong><div class="muted">Use o campo acima para criar.</div></div>`;
+      ul.append(li);
+      return;
+    }
+    list.forEach(c => {
       const li = document.createElement("li");
       li.className = "item";
       li.innerHTML = `
-        <div class="left"><strong>${c.nome}</strong></div>
-        <div><button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button></div>`;
+        <div class="left">
+          <div><strong>${c.nome}</strong></div>
+          <div class="muted" style="font-size:12px">Categoria</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="icon edit" title="Renomear"><i class="ph ph-pencil-simple"></i></button>
+          <button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button>
+        </div>`;
+      li.querySelector(".edit").onclick = async () => {
+        const novo = prompt("Novo nome da categoria:", c.nome)?.trim();
+        if (!novo || novo === c.nome) return;
+        // cria nova, migra transações, apaga antiga
+        await saveCat({ nome: novo });
+        await updateTxCategory(c.nome, novo);
+        await deleteCat(c.nome);
+        await loadAll();
+      };
       li.querySelector(".del").onclick = async () => {
-        if (confirm("Excluir categoria?")) {
+        if (confirm("Excluir categoria? Transações existentes manterão o nome antigo.")) {
           await deleteCat(c.nome);
-          loadAll();
+          await loadAll();
         }
+      };
+      ul.append(li);
+    });
+  }
       };
       ul.append(li);
     });
@@ -671,6 +705,10 @@ window.onload = function () {
   if (btnAddCat) btnAddCat.onclick = async () => {
     const nome = qs("#newCatName").value.trim();
     if (!nome) return;
+    if (S.cats.some(c => c.nome.toLowerCase() === nome.toLowerCase())) {
+      alert("Essa categoria já existe.");
+      return;
+    }
     await saveCat({ nome });
     qs("#newCatName").value = "";
     loadAll();
