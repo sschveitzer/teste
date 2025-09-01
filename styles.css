@@ -553,3 +553,37 @@ body.dark .error { background:#3b1f20; border-color:#ef4444; color:#fecaca; }
 @media (max-width:700px){
   .form-grid { grid-template-columns:1fr; }
 }
+/* Grid para lançamentos */
+.lanc-grid {
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.lanc-grid .item {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+  transition: transform 0.2s ease;
+}
+
+.lanc-grid .item:hover {
+  transform: translateY(-3px);
+}
+
+/* Responsivo */
+@media(max-width: 1000px) {
+  .lanc-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media(max-width: 600px) {
+  .lanc-grid {
+    grid-template-columns: 1fr;
+  }
+}
