@@ -931,4 +931,3 @@ list.forEach(c => {
 
   // ========= START =========
   loadAll();
-};
