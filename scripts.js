@@ -315,10 +315,10 @@ window.onload = function () {
 // ========= RELATÓRIOS =========
   function updateKpis() {
     const txMonth = S.tx.filter(x => x.data.startsWith(S.month));
-    const receitas = txMonthPie
+    const receitas = txMonth
       .filter(x => x.tipo === "Receita")
       .reduce((a, b) => a + Number(b.valor), 0);
-    const despesas = txMonthPie
+    const despesas = txMonth
       .filter(x => x.tipo === "Despesa")
       .reduce((a, b) => a + Number(b.valor), 0);
     const saldo = receitas - despesas;
@@ -368,9 +368,9 @@ window.onload = function () {
     if (chartPie) chartPie.destroy();
     const ctxPie = qs("#chartPie");
     if (ctxPie) {
-      const txMonthPie = S.tx.filter(x => x.data.startsWith(S.month));
+      const txMonth = S.tx.filter(x => x.data.startsWith(S.month));
       const porCat = {};
-      txMonthPie
+      txMonth
         .filter(x => x.tipo === "Despesa")
         .forEach(x => {
           porCat[x.categoria] = (porCat[x.categoria] || 0) + Number(x.valor);
