@@ -141,6 +141,26 @@ window.onload = function () {
   async function deleteCat(nome) {
     return await supabaseClient.from("categories").delete().eq("nome", nome);
   }
+
+  // Renomeia uma categoria e atualiza transações relacionadas
+  async function renameCategoryFlow(oldName) {
+    const newName = prompt("Novo nome da categoria:", oldName);
+    if (!newName || newName.trim() === "" || newName === oldName) return;
+
+    const trimmed = newName.trim();
+
+    // Cria/atualiza a categoria com novo nome
+    await saveCat({ nome: trimmed });
+
+    // Atualiza transações que usam a categoria antiga
+    await supabaseClient.from("transactions").update({ categoria: trimmed }).eq("categoria", oldName);
+
+    // Remove a categoria antiga
+    await deleteCat(oldName);
+
+    await loadAll();
+  }
+
   async function savePrefs() {
     await supabaseClient.from("preferences").upsert([
       { id: 1, month: S.month, hide: S.hide, dark: S.dark }
@@ -390,21 +410,62 @@ window.onload = function () {
   }
 
   // ========= CATEGORIAS =========
+  
   function renderCategorias() {
     const ul = qs("#listaCats");
     if (!ul) return;
     ul.innerHTML = "";
-    S.cats.forEach(c => {
+
+    // Ordena por nome
+    const cats = [...S.cats].sort((a,b) => a.nome.localeCompare(b.nome));
+
+    if (!cats.length) {
       const li = document.createElement("li");
       li.className = "item";
+      li.innerHTML = `<div class="left"><strong>Nenhuma categoria</strong><div class="muted">Adicione uma no campo acima.</div></div>`;
+      ul.append(li);
+      return;
+    }
+
+    cats.forEach(c => {
+      const txs = S.tx.filter(x => x.categoria === c.nome);
+      const qtd = txs.length;
+      const totalDesp = txs
+        .filter(x => x.tipo === "Despesa")
+        .reduce((a,b) => a + Number(b.valor), 0);
+      const totalRec = txs
+        .filter(x => x.tipo === "Receita")
+        .reduce((a,b) => a + Number(b.valor), 0);
+
+      const li = document.createElement("li");
+      li.className = "item";
+      li.setAttribute("data-cat", c.nome);
       li.innerHTML = `
-        <div class="left"><strong>${c.nome}</strong></div>
-        <div><button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button></div>`;
-      li.querySelector(".del").onclick = async () => {
-        if (confirm("Excluir categoria?")) {
+        <div class="chip">Categoria</div>
+        <div class="titulo">${c.nome}</div>
+        <div class="subinfo">${qtd} lançamento${qtd===1?'':'s'}</div>
+        <div class="valor">${fmtMoney(totalDesp)} <span class="muted">(despesas)</span></div>
+        ${ totalRec > 0 ? `<div class="valor" style="margin-top:4px">${fmtMoney(totalRec)} <span class="muted">(receitas)</span></div>` : ''}
+        <div class="right">
+          <button class="btn-acao edit" title="Renomear"><i class="ph ph-pencil-simple"></i></button>
+          <button class="btn-acao del" title="Excluir"><i class="ph ph-trash"></i></button>
+        </div>
+      `;
+
+      const btnEdit = li.querySelector(".edit");
+      if (btnEdit) btnEdit.onclick = () => renameCategoryFlow(c.nome);
+      const btnDel = li.querySelector(".del");
+      if (btnDel) btnDel.onclick = async () => {
+        if (confirm("Excluir categoria? Isso não altera lançamentos já existentes.")) {
           await deleteCat(c.nome);
           loadAll();
         }
+      };
+
+      ul.append(li);
+    });
+  }
+
       };
       ul.append(li);
     });
@@ -681,9 +742,6 @@ window.onload = function () {
     await savePrefs();
   };
 
-  const btnConfig = document.getElementById("btnConfig");
-  if (btnConfig) btnConfig.onclick = () => setTab("config");
-  
   const toggleHide = qs("#toggleHide");
   if (toggleHide) toggleHide.onchange = async e => {
     S.hide = e.target.checked;
