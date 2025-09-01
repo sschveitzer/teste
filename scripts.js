@@ -342,10 +342,8 @@ window.onload = function () {
         <div class="${S.hide ? "blurred" : ""}" style="font-weight:700">${fmtMoney(v)}</div>${actions}
       </div>`;
     if (!readOnly) {
-      const btnEdit = li.querySelector(".edit");
-      const btnDel  = li.querySelector(".del");
-      if (btnEdit) btnEdit.onclick = () => openEdit(x.id);
-      if (btnDel)  btnDel.onclick  = () => delTx(x.id);
+      li.querySelector(".edit").onclick = () => openEdit(x.id);
+      li.querySelector(".del").onclick = () => delTx(x.id);
     }
     return li;
   }
@@ -631,23 +629,6 @@ window.onload = function () {
     });
   }
 
-  
-  // Delegation: handle changes on Config switches even if DOM is re-rendered
-  document.addEventListener('change', async (e) => {
-    const t = e.target;
-    if (!t) return;
-    if (t.matches && t.matches('#cfgDark')) {
-      S.dark = !!t.checked;
-      document.body.classList.toggle('dark', S.dark);
-      await savePrefs();
-    }
-    if (t.matches && t.matches('#cfgHide')) {
-      S.hide = !!t.checked;
-      render();
-      await savePrefs();
-    }
-  });
-
   // ========= RENDER PRINCIPAL =========
   function render() {
     document.body.classList.toggle("dark", S.dark);
@@ -700,6 +681,9 @@ window.onload = function () {
     await savePrefs();
   };
 
+  const btnConfig = document.getElementById("btnConfig");
+  if (btnConfig) btnConfig.onclick = () => setTab("config");
+  
   const toggleHide = qs("#toggleHide");
   if (toggleHide) toggleHide.onchange = async e => {
     S.hide = e.target.checked;
@@ -707,27 +691,7 @@ window.onload = function () {
     await savePrefs();
   };
 
-    // Ícone de Config na topbar (abre a aba Config) — robust wiring
-  function wireBtnConfig(){
-    const btn = document.getElementById('btnConfig');
-    if (btn && !btn.__wired){
-      btn.__wired = true;
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        setTab('config');
-      });
-    }
-  }
-  // tenta agora e também garante por delegação (caso o botão seja recriado)
-  wireBtnConfig();
-  document.addEventListener('click', (e) => {
-    const target = e.target && e.target.closest ? e.target.closest('#btnConfig') : null;
-    if (target){
-      e.preventDefault();
-      setTab('config');
-    }
-  });
-// Recorrência: mostrar/ocultar campos conforme checkbox/periodicidade
+  // Recorrência: mostrar/ocultar campos conforme checkbox/periodicidade
   const chkRepetir = qs("#mRepetir");
   const recurrenceBox = qs("#recurrenceFields");
   const selPer = qs("#mPeriodicidade");
