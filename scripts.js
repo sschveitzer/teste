@@ -681,6 +681,9 @@ window.onload = function () {
     await savePrefs();
   };
 
+  const btnConfig = document.getElementById("btnConfig");
+  if (btnConfig) btnConfig.onclick = () => setTab("config");
+  
   const toggleHide = qs("#toggleHide");
   if (toggleHide) toggleHide.onchange = async e => {
     S.hide = e.target.checked;
