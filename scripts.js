@@ -411,21 +411,27 @@ window.onload = function () {
 
   // ========= CATEGORIAS =========
   
+  
   function renderCategorias() {
     const ul = qs("#listaCats");
     if (!ul) return;
     ul.innerHTML = "";
-
-    // Ordena por nome
-    const cats = [...S.cats].sort((a,b) => a.nome.localeCompare(b.nome));
-
-    if (!cats.length) {
+    S.cats.forEach(c => {
       const li = document.createElement("li");
       li.className = "item";
-      li.innerHTML = `<div class="left"><strong>Nenhuma categoria</strong><div class="muted">Adicione uma no campo acima.</div></div>`;
+      li.innerHTML = `
+        <div class="left"><strong>${c.nome}</strong></div>
+        <div><button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button></div>`;
+      li.querySelector(".del").onclick = async () => {
+        if (confirm("Excluir categoria?")) {
+          await deleteCat(c.nome);
+          loadAll();
+        }
+      };
       ul.append(li);
-      return;
-    }
+    });
+  }
+
 
     cats.forEach(c => {
       const txs = S.tx.filter(x => x.categoria === c.nome);
