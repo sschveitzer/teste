@@ -412,21 +412,27 @@ window.onload = function () {
   // ========= CATEGORIAS =========
   
   
-  function renderCategorias() {
-    const ul = qs("#listaCats");
-    if (!ul) return;
-    ul.innerHTML = "";
-    S.cats.forEach(c => {
-      const li = document.createElement("li");
-      li.className = "item";
-      li.innerHTML = `
-        <div class="left"><strong>${c.nome}</strong></div>
-        <div><button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button></div>`;
-      li.querySelector(".del").onclick = async () => {
-        if (confirm("Excluir categoria?")) {
-          await deleteCat(c.nome);
-          loadAll();
-        }
+  
+function renderCategorias() {
+  const ul = qs("#listaCats");
+  if (!ul) return;
+  ul.innerHTML = "";
+  S.cats.forEach(c => {
+    const li = document.createElement("li");
+    li.className = "item";
+    li.innerHTML = `<div class="left"><strong>${c.nome}</strong></div>
+      <div><button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button></div>`;
+    const btnDel = li.querySelector(".del");
+    if (btnDel) btnDel.onclick = async () => {
+      if (confirm("Excluir categoria?")) {
+        await deleteCat(c.nome);
+        loadAll();
+      }
+    };
+    ul.append(li);
+  });
+
+
       };
       ul.append(li);
     });
@@ -868,3 +874,22 @@ window.onload = function () {
   // ========= START =========
   loadAll();
 };
+
+// Delegation for Config checkboxes
+document.addEventListener('change', async (e) => {
+  if (!e.target) return;
+  if (e.target.matches('#cfgDark')) {
+    S.dark = !!e.target.checked;
+    document.body.classList.toggle('dark', S.dark);
+    await savePrefs();
+  }
+  if (e.target.matches('#cfgHide')) {
+    S.hide = !!e.target.checked;
+    render();
+    await savePrefs();
+  }
+});
+
+// Config button
+const btnConfig = document.getElementById('btnConfig');
+if (btnConfig) btnConfig.addEventListener('click', () => setTab('config'));
