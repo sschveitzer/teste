@@ -401,7 +401,7 @@ window.onload = function () {
   function renderCategorias() {
     const ul = qs("#listaCats");
     if (!ul) return;
-    ul.classList.add("lanc-grid");
+    ul.classList.add("cats-grid");
     ul.innerHTML = "";
 
     const list = Array.isArray(S.cats) ? [...S.cats].sort((a,b)=> (a.nome||"").localeCompare(b.nome||"")) : [];
