@@ -516,17 +516,6 @@ list.forEach(c => {
       ul.append(li);
     });
   }
-</strong></div>
-        <div><button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button></div>`;
-      li.querySelector(".del").onclick = async () => {
-        if (confirm("Excluir categoria?")) {
-          await deleteCat(c.nome);
-          loadAll();
-        }
-      };
-      ul.append(li);
-    });
-  }
 
   // ========= RELATÓRIOS / KPIs / GRÁFICOS =========
   function updateKpis() {
