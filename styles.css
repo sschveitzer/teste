@@ -522,3 +522,11 @@ body.dark .typetabs button.active {
     border-radius: 0;
   }
 }
+
+
+/* === KPIs em 4 colunas em telas grandes === */
+@media (min-width: 1200px) {
+  .grid.cards {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
