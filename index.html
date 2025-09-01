@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Gestão Financeira - S.Schveitzer</title>
+
+  <!-- Ícone -->
+  <link rel="icon" type="image/png" href="img/logo.png" />
+
+  <!-- Preconnect para melhorar o carregamento do SDK -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+
+  <!-- Viewport e tema -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+
+  <!-- CSP básica (ajuste domínios se necessário) -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self';
+                 img-src 'self' data:;
+                 style-src 'self' 'unsafe-inline';
+                 script-src 'self' https://cdn.jsdelivr.net;
+                 connect-src 'self' https://*.supabase.co;
+                 font-src 'self' data:;
+                 frame-ancestors 'none';">
+
+  <!-- Estilos globais existentes -->
+  <link rel="stylesheet" href="login.css" />
+
+  <!-- SDK Supabase -->
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+</head>
+<body class="auth-page">
+  <noscript>
+    <div class="card auth-card" style="margin:24px auto;max-width:360px">
+      Ative o JavaScript para usar o FinanceAPP.
+    </div>
+  </noscript>
+
+  <main class="card auth-card" role="main" aria-labelledby="auth-title">
+    <img src="img/logo.png" alt="FinanceAPP" class="logo" width="64" height="64" />
+
+    <h1 id="auth-title" class="auth-title">Entrar</h1>
+
+    <form id="login-form" class="auth-form" autocomplete="on" novalidate>
+      <div class="field">
+        <label for="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          inputmode="email"
+          autocomplete="username"
+          placeholder="voce@exemplo.com"
+          required
+          aria-required="true"
+          spellcheck="false" />
+      </div>
+
+      <div class="field">
+        <label for="password">Senha</label>
+        <div class="input-group">
+          <input
+            type="password"
+            id="password"
+            autocomplete="current-password"
+            placeholder="Sua senha"
+            required
+            aria-required="true" />
+          <button
+            type="button"
+            id="togglePass"
+            class="icon ghost"
+            aria-label="Mostrar senha"
+            aria-pressed="false"
+            title="Mostrar/ocultar senha">
+            👁️
+          </button>
+        </div>
+      </div>
+
+      <button class="btn" id="loginBtn" type="submit" data-default-text="Entrar">
+        Entrar
+      </button>
+
+      <p id="statusMsg" class="status" aria-live="polite"></p>
+
+      <!-- Opcional: link de recuperação
+      <p class="helper"><a href="recuperar.html">Esqueci minha senha</a></p>
+      -->
+    </form>
+  </main>
+
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script defer src="app.js"></script>
+</body>
+</html>
