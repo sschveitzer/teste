@@ -530,3 +530,93 @@ body.dark .typetabs button.active {
     grid-template-columns: repeat(4, 1fr);
   }
 }
+/* ====== LOGIN PAGE ENHANCEMENTS ====== */
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(124,58,237,.08), transparent 60%),
+    var(--bg);
+}
+
+.auth-card {
+  width: min(420px, 96vw);
+  padding: 24px;
+  text-align: center;
+}
+
+.logo {
+  width: 72px;
+  height: auto;
+  margin: 4px auto 12px;
+  display: block;
+}
+
+.auth-title {
+  margin: 6px 0 14px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.auth-form {
+  display: grid;
+  gap: 10px;
+  text-align: left;
+}
+
+.input-group {
+  position: relative;
+  display: grid;
+}
+
+.input-group .icon.ghost {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  padding: 6px 8px;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.auth-form input[type="email"],
+.auth-form input[type="password"],
+.auth-form input[type="text"] {
+  width: 100%;
+  padding-right: 40px; /* espaço pro botão olho */
+}
+
+.status {
+  min-height: 18px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+  text-align: center;
+}
+
+.status.ok { color: var(--ok); }
+.status.error { color: var(--warn); }
+
+/* botão ocupa largura toda para mobile */
+.auth-form .btn {
+  width: 100%;
+}
+
+/* acessibilidade */
+.sr-only {
+  position: absolute !important;
+  height: 1px; width: 1px;
+  overflow: hidden; clip: rect(1px, 1px, 1px, 1px);
+  white-space: nowrap; border: 0; padding: 0; margin: -1px;
+}
+
+/* dark mode refinado para a auth */
+body.dark .auth-page {
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(139,92,246,.15), transparent 60%),
+    var(--bg);
+}
