@@ -485,38 +485,6 @@ window.onload = function () {
       ul.appendChild(li);
     });
   }
-list.forEach(c => {
-      const li = document.createElement("li");
-      li.className = "item";
-      li.innerHTML = `
-        <div class="left">
-          <div><strong>${c.nome}</strong></div>
-          <div class="muted" style="font-size:12px">Categoria</div>
-        </div>
-        <div style="display:flex;gap:6px;align-items:center">
-          <button class="icon edit" title="Renomear"><i class="ph ph-pencil-simple"></i></button>
-          <button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button>
-        </div>`;
-      const btnEdit = li.querySelector(".edit");
-      const btnDel  = li.querySelector(".del");
-      if (btnEdit) btnEdit.onclick = async () => {
-        const novo = prompt("Novo nome da categoria:", c.nome)?.trim();
-        if (!novo || novo === c.nome) return;
-        await saveCat({ nome: novo });
-        await updateTxCategory(c.nome, novo);
-        await deleteCat(c.nome);
-        await loadAll();
-      };
-      if (btnDel) btnDel.onclick = async () => {
-        if (confirm("Excluir categoria? Transações existentes manterão o nome antigo.")) {
-          await deleteCat(c.nome);
-          await loadAll();
-        }
-      };
-      ul.append(li);
-    });
-  }
-
   // ========= RELATÓRIOS / KPIs / GRÁFICOS =========
   function updateKpis() {
     const txMonth = S.tx.filter(x => x.data && x.data.startsWith(S.month));
