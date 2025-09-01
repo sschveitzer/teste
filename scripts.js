@@ -410,26 +410,30 @@ window.onload = function () {
   }
 
   // ========= CATEGORIAS =========
+  
+  
+  
+
+
 function renderCategorias() {
   const ul = qs("#listaCats");
   if (!ul) return;
   ul.innerHTML = "";
 
   const cats = Array.isArray(S.cats) ? [...S.cats] : [];
-  cats.sort((a, b) => String(a.nome || "").localeCompare(String(b.nome || "")));
+  cats.sort((a,b) => String(a.nome || "").localeCompare(String(b.nome || "")));
 
   if (!cats.length) {
     const li = document.createElement("li");
     li.className = "item";
     li.innerHTML = '<div class="left"><strong>Nenhuma categoria</strong><div class="muted">Adicione uma no campo acima.</div></div>';
-    ul.appendChild(li);
+    ul.append(li);
     return;
   }
 
   cats.forEach(c => {
     const li = document.createElement("li");
     li.className = "item";
-
     const left = document.createElement("div");
     left.className = "left";
     const strong = document.createElement("strong");
@@ -454,6 +458,7 @@ function renderCategorias() {
     ul.appendChild(li);
   });
 }
+
   cats.forEach(c => {
     const txs = S.tx.filter(x => x.categoria === c.nome);
     const qtd = txs.length;
@@ -473,7 +478,7 @@ function renderCategorias() {
         <button class="btn-acao edit" title="Renomear"><i class="ph ph-pencil-simple"></i></button>
         <button class="btn-acao del" title="Excluir"><i class="ph ph-trash"></i></button>
       </div>
-   ';
+    `;
 
     const btnEdit = li.querySelector(".edit");
     if (btnEdit) btnEdit.onclick = () => renameCategoryFlow(c.nome);
@@ -660,18 +665,79 @@ function renderCategorias() {
     S.tx = tx || [];
   }
 
-  function renderRecorrentes() {
-    const ul = qs("#listaRecorrentes");
-    if (!ul) return;
-    ul.innerHTML = "";
+  
+function renderRecorrentes() {
+  const ul = qs("#listaRecorrentes");
+  if (!ul) return;
+  ul.innerHTML = "";
 
-    if (!S.recs.length) {
-      const li = document.createElement("li");
-      li.className = "item";
-      li.innerHTML = `<div class="left"><strong>Nenhuma recorrência</strong><div class="muted">Crie um lançamento e marque “Repetir”.</div></div>`;
-      ul.append(li);
-      return;
-    }
+  const recs = Array.isArray(S.recs) ? [...S.recs] : [];
+  if (!recs.length) {
+    const li = document.createElement("li");
+    li.className = "item";
+    const left = document.createElement("div");
+    left.className = "left";
+    const strong = document.createElement("strong");
+    strong.textContent = "Nenhuma recorrência";
+    const muted = document.createElement("div");
+    muted.className = "muted";
+    muted.textContent = "Crie um lançamento e marque “Repetir”.";
+    left.appendChild(strong);
+    left.appendChild(muted);
+    li.appendChild(left);
+    ul.appendChild(li);
+    return;
+  }
+
+  recs.sort((a, b) => String(a.proxima_data || "").localeCompare(String(b.proxima_data || "")));
+
+  recs.forEach(r => {
+    const li = document.createElement("li");
+    li.className = "item";
+
+    const left = document.createElement("div");
+    left.className = "left";
+    const strong = document.createElement("strong");
+    strong.textContent = r.descricao || "(sem descrição)";
+    const meta = document.createElement("div");
+    meta.className = "muted";
+    const tipo = r.tipo || "";
+    const cat = r.categoria || "";
+    const prox = r.proxima_data ? new Date(r.proxima_data).toLocaleDateString("pt-BR") : "-";
+    meta.textContent = `${tipo} • ${cat} • próxima: ${prox}`;
+    left.appendChild(strong);
+    left.appendChild(meta);
+
+    const right = document.createElement("div");
+    const btnRun = document.createElement("button");
+    btnRun.className = "icon";
+    btnRun.title = "Gerar agora";
+    btnRun.innerHTML = '<i class="ph ph-play-circle"></i>';
+    btnRun.addEventListener("click", async () => {
+      await gerarRecorrente(r);
+      await render(); // re-render geral
+    });
+
+    const btnDel = document.createElement("button");
+    btnDel.className = "icon del";
+    btnDel.title = "Excluir recorrência";
+    btnDel.innerHTML = '<i class="ph ph-trash"></i>';
+    btnDel.addEventListener("click", async () => {
+      if (confirm("Excluir esta recorrência?")) {
+        await delRec(r.id);
+        await render();
+      }
+    });
+
+    right.appendChild(btnRun);
+    right.appendChild(btnDel);
+
+    li.appendChild(left);
+    li.appendChild(right);
+    ul.appendChild(li);
+  });
+}
+
 
     const list = [...S.recs].sort((a, b) =>
       (a.proxima_data || "").localeCompare(b.proxima_data || "")
@@ -789,115 +855,113 @@ function renderCategorias() {
   if (selPer) selPer.addEventListener("change", syncRecurrenceFields);
 
   // ====== UX additions: currency mask, keyboard and focus handling ======
-(function enhanceModalUX(){
-  const modal = document.getElementById('modalLanc');
-  const dialog = modal ? modal.querySelector('.content') : null;
-  const valorInput = document.getElementById('mValorBig');
-  const formError = document.getElementById('formError');
-  const btnSalvar = document.getElementById('salvar');
-  const btnCancelar = document.getElementById('cancelar');
+  (function enhanceModalUX(){
+    const modal = document.getElementById('modalLanc');
+    const dialog = modal ? modal.querySelector('.content') : null;
+    const valorInput = document.getElementById('mValorBig');
+    const formError = document.getElementById('formError');
+    const btnSalvar = document.getElementById('salvar');
+    const btnCancelar = document.getElementById('cancelar');
 
-  // currency mask with raw cents
-  let rawCents = 0;
-  const br = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' });
-  const setAmount = () => { if (valorInput) valorInput.value = rawCents ? br.format(rawCents/100) : ''; };
+    // currency mask with raw cents
+    let rawCents = 0;
+    const br = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' });
+    const setAmount = () => { if (valorInput) valorInput.value = rawCents ? br.format(rawCents/100) : ''; };
 
-  if (valorInput) {
-    valorInput.addEventListener('beforeinput', (e) => {
-      if (e.inputType === 'deleteContentBackward') {
-        rawCents = Math.floor(rawCents/10);
-        setAmount();
-        e.preventDefault();
-      }
-    });
-    valorInput.addEventListener('input', (e) => {
-      const d = (e.data ?? '').replace(/\D/g,'');
-      if (d) {
-        rawCents = Math.min(9999999999, rawCents*10 + Number(d));
-        setAmount();
-      } else if (!e.data && !valorInput.value) {
-        rawCents = 0;
-      }
-      // keep caret at end
-      requestAnimationFrame(() => {
-        const len = valorInput.value.length;
-        valorInput.setSelectionRange(len,len);
+    if (valorInput) {
+      valorInput.addEventListener('beforeinput', (e) => {
+        if (e.inputType === 'deleteContentBackward') {
+          rawCents = Math.floor(rawCents/10);
+          setAmount();
+          e.preventDefault();
+        }
       });
-    });
-    valorInput.addEventListener('focus', () => {
-      if (!valorInput.value) setAmount();
-      requestAnimationFrame(() => {
-        const len = valorInput.value.length;
-        valorInput.setSelectionRange(len,len);
+      valorInput.addEventListener('input', (e) => {
+        const d = (e.data ?? '').replace(/\D/g,'');
+        if (d) {
+          rawCents = Math.min(9999999999, rawCents*10 + Number(d));
+          setAmount();
+        } else if (!e.data && !valorInput.value) {
+          rawCents = 0;
+        }
+        // keep caret at end
+        requestAnimationFrame(() => {
+          const len = valorInput.value.length;
+          valorInput.setSelectionRange(len,len);
+        });
       });
-    });
-  }
-
-  // validate before save
-  function validateModal(){
-    if (!formError) return true;
-    formError.hidden = true; formError.textContent = '';
-    const problems = [];
-    if (rawCents <= 0 && parseMoneyMasked(valorInput.value) <= 0) problems.push('Informe um valor maior que zero.');
-    if (!document.getElementById('mCategoria').value) problems.push('Selecione uma categoria.');
-    if (!document.getElementById('mData').value) problems.push('Informe a data.');
-    if (problems.length){
-      formError.textContent = problems.join(' ');
-      formError.hidden = false;
-      return false;
+      valorInput.addEventListener('focus', () => {
+        if (!valorInput.value) setAmount();
+        requestAnimationFrame(() => {
+          const len = valorInput.value.length;
+          valorInput.setSelectionRange(len,len);
+        });
+      });
     }
-    return true;
-  }
 
-  // Enter to save, Esc to cancel (not inside textarea)
-  if (dialog){
-    dialog.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && document.activeElement && document.activeElement.tagName !== 'TEXTAREA') {
-        e.preventDefault();
-        if (validateModal()) btnSalvar?.click();
+    // validate before save
+    function validateModal(){
+      if (!formError) return true;
+      formError.hidden = true; formError.textContent = '';
+      const problems = [];
+      if (rawCents <= 0 && parseMoneyMasked(valorInput.value) <= 0) problems.push('Informe um valor maior que zero.');
+      if (!document.getElementById('mCategoria').value) problems.push('Selecione uma categoria.');
+      if (!document.getElementById('mData').value) problems.push('Informe a data.');
+      if (problems.length){
+        formError.textContent = problems.join(' ');
+        formError.hidden = false;
+        return false;
       }
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        btnCancelar?.click();
-      }
-    });
+      return true;
+    }
 
-    // focus trap
-    dialog.addEventListener('keydown', (e) => {
-      if (e.key !== 'Tab') return;
-      const focusables = dialog.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-      const list = Array.from(focusables).filter(el => !el.disabled);
-      if (!list.length) return;
-      const first = list[0], last = list[list.length - 1];
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-    });
-  }
+    // Enter to save, Esc to cancel (not inside textarea)
+    if (dialog){
+      dialog.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && document.activeElement && document.activeElement.tagName !== 'TEXTAREA') {
+          e.preventDefault();
+          if (validateModal()) btnSalvar?.click();
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          btnCancelar?.click();
+        }
+      });
 
-  // expose getter if needed by other code
-  window.__getValorCentavos = () => rawCents;
-})();
+      // focus trap
+      dialog.addEventListener('keydown', (e) => {
+        if (e.key !== 'Tab') return;
+        const focusables = dialog.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        const list = Array.from(focusables).filter(el => !el.disabled);
+        if (!list.length) return;
+        const first = list[0], last = list[list.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      });
+    }
 
-// ===== Preferências dentro de Config (delegação p/ não quebrar com re-render) =====
-document.addEventListener('change', async (e) => {
-  const t = e.target;
-  if (!t) return;
-  if (t.matches('#cfgDark')) {
-    S.dark = !!t.checked;
-    document.body.classList.toggle('dark', S.dark);
-    await savePrefs();
-  }
-  if (t.matches('#cfgHide')) {
-    S.hide = !!t.checked;
-    render();
-    await savePrefs();
-  }
-});
+    // expose getter if needed by other code
+    window.__getValorCentavos = () => rawCents;
+  })();
 
-// Ícone da engrenagem (topbar) abre a aba Config
-const btnConfigTop = document.getElementById('btnConfig');
-if (btnConfigTop) btnConfigTop.addEventListener('click', () => setTab('config'));
+  
+  // Delegation for Config checkboxes (inside onload to access S/savePrefs/render)
+  document.addEventListener('change', async (e) => {
+    if (!e.target) return;
+    if (e.target.matches('#cfgDark')) {
+      S.dark = !!e.target.checked;
+      document.body.classList.toggle('dark', S.dark);
+      await savePrefs();
+    }
+    if (e.target.matches('#cfgHide')) {
+      S.hide = !!e.target.checked;
+      render();
+      await savePrefs();
+    }
+  });
 
+  // Config button
+  const btnConfigTop = document.getElementById('btnConfig');
+  if (btnConfigTop) btnConfigTop.addEventListener('click', () => setTab('config'));
 // ========= START =========
-loadAll();
-};
+  loadAll();
