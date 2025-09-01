@@ -98,6 +98,58 @@ window.onload = function () {
       { id: 1, month: S.month, hide: S.hide, dark: S.dark }
     ]);
   }
+  // ===== CONFIG/CATEGORIAS (campo único) =====
+  function parseCatsField(str) {
+    return [...new Set(String(str || "")
+      .split(/[,
+]+/)
+      .map(s => s.trim())
+      .filter(Boolean)
+    )];
+  }
+  function renderConfig() {
+    const inp = qs("#cfgCategoriasInput");
+    if (!inp) return; // seção não existe
+    // Preenche a partir do estado atual
+    inp.value = (S.cats || []).map(c => c.nome).join(", ");
+    renderCfgChips();
+  }
+  function renderCfgChips() {
+    const box = qs("#cfgCatChips");
+    const inp = qs("#cfgCategoriasInput");
+    if (!box || !inp) return;
+    const list = parseCatsField(inp.value);
+    box.innerHTML = list.map(n => `<span class="chip">${n}</span>`).join("");
+  }
+  async function saveCfgCategorias() {
+    const inp = qs("#cfgCategoriasInput");
+    const msg = qs("#cfgCatMsg");
+    if (!inp) return;
+    const next = parseCatsField(inp.value);
+    const current = (S.cats || []).map(c => c.nome);
+
+    const inNext = n => next.some(x => x.toLowerCase() === n.toLowerCase());
+    const inCurr = n => current.some(x => x.toLowerCase() === n.toLowerCase());
+
+    const toAdd = next.filter(n => !inCurr(n));
+    const toDel = current.filter(n => !inNext(n));
+
+    // Remoções com aviso de uso
+    for (const cat of toDel) {
+      const uso = (S.tx || []).filter(x => x.categoria === cat).length;
+      if (uso > 0) {
+        const ok = confirm(`A categoria "${cat}" possui ${uso} lançamento(s). Deseja excluir mesmo assim?`);
+        if (!ok) continue;
+      }
+      await deleteCat(cat);
+    }
+    for (const nome of toAdd) {
+      await saveCat({ nome });
+    }
+    if (msg) msg.textContent = "Categorias atualizadas.";
+    await loadAll();
+  }
+
   // ========= UI =========
   function setTab(name) {
     qsa(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
@@ -232,87 +284,24 @@ window.onload = function () {
   // ========= CATEGORIAS =========
   function renderCategorias() {
     const ul = qs("#listaCats");
-    if (!ul) return;
-    const q = (qs("#catSearch")?.value || "").toLowerCase();
     ul.innerHTML = "";
-
-    // Sort by name
-    const cats = [...S.cats].sort((a,b)=>a.nome.localeCompare(b.nome))
-      .filter(c => c.nome.toLowerCase().includes(q));
-
-    const usage = Object.create(null);
-    S.tx.forEach(x => { const k = x.categoria || ""; usage[k] = (usage[k]||0)+1; });
-
-    cats.forEach(c => {
-      const count = usage[c.nome] || 0;
+    S.cats.forEach(c => {
       const li = document.createElement("li");
       li.className = "item";
       li.innerHTML = `
-        <div class="left">
-          <strong class="cat-name">${c.nome}</strong>
-          <span class="muted" style="margin-left:8px">(${count} uso${count===1?'':'s'})</span>
-        </div>
-        <div class="right" style="display:flex;gap:6px">
-          <button class="icon edit" title="Editar"><i class="ph ph-pencil-simple"></i></button>
-          <button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button>
-        </div>`;
-
-      // Delete with confirmation when in use
+        <div class="left"><strong>${c.nome}</strong></div>
+        <div><button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button></div>`;
       li.querySelector(".del").onclick = async () => {
-        if (count > 0) {
-          if (!confirm(`A categoria "${c.nome}" possui ${count} lançamento(s). Deseja realmente excluir?`)) return;
+        if (confirm("Excluir categoria?")) {
+          await deleteCat(c.nome);
+          loadAll();
         }
-        await deleteCat(c.nome);
-        await loadAll();
       };
-
-      // Inline edit / rename
-      li.querySelector(".edit").onclick = () => {
-        const wrapper = document.createElement("div");
-        wrapper.className = "inline-edit";
-        wrapper.innerHTML = `
-          <input class="inpName" value="${c.nome}" style="min-width:220px" />
-          <button class="btn save">Salvar</button>
-          <button class="btn secondary cancel">Cancelar</button>`;
-        li.replaceChildren(wrapper);
-
-        const inp = wrapper.querySelector(".inpName");
-        inp.focus(); inp.select();
-
-        wrapper.querySelector(".cancel").onclick = renderCategorias;
-        wrapper.querySelector(".save").onclick = async () => {
-          const novo = (inp.value || "").trim();
-          if (!novo) return alert("Informe um nome.");
-          if (novo.toLowerCase() === c.nome.toLowerCase()) return renderCategorias();
-          if (S.cats.some(x => x.nome.toLowerCase() == novo.toLowerCase())) {
-            return alert("Já existe uma categoria com esse nome.");
-          }
-          // rename: cria nova cat, atualiza transações e remove antiga
-          await renameCategory(c.nome, novo);
-          await loadAll();
-        };
-      };
-
       ul.append(li);
     });
   }
 
-  
-  // ========= CATEGORIAS HELPERS =========
-  async function renameCategory(oldName, newName) {
-    // 1) cria/garante nova categoria
-    await saveCat({ nome: newName });
-    // 2) atualiza todas as transações referenciando a antiga
-    if (oldName !== newName) {
-      await supabaseClient
-        .from("transactions")
-        .update({ categoria: newName })
-        .eq("categoria", oldName);
-    }
-    // 3) remove categoria antiga
-    await deleteCat(oldName);
-  }
-// ========= RELATÓRIOS =========
+  // ========= RELATÓRIOS =========
   function updateKpis() {
     const txMonth = S.tx.filter(x => x.data.startsWith(S.month));
     const receitas = txMonth
@@ -433,7 +422,9 @@ window.onload = function () {
     renderRecentes();
     renderLancamentos();
     renderCategorias();
-    buildMonthSelect();
+    
+    renderConfig();
+buildMonthSelect();
     updateKpis();
     renderCharts();
   }
@@ -454,8 +445,15 @@ window.onload = function () {
     })
   );
 
-  // removido: handler antigo #addCat
-qs("#toggleDark").onclick = async () => {
+  qs("#addCat").onclick = async () => {
+    const nome = qs("#newCatName").value.trim();
+    if (!nome) return;
+    await saveCat({ nome });
+    qs("#newCatName").value = "";
+    loadAll();
+  };
+
+  qs("#toggleDark").onclick = async () => {
     S.dark = !S.dark;
     document.body.classList.toggle("dark", S.dark);
     await savePrefs();
@@ -466,20 +464,9 @@ qs("#toggleDark").onclick = async () => {
     await savePrefs();
   };
 
-  // ========= CONTROLES CONFIG/CATEGORIAS =========
-  const addBtnCfg = qs("#cfgAddCat");
-  if (addBtnCfg) addBtnCfg.onclick = async () => {
-    const nome = (qs("#cfgCatName")?.value || "").trim();
-    if (!nome) return;
-    if (S.cats.some(x => x.nome.toLowerCase() === nome.toLowerCase())) {
-      alert("Já existe uma categoria com esse nome."); return;
-    }
-    await saveCat({ nome });
-    qs("#cfgCatName").value = "";
-    await loadAll();
-  };
-  const catSearch = qs("#catSearch");
-  if (catSearch) catSearch.oninput = renderCategorias;
+  // ===== CONFIG events =====
+    qs("#cfgCategoriasInput")?.addEventListener("input", renderCfgChips);
+    qs("#btnCfgSalvar")?.addEventListener("click", saveCfgCategorias);
 
   // ========= START =========
   loadAll();
