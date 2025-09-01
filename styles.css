@@ -557,7 +557,6 @@ body.dark .error { background:#3b1f20; border-color:#ef4444; color:#fecaca; }
 /*  Lançamentos em GRID      */
 /* ========================= */
 
-/* Torna o UL um grid, sem alterar o JS que popula <li> */
 #listaLanc.lanc-grid{
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); /* 4 no desktop, 2 no tablet, 1 no celular */
@@ -566,12 +565,10 @@ body.dark .error { background:#3b1f20; border-color:#ef4444; color:#fecaca; }
   margin: 0; padding: 0;
 }
 
-/* Cada <li> vira um card consistente */
+/* Cada <li> como card */
 #listaLanc.lanc-grid > li.item{
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  min-height: 150px;                /* ajuste se quiser mais alto */
   border: 1px solid var(--border);
   background: var(--card);
   border-radius: 14px;
@@ -584,13 +581,12 @@ body.dark .error { background:#3b1f20; border-color:#ef4444; color:#fecaca; }
   transform: translateY(-2px);
 }
 
-/* Zera herança da .list (que antes era coluna) só aqui */
+/* Zera herança da .list (vertical) só aqui */
 #listaLanc.lanc-grid.list{
-  /* a .list define flex/column; garantimos que o grid prevaleça */
   display: grid;
 }
 
-/* Hierarquia visual dentro do card */
+/* Conteúdo interno */
 #listaLanc .chip{ 
   background: var(--chip);
   padding: 4px 10px;
@@ -605,28 +601,32 @@ body.dark .error { background:#3b1f20; border-color:#ef4444; color:#fecaca; }
   font-size: 16px;
   line-height: 1.2;
   display: -webkit-box;
-  -webkit-line-clamp: 2;           /* limita a 2 linhas */
+  -webkit-line-clamp: 2;   /* máximo 2 linhas */
   -webkit-box-orient: vertical;
   overflow: hidden;
   margin: 6px 0 2px;
+  text-align: left;
 }
 
 #listaLanc .subinfo{
   color: var(--muted);
   font-size: 13px;
   margin-bottom: 6px;
+  text-align: left;
 }
 
 #listaLanc .valor{
   font-size: 18px;
   font-weight: 800;
   margin: 8px 0;
+  text-align: left;
 }
 
-/* Área de ações no rodapé do card */
+/* Área de ações (botões) alinhada à direita */
 #listaLanc .acoes{
-  margin-top: auto;
+  margin-top: 12px;
   display: flex;
+  justify-content: flex-end;
   gap: 8px;
 }
 
@@ -644,12 +644,12 @@ body.dark .error { background:#3b1f20; border-color:#ef4444; color:#fecaca; }
   outline-offset: 2px;
 }
 
-/* Cores sutis por tipo (opcional) */
+/* Cores por tipo */
 #listaLanc li[data-tipo="Despesa"] .chip{ background: rgba(220,38,38,.10); color:#dc2626; }
 #listaLanc li[data-tipo="Receita"] .chip{ background: rgba(34,197,94,.10);  color:#16a34a; }
 #listaLanc li[data-tipo="Transferência"] .chip{ background: rgba(124,58,237,.10); color:#7c3aed; }
 
-/* Respeitar acessibilidade (reduzir animações) */
+/* Acessibilidade: menos animações */
 @media (prefers-reduced-motion: reduce){
   #listaLanc.lanc-grid > li.item{ transition: none; }
 }
