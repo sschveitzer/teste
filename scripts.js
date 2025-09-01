@@ -631,6 +631,23 @@ window.onload = function () {
     });
   }
 
+  
+  // Delegation: handle changes on Config switches even if DOM is re-rendered
+  document.addEventListener('change', async (e) => {
+    const t = e.target;
+    if (!t) return;
+    if (t.matches && t.matches('#cfgDark')) {
+      S.dark = !!t.checked;
+      document.body.classList.toggle('dark', S.dark);
+      await savePrefs();
+    }
+    if (t.matches && t.matches('#cfgHide')) {
+      S.hide = !!t.checked;
+      render();
+      await savePrefs();
+    }
+  });
+
   // ========= RENDER PRINCIPAL =========
   function render() {
     document.body.classList.toggle("dark", S.dark);
