@@ -460,7 +460,7 @@ window.onload = function () {
 
   function itemTx(x, readOnly = false) {
     const li = document.createElement("li");
-    li.className = "item";
+    li.className = "item lanc-card";
     const v = isFinite(Number(x.valor)) ? Number(x.valor) : 0;
     const actions = readOnly
       ? ""
@@ -499,12 +499,84 @@ window.onload = function () {
   list.forEach(x => ul.append(itemTx(x, true)));
 }
 
+
+  // ========= Lançamentos: Toolbar =========
+  if (!S.lf) S.lf = { tipo:'todos', cat:'todas', q:'', sort:'data_desc', compact:false };
+
+  function buildLancToolbar(){
+    const selTipo = qs('#lancTipo');
+    const selCat  = qs('#lancCat');
+    const inpQ    = qs('#lancSearch');
+    const selSort = qs('#lancSort');
+    const chkComp = qs('#lancCompact');
+    if (!selTipo || !selCat || !inpQ || !selSort || !chkComp) return;
+
+    // categorias
+    selCat.innerHTML = '<option value="todas">Todas as categorias</option>';
+    const list = Array.isArray(S.cats) ? [...S.cats].sort((a,b)=> (a.nome||'').localeCompare(b.nome||'')) : [];
+    list.forEach(c=>{
+      const o = document.createElement('option');
+      o.value = c.nome; o.textContent = c.nome;
+      if (S.lf.cat === c.nome) o.selected = true;
+      selCat.appendChild(o);
+    });
+
+    // valores atuais
+    selTipo.value = S.lf.tipo;
+    inpQ.value = S.lf.q;
+    selSort.value = S.lf.sort;
+    chkComp.checked = S.lf.compact;
+
+    // eventos
+    selTipo.onchange = () => { S.lf.tipo = selTipo.value; renderLancamentos(); };
+    selCat.onchange  = () => { S.lf.cat  = selCat.value; renderLancamentos(); };
+    inpQ.oninput     = () => { S.lf.q    = inpQ.value.trim().toLowerCase(); renderLancamentos(); };
+    selSort.onchange = () => { S.lf.sort = selSort.value; renderLancamentos(); };
+    chkComp.onchange = () => { S.lf.compact = chkComp.checked; renderLancamentos(); };
+  }
+
+  function applyLancFilters(list){
+    let out = [...list];
+    if (S.lf.tipo !== 'todos') out = out.filter(x=> x.tipo === S.lf.tipo);
+    if (S.lf.cat  !== 'todas') out = out.filter(x=> (x.categoria||'') === S.lf.cat);
+    if (S.lf.q) {
+      const q = S.lf.q;
+      out = out.filter(x=> (x.descricao||'').toLowerCase().includes(q) || (x.obs||'').toLowerCase().includes(q));
+    }
+    // sort
+    const cmpVal = (a,b)=> (Number(a.valor)||0) - (Number(b.valor)||0);
+    const cmpData = (a,b)=> (a.data||'').localeCompare(b.data||'');
+    if (S.lf.sort === 'data_desc') out.sort((a,b)=> cmpData(b,a));
+    else if (S.lf.sort === 'data_asc') out.sort((a,b)=> cmpData(a,b));
+    else if (S.lf.sort === 'valor_desc') out.sort((a,b)=> cmpVal(b,a));
+    else if (S.lf.sort === 'valor_asc') out.sort((a,b)=> cmpVal(a,b));
+    return out;
+  }
+
+  function renderLancSummary(list){
+    const el = qs('#lancSummary');
+    if (!el) return;
+    const rec = list.filter(x=>x.tipo==='Receita').reduce((a,b)=>a+(Number(b.valor)||0),0);
+    const des = list.filter(x=>x.tipo==='Despesa').reduce((a,b)=>a+(Number(b.valor)||0),0);
+    const sal = rec - des;
+    el.innerHTML = '';
+    const mk = (icon, label, val, color)=> `<span class="pill" style="color:${color}"><i class="ph ${icon}"></i> ${label}: <strong>${fmtMoney(val)}</strong></span>`;
+    el.insertAdjacentHTML('beforeend', mk('ph-trend-up','Receitas',rec,'var(--ok)'));
+    el.insertAdjacentHTML('beforeend', mk('ph-trend-down','Despesas',des,'var(--warn)'));
+    el.insertAdjacentHTML('beforeend', mk('ph-wallet','Saldo',sal,'var(--brand)'));
+  }
+
   function renderLancamentos() {
     const ul = qs("#listaLanc");
     if (!ul) return;
-    const list = [...S.tx].sort((a, b) => b.data.localeCompare(a.data));
+    buildLancToolbar();
+
+    const list = applyLancFilters([...S.tx]);
     ul.innerHTML = "";
+    ul.classList.toggle('compact', !!S.lf.compact);
     list.forEach(x => ul.append(itemTx(x, false)));
+
+    renderLancSummary(list);
   }
 
   function openEdit(id) {
