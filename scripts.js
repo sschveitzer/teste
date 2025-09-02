@@ -1293,6 +1293,22 @@ mesesDisponiveis.forEach(m => {
     }
   })();
 
+
+  // ====== Safe initializer ======
+  function loadAll(){
+    try {
+      // Populate category select if available
+      if (typeof rebuildCatSelect === 'function') rebuildCatSelect();
+      // KPIs and charts
+      if (typeof updateKpis === 'function') updateKpis();
+      if (typeof renderCharts === 'function') renderCharts();
+      // Lançamentos list
+      if (typeof renderLancamentos === 'function') renderLancamentos();
+    } catch(err){
+      console.error('loadAll failed:', err);
+    }
+  }
+
   // Start!
   loadAll();
 ;
