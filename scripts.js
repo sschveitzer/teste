@@ -511,7 +511,7 @@ window.onload = function () {
     // categorias
     selCat.innerHTML = '<option value="todas">Todas as categorias</option>';
     const list = Array.isArray(S.cats) ? [...S.cats].sort((a,b)=> (a.nome||'').localeCompare(b.nome||'')) : [];
-    list.forEach(c=>{);
+    list.forEach(c => {
       const o = document.createElement('option');
       o.value = c.nome; o.textContent = c.nome;
       if (S.lf.cat === c.nome) o.selected = true;
