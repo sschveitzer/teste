@@ -882,3 +882,46 @@ button:focus-visible, [role="button"]:focus-visible, .tab:focus-visible, .btn:fo
   .lanc-card .valor{ justify-self: start; }
   .lanc-card .acoes{ justify-self: stretch; }
 }
+
+
+/* === Lançamentos UI upgrades === */
+.lanc-header{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:10px; }
+.lanc-header h3{ display:flex; align-items:center; gap:8px; }
+.lanc-actions{ display:flex; gap:8px; }
+
+.lanc-toolbar{
+  display:grid;
+  grid-template-columns: 150px 1fr 1fr 150px auto;
+  gap: 10px;
+  align-items:center;
+  background: var(--bg-soft);
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: 10px;
+}
+.lanc-toolbar .switch.sm input{ margin-right:6px; }
+@media(max-width:900px){
+  .lanc-toolbar{ grid-template-columns: 1fr 1fr; }
+}
+@media(max-width:520px){
+  .lanc-toolbar{ grid-template-columns: 1fr; }
+}
+
+.lanc-summary{
+  margin-top:10px;
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.lanc-summary .pill{
+  background: var(--chip);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-weight: 600;
+  display:flex; gap:6px; align-items:center;
+}
+
+#listaLanc.compact > li.item{ padding: 12px; }
+#listaLanc.compact > li.item .titulo{ font-size:14px; }
+#listaLanc.compact > li.item .valor{ font-size:16px; }
