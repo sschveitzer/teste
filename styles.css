@@ -779,14 +779,40 @@ body.dark .error { background:#3b1f20; border-color:#ef4444; color:#fecaca; }
 }
 
 
-/* === Forma de pagamento chip === */
-.pay-chip{
-  display:inline-flex; align-items:center; gap:6px;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: var(--chip);
+/* === Modal aesthetic polish === */
+.modal .content{ border-radius: 20px; }
+.modal .title h3{ font-size:18px; font-weight:800; }
+.modal .amount{
+  font-size: 36px;
+  letter-spacing: .3px;
+  background: linear-gradient(0deg, var(--bg-soft), var(--bg-soft));
   border: 1px solid var(--border);
-  font-size: 12px; font-weight:600;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.2);
 }
-.pay-chip i{ font-size: 14px; }
-.subline{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.segmented button{ display:flex; align-items:center; gap:8px; min-width:140px; }
+.segmented button{ transition: transform .05s ease, background .15s ease; }
+.segmented button:active{ transform: translateY(1px); }
+
+.form-grid{ gap: 14px; }
+.field label{ font-weight: 700; }
+.field .optional{
+  font-weight:600; font-size: 12px; color: var(--muted);
+  background: var(--chip); border: 1px solid var(--border); border-radius: 999px; padding: 2px 6px; margin-left: 6px;
+}
+.helper{ margin-top: -2px; }
+
+/* Controls heights */
+select, input[type="text"], input[type="date"], textarea, .modal .amount{
+  border-radius: 14px;
+}
+select, input[type="text"], input[type="date"]{ height: 42px; }
+
+/* Actions bar */
+.actions{ margin-top: 12px; }
+.actions .btn-save{ background: var(--brand); color:#fff; border:none; }
+.actions .btn-cancel{ background: var(--chip); }
+
+/* Compact gaps on mobile */
+@media(max-width:700px){
+  .segmented button{ min-width: unset; flex:1; }
+}
