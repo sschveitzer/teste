@@ -10,10 +10,10 @@ window.onload = function () {
     editingId: null,
     tx: [],
     cats: [],
-    recs: [] // NOVO: recorrências
+    recs: [] // recorrências
   };
 
-  // ========= HELPERS =========
+  // ========= HELPERS GERAIS =========
   function gid() {
     return crypto.randomUUID();
   }
@@ -96,7 +96,7 @@ window.onload = function () {
       S.cats = cats || [];
     }
 
-    // Preferências
+    // Preferências (month, hide, dark)
     const { data: prefs, error: prefsError } = await supabaseClient
       .from("preferences")
       .select("*")
@@ -106,9 +106,9 @@ window.onload = function () {
       console.error("Erro ao carregar preferências:", prefsError);
     }
     if (prefs) {
-      S.month = prefs.month;
-      S.hide = prefs.hide;
-      S.dark = prefs.dark;
+      S.month = prefs.month ?? S.month;
+      S.hide = !!prefs.hide;
+      S.dark = !!prefs.dark;
     }
 
     // Recorrências
@@ -128,13 +128,7 @@ window.onload = function () {
     render();
   }
 
-  
-  // Atualiza categoria nas transações (rename)
-  async function updateTxCategory(oldName, newName) {
-    if (!oldName || !newName || oldName === newName) return;
-    await supabaseClient.from("transactions").update({ categoria: newName }).eq("categoria", oldName);
-  }
-// ========= SAVE =========
+  // ========= SAVE =========
   async function saveTx(t) {
     return await supabaseClient.from("transactions").upsert([t]);
   }
@@ -153,7 +147,13 @@ window.onload = function () {
     ]);
   }
 
-  // Recorrências
+  // Atualiza categoria nas transações (rename)
+  async function updateTxCategory(oldName, newName) {
+    if (!oldName || !newName || oldName === newName) return;
+    await supabaseClient.from("transactions").update({ categoria: newName }).eq("categoria", oldName);
+  }
+
+  // ========= RECORRÊNCIAS =========
   async function saveRec(r) {
     return await supabaseClient.from("recurrences").upsert([r]).select().single();
   }
@@ -162,6 +162,58 @@ window.onload = function () {
   }
   async function toggleRecAtivo(id, ativo) {
     return await supabaseClient.from("recurrences").update({ ativo }).eq("id", id);
+  }
+
+  async function materializeOne(rec, occDate) {
+    const t = {
+      id: gid(),
+      tipo: rec.tipo,
+      categoria: rec.categoria,
+      data: occDate,
+      descricao: rec.descricao,
+      valor: Number(rec.valor) || 0,
+      obs: rec.obs ? (rec.obs + " (recorrente)") : "Recorrente",
+      recurrence_id: rec.id,
+      occurrence_date: occDate
+    };
+    await saveTx(t);
+  }
+
+  async function applyRecurrences() {
+    if (!Array.isArray(S.recs) || !S.recs.length) return;
+    const today = nowYMD();
+
+    for (const r of S.recs) {
+      if (!r.ativo) continue;
+      if (r.fim_em && r.fim_em < today) continue;
+
+      let next = r.proxima_data || today;
+      let changed = false;
+
+      while (next <= today) {
+        if (r.fim_em && next > r.fim_em) break;
+        await materializeOne(r, next);
+        changed = true;
+
+        if (r.periodicidade === "Mensal") {
+          next = incMonthly(next, r.dia_mes || 1, r.ajuste_fim_mes ?? true);
+        } else if (r.periodicidade === "Semanal") {
+          next = incWeekly(next);
+        } else if (r.periodicidade === "Anual") {
+          next = incYearly(next, r.dia_mes || 1, r.mes || 1, r.ajuste_fim_mes ?? true);
+        } else {
+          break;
+        }
+      }
+
+      if (changed) {
+        await saveRec({ ...r, proxima_data: next });
+      }
+    }
+
+    // Recarrega transações após gerar
+    const { data: tx } = await supabaseClient.from("transactions").select("*");
+    S.tx = tx || [];
   }
 
   // ========= UI BÁSICA =========
@@ -270,13 +322,11 @@ window.onload = function () {
     // define próxima data inicial baseada no "início"
     let proxima = inicio;
     if (per === "Mensal") {
-      // se início já passou no mês, usamos o próximo mês
       const ld = lastDayOfMonth(Number(inicio.slice(0,4)), Number(inicio.slice(5,7)));
       const day = (ajuste ? Math.min(diaMes, ld) : diaMes);
       const candidate = toYMD(new Date(Number(inicio.slice(0,4)), Number(inicio.slice(5,7)) - 1, day));
       proxima = (candidate < inicio) ? incMonthly(candidate, diaMes, ajuste) : candidate;
     } else if (per === "Semanal") {
-      // próxima semana a partir do início
       proxima = incWeekly(inicio);
     } else if (per === "Anual") {
       const ld = lastDayOfMonth(Number(inicio.slice(0,4)), mes);
@@ -385,7 +435,7 @@ window.onload = function () {
     qs("#mObs").value = x.obs || "";
     qs("#modalTitle").textContent = "Editar lançamento";
 
-    // Edição: esconde blocos de recorrência, pois estamos apenas editando essa instância
+    // Edição: esconde blocos de recorrência (edita só esta instância)
     const chk = qs("#mRepetir");
     const box = qs("#recurrenceFields");
     if (chk && box) {
@@ -485,7 +535,8 @@ window.onload = function () {
       ul.appendChild(li);
     });
   }
-  // ========= RELATÓRIOS / KPIs / GRÁFICOS =========
+
+  // ========= RELATÓRIOS / KPIs / GRÁFICOS EXISTENTES =========
   function updateKpis() {
     const txMonth = S.tx.filter(x => x.data && x.data.startsWith(S.month));
     const receitas = txMonth
@@ -602,113 +653,201 @@ window.onload = function () {
     };
   }
 
-  // ========= RECORRÊNCIAS =========
-  async function materializeOne(rec, occDate) {
-    const t = {
-      id: gid(),
-      tipo: rec.tipo,
-      categoria: rec.categoria,
-      data: occDate,
-      descricao: rec.descricao,
-      valor: Number(rec.valor) || 0,
-      obs: rec.obs ? (rec.obs + " (recorrente)") : "Recorrente",
-      recurrence_id: rec.id,
-      occurrence_date: occDate
-    };
-    await saveTx(t);
+  // ========= NOVOS INSIGHTS / ANÁLISES =========
+  // Helpers de série temporal
+  function monthsBack(n) {
+    const out = [];
+    const d = new Date();
+    for (let i = n - 1; i >= 0; i--) {
+      const dt = new Date(d.getFullYear(), d.getMonth() - i, 1);
+      out.push(dt.toISOString().slice(0,7));
+    }
+    return out;
+  }
+  function monthDays(ym) {
+    const [y, m] = ym.split('-').map(Number);
+    return new Date(y, m, 0).getDate();
+  }
+  function netByMonth(ym) {
+    const txs = S.tx.filter(x => x.data && x.data.startsWith(ym));
+    const rec = txs.filter(x=>x.tipo==="Receita").reduce((a,b)=>a+Number(b.valor),0);
+    const des = txs.filter(x=>x.tipo==="Despesa").reduce((a,b)=>a+Number(b.valor),0);
+    return rec - des;
   }
 
-  async function applyRecurrences() {
-    if (!Array.isArray(S.recs) || !S.recs.length) return;
-    const today = nowYMD();
-
-    for (const r of S.recs) {
-      if (!r.ativo) continue;
-      if (r.fim_em && r.fim_em < today) continue;
-
-      let next = r.proxima_data || today;
-      let changed = false;
-
-      while (next <= today) {
-        if (r.fim_em && next > r.fim_em) break;
-        await materializeOne(r, next);
-        changed = true;
-
-        if (r.periodicidade === "Mensal") {
-          next = incMonthly(next, r.dia_mes || 1, r.ajuste_fim_mes ?? true);
-        } else if (r.periodicidade === "Semanal") {
-          next = incWeekly(next);
-        } else if (r.periodicidade === "Anual") {
-          next = incYearly(next, r.dia_mes || 1, r.mes || 1, r.ajuste_fim_mes ?? true);
-        } else {
-          break;
-        }
+  // Top 5 categorias (12 meses) — preenche #tblTop (já existe na página)
+  function renderTopCategorias12m(limit=5){
+    const cutoff = new Date();
+    const from = new Date(cutoff.getFullYear(), cutoff.getMonth()-11, 1);
+    const sum = {};
+    S.tx.forEach(x=>{
+      if (!x.data || x.tipo!=="Despesa") return;
+      const dt = new Date(x.data);
+      if (dt >= from && dt <= cutoff) {
+        sum[x.categoria] = (sum[x.categoria]||0) + (Number(x.valor)||0);
       }
-
-      if (changed) {
-        await saveRec({ ...r, proxima_data: next });
-      }
-    }
-
-    // Recarrega transações após gerar
-    const { data: tx } = await supabaseClient.from("transactions").select("*");
-    S.tx = tx || [];
-  }
-
-  function renderRecorrentes() {
-    const ul = qs("#listaRecorrentes");
-    if (!ul) return;
-    ul.innerHTML = "";
-
-    if (!S.recs.length) {
-      const li = document.createElement("li");
-      li.className = "item";
-      li.innerHTML = `<div class="left"><strong>Nenhuma recorrência</strong><div class="muted">Crie um lançamento e marque “Repetir”.</div></div>`;
-      ul.append(li);
-      return;
-    }
-
-    const list = [...S.recs].sort((a, b) =>
-      (a.proxima_data || "").localeCompare(b.proxima_data || "")
-    );
-
-    list.forEach(r => {
-      const li = document.createElement("li");
-      li.className = "item";
-      const status = r.ativo ? '<span class="tag">Ativo</span>' : '<span class="tag">Pausado</span>';
-      const prox = r.proxima_data ? `• próxima: ${r.proxima_data}` : '';
-      li.innerHTML = `
-        <div class="left">
-          <div class="tag">${r.periodicidade}</div>
-          <div>
-            <div><strong>${r.descricao}</strong> ${status}</div>
-            <div class="muted" style="font-size:12px">${r.categoria} • ${fmtMoney(r.valor)} ${prox}</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:6px;align-items:center">
-          <button class="icon toggle" title="${r.ativo ? 'Pausar' : 'Ativar'}"><i class="ph ${r.ativo ? 'ph-pause' : 'ph-play'}"></i></button>
-          <button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button>
-        </div>
-      `;
-      li.querySelector(".toggle").onclick = async () => {
-        await toggleRecAtivo(r.id, !r.ativo);
-        await loadAll();
-      };
-      li.querySelector(".del").onclick = async () => {
-        if (confirm("Excluir recorrência?")) {
-          await deleteRec(r.id);
-          await loadAll();
-        }
-      };
-      ul.append(li);
     });
+    const rows = Object.entries(sum)
+      .sort((a,b)=>b[1]-a[1])
+      .slice(0,limit);
+
+    const tbody = document.querySelector('#tblTop tbody');
+    if (tbody){
+      tbody.innerHTML = '';
+      rows.forEach(([cat, total])=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${cat||'-'}</td><td>${fmtMoney(total)}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+  }
+
+  // Média de gastos por categoria (janela de 6 meses) — preenche #tblMediaCats
+  function renderMediaPorCategoria(windowMonths=6){
+    const months = monthsBack(windowMonths);
+    const byCatMonth = {};
+    months.forEach(m=>{
+      S.tx.filter(x=>x.data && x.data.startsWith(m) && x.tipo==="Despesa")
+        .forEach(x=>{
+          const k = x.categoria || '(sem categoria)';
+          byCatMonth[k] = byCatMonth[k] || {};
+          byCatMonth[k][m] = (byCatMonth[k][m]||0) + (Number(x.valor)||0);
+        });
+    });
+    const medias = Object.entries(byCatMonth).map(([cat, map])=>{
+      const tot = months.reduce((a,m)=>a+(map[m]||0),0);
+      return [cat, tot/windowMonths];
+    }).sort((a,b)=>b[1]-a[1]);
+
+    const tbody = document.querySelector('#tblMediaCats tbody');
+    if (tbody){
+      tbody.innerHTML = '';
+      medias.forEach(([cat, avg])=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${cat}</td><td>${fmtMoney(avg)}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+  }
+
+  // Tendência do saldo (projeção até o fim do mês) — mostra em #kpiForecastFinal
+  function renderTendenciaSaldo(){
+    const ym = S.month;
+    const [y,m] = ym.split('-').map(Number);
+    const today = new Date();
+    const isCurrentMonth = (today.getFullYear()===y && (today.getMonth()+1)===m);
+
+    const txs = S.tx.filter(x=>x.data && x.data.startsWith(ym));
+    const receitas = txs.filter(x=>x.tipo==="Receita").reduce((a,b)=>a+Number(b.valor),0);
+    const despesas = txs.filter(x=>x.tipo==="Despesa").reduce((a,b)=>a+Number(b.valor),0);
+    const saldoAtual = receitas - despesas;
+
+    let proj = saldoAtual;
+    if (isCurrentMonth){
+      const dia = today.getDate();
+      const diasMes = monthDays(ym);
+      const mediaDiaria = saldoAtual / Math.max(1, dia);
+      proj = mediaDiaria * diasMes;
+    }
+    const el = document.getElementById('kpiForecastFinal');
+    if (el){
+      el.textContent = fmtMoney(proj);
+      el.style.color = proj >= 0 ? "var(--ok)" : "var(--warn)";
+    }
+  }
+
+  // Previsão simples com média móvel de 3 meses (gráfico)
+  let chartForecast;
+  function renderForecastChart(){
+    if (chartForecast) chartForecast.destroy();
+    const ctx = document.getElementById('chartForecast');
+    if (!ctx || !window.Chart) return;
+
+    const months = monthsBack(12);
+    const serie = months.map(netByMonth);
+    const ma = serie.map((_,i)=>{
+      const a = Math.max(0,i-2);
+      const slice = serie.slice(a,i+1);
+      return slice.reduce((x,y)=>x+y,0)/slice.length;
+    });
+
+    chartForecast = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: months.map(m=>{
+          const [Y,M]=m.split('-');
+          return new Date(Y, M-1, 1).toLocaleDateString('pt-BR',{month:'short'});
+        }),
+        datasets: [
+          { label:'Saldo mensal', data: serie },
+          { label:'Média móvel (3m)', data: ma }
+        ]
+      }
+    });
+  }
+
+  // Heatmap de gastos por dia do mês
+  function renderHeatmap(){
+    const wrap = document.getElementById('heatmap');
+    if (!wrap) return;
+    const ym = S.month;
+    const days = monthDays(ym);
+    const gastosPorDia = Array.from({length: days}, ()=>0);
+
+    S.tx.forEach(x=>{
+      if (!x.data || x.tipo!=="Despesa") return;
+      if (!x.data.startsWith(ym)) return;
+      const d = Number(x.data.slice(8,10));
+      gastosPorDia[d-1] += Number(x.valor)||0;
+    });
+
+    const max = Math.max(...gastosPorDia, 0);
+    wrap.innerHTML = '';
+
+    // Cabeçalho com iniciais (S T Q Q S S D)
+    ['S','T','Q','Q','S','S','D'].forEach(lbl=>{
+      const h = document.createElement('div');
+      h.className = 'cell';
+      h.textContent = lbl;
+      h.style.fontWeight = '700';
+      wrap.appendChild(h);
+    });
+
+    // Células
+    for (let d=1; d<=days; d++){
+      const v = gastosPorDia[d-1];
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.textContent = d;
+      if (v>0){
+        const intensity = max ? v/max : 0;
+        const bg = `hsl(0, 85%, ${90 - 50*intensity}%)`; // tons de vermelho
+        cell.style.background = bg;
+        cell.setAttribute('data-val', String(v));
+        cell.title = `Despesas em ${String(d).padStart(2,'0')}/${ym.slice(5,7)}: ${fmtMoney(v)}`;
+      }
+      wrap.appendChild(cell);
+    }
+
+    // Legenda
+    const legend = document.createElement('div');
+    legend.className = 'legend';
+    const sw1 = document.createElement('span'); sw1.className='swatch'; sw1.style.background='hsl(0,85%,90%)';
+    const sw2 = document.createElement('span'); sw2.className='swatch'; sw2.style.background='hsl(0,85%,65%)';
+    const sw3 = document.createElement('span'); sw3.className='swatch'; sw3.style.background='hsl(0,85%,40%)';
+    legend.append('Menor', sw1, sw2, sw3, 'Maior');
+    wrap.appendChild(legend);
   }
 
   // ========= RENDER PRINCIPAL =========
   function render() {
     document.body.classList.toggle("dark", S.dark);
-    const hideToggle = qs("#toggleHide");
+
+    // sincroniza estado dos toggles (suporta ids antigos e novos)
+    const hideToggle = qs("#toggleHide") || qs("#cfgHide");
     if (hideToggle) hideToggle.checked = S.hide;
+    const darkToggle = qs("#toggleDark") || qs("#cfgDark");
+    if (darkToggle) darkToggle.checked = S.dark;
 
     renderRecentes();
     renderLancamentos();
@@ -716,23 +855,35 @@ window.onload = function () {
     buildMonthSelect();
     updateKpis();
     renderCharts();
-    renderRecorrentes();
+
+    // Novos insights
+    renderTopCategorias12m(5);
+    renderMediaPorCategoria(6);
+    renderTendenciaSaldo();
+    renderForecastChart();
+    renderHeatmap();
   }
 
   // ========= EVENTOS =========
   qsa(".tab").forEach(btn =>
     btn.addEventListener("click", () => setTab(btn.dataset.tab))
   );
+
   const fab = qs("#fab");
   if (fab) fab.onclick = () => toggleModal(true);
+
   const btnNovo = qs("#btnNovo");
   if (btnNovo) btnNovo.onclick = () => toggleModal(true);
+
   const btnClose = qs("#closeModal");
   if (btnClose) btnClose.onclick = () => toggleModal(false);
+
   const btnCancelar = qs("#cancelar");
   if (btnCancelar) btnCancelar.onclick = () => toggleModal(false);
+
   const btnSalvar = qs("#salvar");
   if (btnSalvar) btnSalvar.onclick = addOrUpdate;
+
   qsa("#tipoTabs button").forEach(b =>
     b.addEventListener("click", () => {
       modalTipo = b.dataset.type;
@@ -742,9 +893,9 @@ window.onload = function () {
 
   const btnAddCat = qs("#addCat");
   if (btnAddCat) btnAddCat.onclick = async () => {
-    const nome = qs("#newCatName").value.trim();
+    const nome = (qs("#newCatName").value || "").trim();
     if (!nome) return;
-    if (S.cats.some(c => c.nome.toLowerCase() === nome.toLowerCase())) {
+    if (S.cats.some(c => (c.nome||"").toLowerCase() === nome.toLowerCase())) {
       alert("Essa categoria já existe.");
       return;
     }
@@ -753,21 +904,33 @@ window.onload = function () {
     loadAll();
   };
 
-  const btnDark = qs("#toggleDark");
-  if (btnDark) btnDark.onclick = async () => {
-    S.dark = !S.dark;
-    document.body.classList.toggle("dark", S.dark);
-    await savePrefs();
-  };
+  // Suporta #toggleDark (novo) e #cfgDark (antigo)
+  const btnDark = qs("#toggleDark") || qs("#cfgDark");
+  if (btnDark) {
+    btnDark.addEventListener('change', async () => {
+      S.dark = !!btnDark.checked;
+      document.body.classList.toggle("dark", S.dark);
+      await savePrefs();
+    });
+    // clique também alterna (para botões sem checkbox)
+    btnDark.addEventListener('click', async (e) => {
+      if (btnDark.tagName === 'BUTTON') {
+        S.dark = !S.dark;
+        document.body.classList.toggle("dark", S.dark);
+        await savePrefs();
+      }
+    });
+  }
 
-  const toggleHide = qs("#toggleHide");
+  // Suporta #toggleHide (novo) e #cfgHide (antigo)
+  const toggleHide = qs("#toggleHide") || qs("#cfgHide");
   if (toggleHide) toggleHide.onchange = async e => {
-    S.hide = e.target.checked;
+    S.hide = !!e.target.checked;
     render();
     await savePrefs();
   };
 
-    // Ícone de Config na topbar (abre a aba Config) — robust wiring
+  // Ícone de Config na topbar (abre a aba Config)
   function wireBtnConfig(){
     const btn = document.getElementById('btnConfig');
     if (btn && !btn.__wired){
@@ -778,7 +941,6 @@ window.onload = function () {
       });
     }
   }
-  // tenta agora e também garante por delegação (caso o botão seja recriado)
   wireBtnConfig();
   document.addEventListener('click', (e) => {
     const target = e.target && e.target.closest ? e.target.closest('#btnConfig') : null;
@@ -787,7 +949,8 @@ window.onload = function () {
       setTab('config');
     }
   });
-// Recorrência: mostrar/ocultar campos conforme checkbox/periodicidade
+
+  // Recorrência: mostrar/ocultar campos conforme checkbox/periodicidade
   const chkRepetir = qs("#mRepetir");
   const recurrenceBox = qs("#recurrenceFields");
   const selPer = qs("#mPeriodicidade");
@@ -868,7 +1031,7 @@ window.onload = function () {
       return true;
     }
 
-    // Enter to save, Esc to cancel (not inside textarea)
+    // Enter para salvar, Esc para cancelar (fora do textarea)
     if (dialog){
       dialog.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && document.activeElement && document.activeElement.tagName !== 'TEXTAREA') {
@@ -881,22 +1044,20 @@ window.onload = function () {
         }
       });
 
-      // focus trap
+      // Trap de foco + Tab
       dialog.addEventListener('keydown', (e) => {
         if (e.key !== 'Tab') return;
-        const focusables = dialog.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-        const list = Array.from(focusables).filter(el => !el.disabled);
-        if (!list.length) return;
-        const first = list[0], last = list[list.length - 1];
-        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        const focusables = [...dialog.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+          .filter(el => !el.hasAttribute('disabled') && !el.getAttribute('aria-hidden'));
+        if (!focusables.length) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) { last.focus(); e.preventDefault(); }
+        else if (!e.shiftKey && document.activeElement === last) { first.focus(); e.preventDefault(); }
       });
     }
-
-    // expose getter if needed by other code
-    window.__getValorCentavos = () => rawCents;
   })();
 
-  // ========= START =========
+  // Start!
   loadAll();
-    }
+};
