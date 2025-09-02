@@ -1,28 +1,9 @@
-var S;
-if (!S) S = {};
-if (!S.lf) S.lf = { tipo:'todos', cat:'todas', q:'', sort:'data_desc', compact:false };
-// ==== Query helpers ====
-const qs  = (sel, ctx=document) => ctx.querySelector(sel);
-const qsa = (sel, ctx=document) => Array.from(ctx.querySelectorAll(sel));
-const $on = (el, ev, fn) => el && el.addEventListener(ev, fn);
-// ==== State guards ====
-if (!S.tx) S.tx = [];
-if (!S.cats) S.cats = [];
-(function ensureMonth(){
-  if (!S.month){
-    const d=new Date();
-    const y=d.getFullYear();
-    const m=String(d.getMonth()+1).padStart(2,'0');
-    S.month = `${y}-${m}`;
-  }
-})();
 window.onload = function () {
   // Usa o supabase já criado no dashboard.html
   const supabaseClient = window.supabaseClient || supabase;
 
   // ========= ESTADO GLOBAL =========
-  S = {
-    lf: S.lf || { tipo:'todos', cat:'todas', q:'', sort:'data_desc', compact:false } ,
+  let S = {
     month: nowYMD().slice(0, 7),
     hide: false,
     dark: false,
@@ -91,63 +72,6 @@ window.onload = function () {
   const qs = s => document.querySelector(s);
   const qsa = s => [...document.querySelectorAll(s)];
 
-  // ========= Recorrência: UI logic =========
-  function syncRecurrenceVisibility(){
-    const chk = qs('#mRepetir'); const box = qs('#recurrenceFields');
-    const per = qs('#mPeriodicidade')?.value || 'Mensal';
-    const fDiaMes = qs('#fieldDiaMes'); const fDiaSem = qs('#fieldDiaSemana'); const fMes = qs('#fieldMes');
-    if (!chk || !box) return;
-    box.style.display = chk.checked ? 'block' : 'none';
-
-    if (per === 'Semanal'){
-      if (fDiaMes) fDiaMes.classList.add('hide');
-      if (fDiaSem) fDiaSem.classList.remove('hide');
-      if (fMes)    fMes.classList.add('hide');
-    } else if (per === 'Anual'){
-      if (fDiaMes) fDiaMes.classList.remove('hide');
-      if (fDiaSem) fDiaSem.classList.add('hide');
-      if (fMes)    fMes.classList.remove('hide');
-    } else { // Mensal
-      if (fDiaMes) fDiaMes.classList.remove('hide');
-      if (fDiaSem) fDiaSem.classList.add('hide');
-      if (fMes)    fMes.classList.add('hide');
-    }
-  }
-
-  function attachRecurrenceHandlers(){
-    const chk = qs('#mRepetir');
-    const per = qs('#mPeriodicidade');
-    if (chk) chk.onchange = syncRecurrenceVisibility;
-    if (per) per.onchange  = syncRecurrenceVisibility;
-
-    // presets: buttons inserted once
-    const recBox = qs('#recurrenceFields');
-    if (recBox && !recBox.querySelector('.preset-group')){
-      const div = document.createElement('div');
-      div.className = 'preset-group';
-      div.innerHTML = `
-        <button type="button" class="preset" data-pre="mensal-5"><i class="ph ph-calendar-check"></i> Mensal no dia 5</button>
-        <button type="button" class="preset" data-pre="mensal-ultimo"><i class="ph ph-calendar-x"></i> Mensal no último dia</button>
-        <button type="button" class="preset" data-pre="semanal-sexta"><i class="ph ph-calendar"></i> Semanal na sexta</button>
-        <button type="button" class="preset" data-pre="anual-jan"><i class="ph ph-calendar-blank"></i> Anual em Jan, dia 1</button>
-      `;
-      recBox.prepend(div);
-      div.addEventListener('click', (e)=>{
-        const b = e.target.closest('.preset'); if (!b) return;
-        const selPer = qs('#mPeriodicidade');
-        const inpDM = qs('#mDiaMes'); const selDW = qs('#mDiaSemana'); const selM = qs('#mMes');
-        const chkAdj = qs('#mAjusteFimMes');
-        const today = new Date();
-        if (b.dataset.pre === 'mensal-5'){ if (selPer) selPer.value='Mensal'; if (inpDM) inpDM.value=5; if (chkAdj) chkAdj.checked=true; }
-        if (b.dataset.pre === 'mensal-ultimo'){ if (selPer) selPer.value='Mensal'; if (inpDM) inpDM.value=31; if (chkAdj) chkAdj.checked=true; }
-        if (b.dataset.pre === 'semanal-sexta'){ if (selPer) selPer.value='Semanal'; if (selDW) selDW.value='5'; }
-        if (b.dataset.pre === 'anual-jan'){ if (selPer) selPer.value='Anual'; if (selM) selM.value='1'; if (inpDM) inpDM.value=1; if (chkAdj) chkAdj.checked=true; }
-        syncRecurrenceVisibility();
-      });
-    }
-    syncRecurrenceVisibility();
-  
-
   // ========= LOAD DATA =========
   async function loadAll() {
     // Transações
@@ -194,7 +118,7 @@ window.onload = function () {
         const m = String(today.getMonth() + 1).padStart(2, "0");
         S.month = `${y}-${m}`;
       }
-
+// ENSURE_S_MONTH: garante mês atual como default se não houver salvo
     if (!S.month) {
       const today = new Date();
       const y = today.getFullYear();
@@ -348,7 +272,6 @@ window.onload = function () {
       const selPer = qs("#mPeriodicidade");
       const chkAdj = qs("#mAjusteFimMes");
       if (inpIni) inpIni.value = nowYMD();
-      attachRecurrenceHandlers();
       if (inpFim) inpFim.value = "";
       if (inpDM) inpDM.value = new Date().getDate();
       if (selDW) selDW.value = String(new Date().getDay() || 1);
@@ -364,27 +287,25 @@ window.onload = function () {
 
   let modalTipo = "Despesa";
   function syncTipoTabs() {
-  qsa("#tipoTabs button").forEach(b => {
-    b.classList.toggle("active", b.dataset.type === modalTipo);
-  });
-  if (!S.editingId) {
-    qs("#modalTitle").textContent = "Nova " + modalTipo;
-  }
-}
+    qsa("#tipoTabs button").forEach(b =>
+      b.classList.toggle("active", b.dataset.type === modalTipo)
+    );
+    if (!S.editingId) {
+      qs("#modalTitle").textContent = "Nova " + modalTipo;
+    }
   }
 
   function rebuildCatSelect(selected) {
-  const sel = qs("#mCategoria");
-  if (!sel) return;
-  sel.innerHTML = '<option value="">Selecione…</option>';
-  S.cats.forEach(c => {
-    const o = document.createElement("option");
-    o.value = c.nome;
-    o.textContent = c.nome;
-    if (c.nome === selected) o.selected = true;
-    sel.append(o);
-  });
-}
+    const sel = qs("#mCategoria");
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Selecione…</option>';
+    S.cats.forEach(c => {
+      const o = document.createElement("option");
+      o.value = c.nome;
+      o.textContent = c.nome;
+      if (c.nome === selected) o.selected = true;
+      sel.append(o);
+    });
   }
 
   // ========= TRANSAÇÕES =========
@@ -480,7 +401,7 @@ window.onload = function () {
 
   function itemTx(x, readOnly = false) {
     const li = document.createElement("li");
-    li.className = "item lanc-card";
+    li.className = "item";
     const v = isFinite(Number(x.valor)) ? Number(x.valor) : 0;
     const actions = readOnly
       ? ""
@@ -519,84 +440,12 @@ window.onload = function () {
   list.forEach(x => ul.append(itemTx(x, true)));
 }
 
-
-  // ========= Lançamentos: Toolbar =========
-  if (!S.lf) S.lf = { tipo:'todos', cat:'todas', q:'', sort:'data_desc', compact:false };
-
-  function buildLancToolbar(){
-    const selTipo = qs('#lancTipo');
-    const selCat  = qs('#lancCat');
-    const inpQ    = qs('#lancSearch');
-    const selSort = qs('#lancSort');
-    const chkComp = qs('#lancCompact');
-    if (!selTipo || !selCat || !inpQ || !selSort || !chkComp) return;
-
-    // categorias
-    selCat.innerHTML = '<option value="todas">Todas as categorias</option>';
-    const list = Array.isArray(S.cats) ? [...S.cats].sort((a,b)=> (a.nome||'').localeCompare(b.nome||'')) : [];
-    list.forEach(c=>{
-      const o = document.createElement('option');
-      o.value = c.nome; o.textContent = c.nome;
-      if (S.lf.cat === c.nome) o.selected = true;
-      selCat.appendChild(o);
-    });
-
-    // valores atuais
-    selTipo.value = S.lf.tipo;
-    inpQ.value = S.lf.q;
-    selSort.value = S.lf.sort;
-    chkComp.checked = S.lf.compact;
-
-    // eventos
-    selTipo.onchange = () => { S.lf.tipo = selTipo.value; renderLancamentos(); };
-    selCat.onchange  = () => { S.lf.cat  = selCat.value; renderLancamentos(); };
-    inpQ.oninput     = () => { S.lf.q    = inpQ.value.trim().toLowerCase(); renderLancamentos(); };
-    selSort.onchange = () => { S.lf.sort = selSort.value; renderLancamentos(); };
-    chkComp.onchange = () => { S.lf.compact = chkComp.checked; renderLancamentos(); };
-  }
-
-  function applyLancFilters(list){
-    let out = [...list];
-    if (S.lf.tipo !== 'todos') out = out.filter(x=> x.tipo === S.lf.tipo);
-    if (S.lf.cat  !== 'todas') out = out.filter(x=> (x.categoria||'') === S.lf.cat);
-    if (S.lf.q) {
-      const q = S.lf.q;
-      out = out.filter(x=> (x.descricao||'').toLowerCase().includes(q) || (x.obs||'').toLowerCase().includes(q));
-    }
-    // sort
-    const cmpVal = (a,b)=> (Number(a.valor)||0) - (Number(b.valor)||0);
-    const cmpData = (a,b)=> (a.data||'').localeCompare(b.data||'');
-    if (S.lf.sort === 'data_desc') out.sort((a,b)=> cmpData(b,a));
-    else if (S.lf.sort === 'data_asc') out.sort((a,b)=> cmpData(a,b));
-    else if (S.lf.sort === 'valor_desc') out.sort((a,b)=> cmpVal(b,a));
-    else if (S.lf.sort === 'valor_asc') out.sort((a,b)=> cmpVal(a,b));
-    return out;
-  }
-
-  function renderLancSummary(list){
-    const el = qs('#lancSummary');
-    if (!el) return;
-    const rec = list.filter(x=>x.tipo==='Receita').reduce((a,b)=>a+(Number(b.valor)||0),0);
-    const des = list.filter(x=>x.tipo==='Despesa').reduce((a,b)=>a+(Number(b.valor)||0),0);
-    const sal = rec - des;
-    el.innerHTML = '';
-    const mk = (icon, label, val, color)=> `<span class="pill" style="color:${color}"><i class="ph ${icon}"></i> ${label}: <strong>${fmtMoney(val)}</strong></span>`;
-el.insertAdjacentHTML('beforeend', mk('ph-trend-up','Receitas',rec,'var(--ok)'));
-    el.insertAdjacentHTML('beforeend', mk('ph-trend-down','Despesas',des,'var(--warn)'));
-    el.insertAdjacentHTML('beforeend', mk('ph-wallet','Saldo',sal,'var(--brand)'));
-  }
-
   function renderLancamentos() {
     const ul = qs("#listaLanc");
     if (!ul) return;
-    buildLancToolbar();
-
-    const list = applyLancFilters([...S.tx]);
+    const list = [...S.tx].sort((a, b) => b.data.localeCompare(a.data));
     ul.innerHTML = "";
-    ul.classList.toggle('compact', !!S.lf.compact);
     list.forEach(x => ul.append(itemTx(x, false)));
-
-    renderLancSummary(list);
   }
 
   function openEdit(id) {
@@ -714,13 +563,14 @@ el.insertAdjacentHTML('beforeend', mk('ph-trend-up','Receitas',rec,'var(--ok)'))
   }
 
   // ========= RELATÓRIOS / KPIs / GRÁFICOS EXISTENTES =========
-  
   function updateKpis() {
-    if (!S || !Array.isArray(S.tx)) { return; }
-
     const txMonth = S.tx.filter(x => x.data && x.data.startsWith(S.month));
-    const receitas = txMonth.filter(x => x.tipo === "Receita").reduce((a, b) => a + Number(b.valor), 0);
-    const despesas = txMonth.filter(x => x.tipo === "Despesa").reduce((a, b) => a + Number(b.valor), 0);
+    const receitas = txMonth
+      .filter(x => x.tipo === "Receita")
+      .reduce((a, b) => a + Number(b.valor), 0);
+    const despesas = txMonth
+      .filter(x => x.tipo === "Despesa")
+      .reduce((a, b) => a + Number(b.valor), 0);
     const saldo = receitas - despesas;
 
     const kpiReceitas = qs("#kpiReceitas");
@@ -732,47 +582,13 @@ el.insertAdjacentHTML('beforeend', mk('ph-trend-up','Receitas',rec,'var(--ok)'))
     if (kpiReceitas) kpiReceitas.textContent = fmtMoney(receitas);
     if (kpiDespesas) kpiDespesas.textContent = fmtMoney(despesas);
     if (kpiSaldo) kpiSaldo.textContent = fmtMoney(saldo);
+
     if (kpiSplit) kpiSplit.textContent = fmtMoney(despesas / 2);
     if (kpiSplitHint) kpiSplitHint.textContent = "½ de despesas";
 
     [kpiReceitas, kpiDespesas, kpiSaldo, kpiSplit].forEach(el => {
       if (el) el.classList.toggle("blurred", S.hide);
     });
-
-    // --- Month-over-month deltas ---
-    const prevYM = prevMonthStr(S.month);
-    const txPrev = S.tx.filter(x => x.data && x.data.startsWith(prevYM));
-    const receitasPrev = txPrev.filter(x => x.tipo === "Receita").reduce((a,b)=>a+Number(b.valor),0);
-    const despesasPrev = txPrev.filter(x => x.tipo === "Despesa").reduce((a,b)=>a+Number(b.valor),0);
-    const saldoPrev = receitasPrev - despesasPrev;
-
-    const elRecDelta = qs("#kpiReceitasDelta");
-    const elDesDelta = qs("#kpiDespesasDelta");
-    const elSalDelta = qs("#kpiSaldoDelta");
-
-    const dRec = pctDelta(receitas, receitasPrev);
-    const dDes = pctDelta(despesas, despesasPrev);
-    const dSal = pctDelta(saldo, saldoPrev);
-
-    function applyDelta(el, d, goodWhenUp = true){
-      if (!el) return;
-      if (d === null){
-        el.textContent = "—";
-        el.title = "Sem base de comparação com o mês anterior";
-        el.style.color = "";
-        return;
-      }
-      el.textContent = fmtPct(d);
-      el.title = `Variação vs mês anterior (${prevYM})`;
-      // color logic
-      const isUp = d > 0;
-      const color = (goodWhenUp ? (isUp ? "var(--ok)" : "var(--warn)") : (isUp ? "var(--warn)" : "var(--ok)"));
-      el.style.color = color;
-    }
-
-    applyDelta(elRecDelta, dRec, true);   // subir receita = bom
-    applyDelta(elDesDelta, dDes, false);  // subir despesa = ruim
-    applyDelta(elSalDelta, dSal, true);   // subir saldo = bom
   }
 
   let chartSaldo, chartPie, chartFluxo;
@@ -891,27 +707,6 @@ mesesDisponiveis.forEach(m => {
     }
     return out;
   }
-
-  function prevMonthStr(ym){
-    const [y,m] = ym.split('-').map(Number);
-    let yy = y, mm = m - 1;
-    if (mm < 1){ mm = 12; yy -= 1; }
-    return `${yy}-${String(mm).padStart(2,'0')}`;
-  }
-  function pctDelta(curr, prev){
-    if (!isFinite(curr)) curr = 0;
-    if (!isFinite(prev)) prev = 0;
-    if (prev === 0){
-      return null; // indeterminado
-    }
-    const pct = ((curr - prev) / Math.abs(prev)) * 100;
-    return pct;
-  }
-  function fmtPct(p){
-    const sign = (p>0?'+':'');
-    return `${sign}${p.toFixed(1)}%`;
-  }
-
   function monthDays(ym) {
     const [y, m] = ym.split('-').map(Number);
     return new Date(y, m, 0).getDate();
@@ -1306,22 +1101,6 @@ mesesDisponiveis.forEach(m => {
     }
   })();
 
-
-  // ====== Safe initializer ======
-  function loadAll(){
-    try {
-      // Populate category select if available
-      if (typeof rebuildCatSelect === 'function') rebuildCatSelect();
-      // KPIs and charts
-      if (typeof updateKpis === 'function') updateKpis();
-      if (typeof renderCharts === 'function') renderCharts();
-      // Lançamentos list
-      if (typeof renderLancamentos === 'function') renderLancamentos();
-    } catch(err){
-      console.error('loadAll failed:', err);
-    }
-  }
-
   // Start!
   loadAll();
-;
+};
