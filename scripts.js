@@ -406,29 +406,27 @@ window.onload = function () {
   }
 
   
+  
   function itemTx(x, readOnly = false) {
     const li = document.createElement("li");
-    li.className = "item";
+    li.className = "item lanc-card";
     li.setAttribute('data-tipo', x.tipo);
-    const v = isFinite(Number(x.valor)) ? Number(x.valor) : 0;
 
+    const v = isFinite(Number(x.valor)) ? Number(x.valor) : 0;
     const tipoIcon = x.tipo === "Receita" ? "ph-trend-up" : (x.tipo === "Transferência" ? "ph-arrows-left-right" : "ph-trend-down");
-    const actions = readOnly
-      ? ""
-      : `
-        <button class="icon edit" title="Editar" aria-label="Editar lançamento"><i class="ph ph-pencil-simple" aria-hidden="true"></i></button>
-        <button class="icon del" title="Excluir" aria-label="Excluir lançamento"><i class="ph ph-trash" aria-hidden="true"></i></button>`;
+    const actions = readOnly ? "" : `
+      <div class="acoes">
+        <button class="btn-acao edit" title="Editar" aria-label="Editar lançamento"><i class="ph ph-pencil-simple" aria-hidden="true"></i></button>
+        <button class="btn-acao del" title="Excluir" aria-label="Excluir lançamento"><i class="ph ph-trash" aria-hidden="true"></i></button>
+      </div>`;
 
     li.innerHTML = `
-      <div class="left l-left">
-        <div class="chip"><i class="ph ${tipoIcon}"></i> ${x.tipo}</div>
-        <div class="titulo clamp-2"><strong>${x.descricao || "-"}</strong></div>
-        <div class="subinfo muted">${x.categoria || '-'} • ${x.data || ''}</div>
-      </div>
-      <div class="right">
-        <div class="${S.hide ? "blurred" : ""} valor" style="font-weight:800">${fmtMoney(v)}</div>
-        ${actions}
-      </div>`;
+      <div class="chip"><i class="ph ${tipoIcon}"></i> ${x.tipo}</div>
+      <div class="titulo clamp-2"><strong>${x.descricao || "-"}</strong></div>
+      <div class="subinfo muted">${x.categoria || '-'} • ${x.data || ''}</div>
+      <div class="${S.hide ? "blurred" : ""} valor">${fmtMoney(v)}</div>
+      ${actions}
+    `;
 
     if (!readOnly) {
       const btnEdit = li.querySelector(".edit");
