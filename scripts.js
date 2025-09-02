@@ -10,8 +10,7 @@ window.onload = function () {
     editingId: null,
     tx: [],
     cats: [],
-    recs: [], // recorrências
-    lf: { tipo: 'todos', cat: 'todas', q: '', sort: 'data_desc', compact: false }
+    recs: [] // recorrências
   };
 
   // ========= HELPERS GERAIS =========
@@ -32,12 +31,6 @@ window.onload = function () {
   function isIsoDate(s) {
     return /^\d{4}-\d{2}-\d{2}$/.test(s);
   }
-  
-  function cssVar(name){
-    return getComputedStyle(document.body).getPropertyValue(name).trim();
-  }
-  const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
-
   function fmtMoney(v) {
     const n = Number(v);
     return isFinite(n)
@@ -259,6 +252,7 @@ window.onload = function () {
       rebuildCatSelect();
       qs("#mDesc").value = "";
       qs("#mObs").value = "";
+      const selPayNew = qs("#mMeio"); if (selPayNew) selPayNew.value = "";
       qs("#mValorBig").value = "";
       modalTipo = "Despesa";
       syncTipoTabs();
@@ -318,14 +312,15 @@ window.onload = function () {
   // ========= TRANSAÇÕES =========
   async function addOrUpdate() {
     const valor = parseMoneyMasked(qs("#mValorBig").value);
+    const meioSel = (qs('#mMeio')?.value || '').toLowerCase();
     const t = {
       id: S.editingId || gid(),
       tipo: modalTipo,
-      categoria: qs("#mCategoria").value,
-      data: isIsoDate(qs("#mData").value) ? qs("#mData").value : nowYMD(),
-      descricao: (qs("#mDesc").value || "").trim(),
+      categoria: qs('#mCategoria').value,
+      data: isIsoDate(qs('#mData').value) ? qs('#mData').value : nowYMD(),
+      descricao: (qs('#mDesc').value || '').trim(),
       valor: isFinite(valor) ? valor : 0,
-      obs: (qs("#mObs").value || "").trim()
+      obs: (encodePayTag(meioSel) + stripPayTag((qs('#mObs').value || '')).trim()).trim()
     };
     if (!t.categoria) return alert("Selecione categoria");
     if (!t.descricao) return alert("Descrição obrigatória");
@@ -406,29 +401,26 @@ window.onload = function () {
     }
   }
 
-  
-  
   function itemTx(x, readOnly = false) {
     const li = document.createElement("li");
-    li.className = "item lanc-card";
-    li.setAttribute('data-tipo', x.tipo);
-
+    li.className = "item";
     const v = isFinite(Number(x.valor)) ? Number(x.valor) : 0;
-    const tipoIcon = x.tipo === "Receita" ? "ph-trend-up" : (x.tipo === "Transferência" ? "ph-arrows-left-right" : "ph-trend-down");
-    const actions = readOnly ? "" : `
-      <div class="acoes">
-        <button class="btn-acao edit" title="Editar" aria-label="Editar lançamento"><i class="ph ph-pencil-simple" aria-hidden="true"></i></button>
-        <button class="btn-acao del" title="Excluir" aria-label="Excluir lançamento"><i class="ph ph-trash" aria-hidden="true"></i></button>
-      </div>`;
-
+    const actions = readOnly
+      ? ""
+      : `
+        <button class="icon edit" title="Editar"><i class="ph ph-pencil-simple"></i></button>
+        <button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button>`;
     li.innerHTML = `
-      <div class="chip"><i class="ph ${tipoIcon}"></i> ${x.tipo}</div>
-      <div class="titulo clamp-2"><strong>${x.descricao || "-"}</strong></div>
-      <div class="subinfo muted">${x.categoria || '-'} • ${x.data || ''}</div>
-      <div class="${S.hide ? "blurred" : ""} valor">${fmtMoney(v)}</div>
-      ${actions}
-    `;
-
+      <div class="left">
+        <div class="tag">${x.tipo}</div>
+        <div>
+          <div><strong>${x.descricao || "-"}</strong></div>
+          <div class="muted" style="font-size:12px">${x.categoria} • ${x.data}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <div class="${S.hide ? "blurred" : ""}" style="font-weight:700">${fmtMoney(v)}</div>${actions}
+      </div>`;
     if (!readOnly) {
       const btnEdit = li.querySelector(".edit");
       const btnDel  = li.querySelector(".del");
@@ -450,83 +442,12 @@ window.onload = function () {
   list.forEach(x => ul.append(itemTx(x, true)));
 }
 
-
-  // ========= Lançamentos: Toolbar =========
-  function buildLancToolbar(){
-    const selTipo = qs('#lancTipo');
-    const selCat  = qs('#lancCat');
-    const inpQ    = qs('#lancSearch');
-    const selSort = qs('#lancSort');
-    const chkComp = qs('#lancCompact');
-    if (!selTipo || !selCat || !inpQ || !selSort || !chkComp) return;
-
-    // categorias
-    selCat.innerHTML = '<option value="todas">Todas as categorias</option>';
-    const list = Array.isArray(S.cats) ? [...S.cats].sort((a,b)=> (a.nome||'').localeCompare(b.nome||'')) : [];
-    list.forEach(c=>{
-      const o = document.createElement('option');
-      o.value = c.nome; o.textContent = c.nome;
-      if (S.lf.cat === c.nome) o.selected = true;
-      selCat.appendChild(o);
-    });
-
-    // valores atuais
-    selTipo.value = S.lf.tipo;
-    inpQ.value = S.lf.q;
-    selSort.value = S.lf.sort;
-    chkComp.checked = S.lf.compact;
-
-    // eventos
-    selTipo.onchange = () => { S.lf.tipo = selTipo.value; renderLancamentos(); };
-    selCat.onchange  = () => { S.lf.cat  = selCat.value; renderLancamentos(); };
-    inpQ.oninput     = () => { S.lf.q    = inpQ.value.trim().toLowerCase(); renderLancamentos(); };
-    selSort.onchange = () => { S.lf.sort = selSort.value; renderLancamentos(); };
-    chkComp.onchange = () => { S.lf.compact = chkComp.checked; renderLancamentos(); };
-  }
-
-  function applyLancFilters(list){
-    let out = [...list];
-    if (S.lf.tipo !== 'todos') out = out.filter(x=> x.tipo === S.lf.tipo);
-    if (S.lf.cat  !== 'todas') out = out.filter(x=> (x.categoria||'') === S.lf.cat);
-    if (S.lf.q) {
-      const q = S.lf.q;
-      out = out.filter(x=> (x.descricao||'').toLowerCase().includes(q) || (x.obs||'').toLowerCase().includes(q));
-    }
-    // sort
-    const cmpVal = (a,b)=> (Number(a.valor)||0) - (Number(b.valor)||0);
-    const cmpData = (a,b)=> (a.data||'').localeCompare(b.data||'');
-    if (S.lf.sort === 'data_desc') out.sort((a,b)=> cmpData(b,a));
-    else if (S.lf.sort === 'data_asc') out.sort((a,b)=> cmpData(a,b));
-    else if (S.lf.sort === 'valor_desc') out.sort((a,b)=> cmpVal(b,a));
-    else if (S.lf.sort === 'valor_asc') out.sort((a,b)=> cmpVal(a,b));
-    return out;
-  }
-
-  function renderLancSummary(list){
-    const el = qs('#lancSummary');
-    if (!el) return;
-    const rec = list.filter(x=>x.tipo==='Receita').reduce((a,b)=>a+(Number(b.valor)||0),0);
-    const des = list.filter(x=>x.tipo==='Despesa').reduce((a,b)=>a+(Number(b.valor)||0),0);
-    const sal = rec - des;
-    el.innerHTML = '';
-    const mk = (icon, label, val, color)=> `<span class="pill" style="color:${color}"><i class="ph ${icon}"></i> ${label}: <strong>${fmtMoney(val)}</strong></span>`;
-    el.insertAdjacentHTML('beforeend', mk('ph-trend-up','Receitas',rec,'var(--ok)'));
-    el.insertAdjacentHTML('beforeend', mk('ph-trend-down','Despesas',des,'var(--warn)'));
-    el.insertAdjacentHTML('beforeend', mk('ph-wallet','Saldo',sal,'var(--brand)'));
-  }
-
   function renderLancamentos() {
     const ul = qs("#listaLanc");
     if (!ul) return;
-    buildLancToolbar();
-
-    const listAll = [...S.tx];
-    const list = applyLancFilters(listAll);
+    const list = [...S.tx].sort((a, b) => b.data.localeCompare(a.data));
     ul.innerHTML = "";
-    ul.classList.toggle('compact', !!S.lf.compact);
     list.forEach(x => ul.append(itemTx(x, false)));
-
-    renderLancSummary(list);
   }
 
   function openEdit(id) {
@@ -539,7 +460,8 @@ window.onload = function () {
     qs("#mData").value = isIsoDate(x.data) ? x.data : nowYMD();
     qs("#mDesc").value = x.descricao || "";
     qs("#mValorBig").value = fmtMoney(Number(x.valor) || 0);
-    qs("#mObs").value = x.obs || "";
+    qs("#mObs").value = stripPayTag(x.obs || "");
+    const selPay = qs("#mMeio"); if (selPay) selPay.value = parsePay(x.obs || "") || "";
     qs("#modalTitle").textContent = "Editar lançamento";
 
     // Edição: esconde blocos de recorrência (edita só esta instância)
@@ -696,8 +618,7 @@ window.onload = function () {
       }
       chartSaldo = new Chart(ctxSaldo, {
         type: "line",
-        data: { labels: months, datasets: [{ label: "Saldo", data: saldoData, borderColor: cssVar('--brand'), backgroundColor: cssVar('--chip') }] },
-        options: { plugins: { tooltip: { callbacks: { label: (ctx)=> `${ctx.dataset.label}: ${BRL.format(ctx.parsed.y||0)}` } } } }
+        data: { labels: months, datasets: [{ label: "Saldo", data: saldoData }] }
       });
     }
 
@@ -714,8 +635,7 @@ window.onload = function () {
         });
       chartPie = new Chart(ctxPie, {
         type: "pie",
-        data: { labels: Object.keys(porCat), datasets: [{ data: Object.values(porCat), backgroundColor: Object.keys(porCat).map((_,i)=> `hsl(${Math.floor(i*360/Math.max(1,Object.keys(porCat).length))}, 70%, 60%)`) }] },
-        options: { plugins: { tooltip: { callbacks: { label: (ctx)=> `${ctx.label}: ${BRL.format(ctx.parsed||0)}` } } } }
+        data: { labels: Object.keys(porCat), datasets: [{ data: Object.values(porCat) }] }
       });
     }
 
@@ -732,11 +652,12 @@ window.onload = function () {
           Number(x.valor) * (x.tipo === "Despesa" ? -1 : 1);
       });
       const labels = Object.keys(porMes).sort();
-      const fluxoVals = labels.map(l => porMes[l]);
       chartFluxo = new Chart(ctxFluxo, {
         type: "bar",
-        data: { labels, datasets: [{ label: "Fluxo", data: fluxoVals, backgroundColor: fluxoVals.map(v => v >= 0 ? cssVar('--ok') : cssVar('--warn')) }] },
-        options: { plugins: { tooltip: { callbacks: { label: (ctx)=> `${ctx.dataset.label}: ${BRL.format(ctx.parsed.y||0)}` } } } }
+        data: {
+          labels,
+          datasets: [{ label: "Fluxo", data: labels.map(l => porMes[l]) }]
+        }
       });
     }
   }
@@ -899,13 +820,15 @@ mesesDisponiveis.forEach(m => {
     chartForecast = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: months.map(m=>{ const [Y,M]=m.split('-'); return new Date(Y, M-1, 1).toLocaleDateString('pt-BR',{month:'short'}); }),
+        labels: months.map(m=>{
+          const [Y,M]=m.split('-');
+          return new Date(Y, M-1, 1).toLocaleDateString('pt-BR',{month:'short'});
+        }),
         datasets: [
-          { label:'Saldo mensal', data: serie, borderColor: cssVar('--brand'), backgroundColor: cssVar('--chip') },
-          { label:'Média móvel (3m)', data: ma, borderColor: cssVar('--ok') }
+          { label:'Saldo mensal', data: serie },
+          { label:'Média móvel (3m)', data: ma }
         ]
-      },
-      options: { plugins: { tooltip: { callbacks: { label: (ctx)=> `${ctx.dataset.label}: ${BRL.format(ctx.parsed.y||0)}` } } } }
+      }
     });
   }
 
