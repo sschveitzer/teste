@@ -31,11 +31,12 @@ window.onload = function () {
   function isIsoDate(s) {
     return /^\d{4}-\d{2}-\d{2}$/.test(s);
   }
-  function fmtMoney(v) {
-    const n = Number(v);
-    return isFinite(n)
-      ? n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }
-
+function fmtMoney(v) {
+  const n = Number(v);
+  return isFinite(n)
+    ? n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+    : 'R$ 0,00';
+}
 // ==== MoM delta helpers (ensured) ====
 function prevMonthStr(ym){
   const [y,m] = ym.split('-').map(Number);
