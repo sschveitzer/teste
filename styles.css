@@ -816,3 +816,33 @@ select, input[type="text"], input[type="date"]{ height: 42px; }
 @media(max-width:700px){
   .segmented button{ min-width: unset; flex:1; }
 }
+
+
+/* === Recorrência accordion === */
+.field.recur details{ border:1px dashed var(--border); border-radius:12px; padding:8px 12px; background:var(--bg-soft); }
+.field.recur summary{ cursor:pointer; font-weight:700; display:flex; align-items:center; gap:6px; list-style:none; }
+.field.recur summary::-webkit-details-marker{ display:none; }
+.field.recur .recur-body{ margin-top:8px; padding-left:4px; font-size:14px; }
+
+
+/* === Recorrência UI polish === */
+.rec-card{
+  margin-top:10px;
+  border: 1px dashed var(--border);
+  background: var(--bg-soft);
+  border-radius: 12px;
+  padding: 12px;
+}
+.rec-row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.badge-tip{
+  display:inline-flex; align-items:center; gap:6px;
+  background: var(--chip);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 8px; font-size:12px; font-weight:600; color: var(--muted);
+}
+.preset-group{ display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+.preset{ padding:6px 10px; border:1px solid var(--border); background: var(--card);
+  border-radius: 999px; cursor:pointer; font-size:12px; }
+.preset:focus-visible{ outline:2px solid var(--brand); outline-offset: 2px; }
+.hide{ display:none !important; }
