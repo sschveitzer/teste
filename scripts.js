@@ -406,13 +406,21 @@ window.onload = function () {
     return li;
   }
 
-  function renderRecentes() {
-    const ul = qs("#listaRecentes");
-    if (!ul) return;
-    const list = [...S.tx].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 10);
-    ul.innerHTML = "";
-    list.forEach(x => ul.append(itemTx(x, true)));
-  }
+  
+function renderRecentes() {
+  const ul = qs("#listaRecentes");
+  if (!ul) return;
+  ul.innerHTML = "";
+  // últimos 4 gastos (Despesa) por data desc
+  const list = [...(S.tx || [])]
+    .filter(x => x.tipo === "Despesa")
+    .sort((a, b) => (b.data || "").localeCompare(a.data || ""))
+    .slice(0, 4);
+  // garantir classe em grid
+  if (!ul.classList.contains("lanc-grid")) ul.classList.add("lanc-grid");
+  list.forEach(x => ul.append(itemTx(x, true)));
+}
+
 
   function renderLancamentos() {
     const ul = qs("#listaLanc");
