@@ -406,21 +406,17 @@ window.onload = function () {
     return li;
   }
 
-  
-function renderRecentes() {
+  function renderRecentes() {
   const ul = qs("#listaRecentes");
   if (!ul) return;
-  ul.innerHTML = "";
-  // últimos 4 gastos (Despesa) por data desc
-  const list = [...(S.tx || [])]
+  const list = [...S.tx]
     .filter(x => x.tipo === "Despesa")
-    .sort((a, b) => (b.data || "").localeCompare(a.data || ""))
+    .sort((a, b) => b.data.localeCompare(a.data))
     .slice(0, 4);
-  // garantir classe em grid
+  ul.innerHTML = "";
   if (!ul.classList.contains("lanc-grid")) ul.classList.add("lanc-grid");
   list.forEach(x => ul.append(itemTx(x, true)));
 }
-
 
   function renderLancamentos() {
     const ul = qs("#listaLanc");
@@ -558,23 +554,20 @@ function renderRecentes() {
     const kpiReceitas = qs("#kpiReceitas");
     const kpiDespesas = qs("#kpiDespesas");
     const kpiSaldo = qs("#kpiSaldo");
+    const kpiSplit = qs("#kpiSplit");
+    const kpiSplitHint = qs("#kpiSplitHint");
 
     if (kpiReceitas) kpiReceitas.textContent = fmtMoney(receitas);
     if (kpiDespesas) kpiDespesas.textContent = fmtMoney(despesas);
     if (kpiSaldo) kpiSaldo.textContent = fmtMoney(saldo);
 
-    [kpiReceitas, kpiDespesas, kpiSaldo].forEach(el => {
+    if (kpiSplit) kpiSplit.textContent = fmtMoney(despesas / 2);
+    if (kpiSplitHint) kpiSplitHint.textContent = "½ de despesas";
+
+    [kpiReceitas, kpiDespesas, kpiSaldo, kpiSplit].forEach(el => {
       if (el) el.classList.toggle("blurred", S.hide);
     });
-  
-    // Split (½) baseado nas despesas do mês
-    const kpiSplit = qs("#kpiSplit");
-    const kpiSplitHint = qs("#kpiSplitHint");
-    const half = despesas / 2;
-    if (kpiSplit) kpiSplit.textContent = fmtMoney(half);
-    if (kpiSplitHint) kpiSplitHint.textContent = "½ de despesas";
-    [kpiSplit].forEach(el => { if (el) el.classList.toggle("blurred", S.hide); });
-}
+  }
 
   let chartSaldo, chartPie, chartFluxo;
   function renderCharts() {
@@ -878,7 +871,7 @@ function renderRecentes() {
     renderTendenciaSaldo();
     renderForecastChart();
     renderHeatmap();
-}
+  }
 
   // ========= EVENTOS =========
   qsa(".tab").forEach(btn =>
@@ -1077,18 +1070,3 @@ function renderRecentes() {
   // Start!
   loadAll();
 };
-
-
-function renderSplitPanel() {
-  const totalEl = document.getElementById("splitTotal");
-  const halfEl  = document.getElementById("splitHalf");
-  if (!totalEl || !halfEl) return;
-
-  const total = computeMonthExpenses();
-  const half  = total / 2;
-
-  totalEl.textContent = fmtMoney(total);
-  halfEl.textContent  = fmtMoney(half);
-
-  [totalEl, halfEl].forEach(el => el.classList.toggle("blurred", !!S.hide));
-}
