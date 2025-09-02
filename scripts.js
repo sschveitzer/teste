@@ -55,7 +55,6 @@ function fmtPct(p){
   const sign = (p>0?'+':'');
   return `${sign}${p.toFixed(1)}%`;
 }
-)
       : "R$ 0,00";
   }
 
