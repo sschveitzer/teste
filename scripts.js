@@ -406,116 +406,13 @@ window.onload = function () {
     return li;
   }
 
-function renderRecentes() {
-  const ul = document.querySelector("#listaRecentes");
-  if (!ul) return;
-
-  // parâmetros UI
-  const selTipo = document.querySelector("#filterTipo");
-  const inpBusca = document.querySelector("#searchLanc");
-  const selOrder = document.querySelector("#orderRecentes");
-  const order = selOrder?.value || "data_desc";
-  const tipoFiltro = selTipo?.value || "todos";
-  const q = (inpBusca?.value || "").trim().toLowerCase();
-
-  // tamanho da página (vai aumentando com "Carregar mais")
-  S._recentesPage = S._recentesPage || 10;
-
-  // filtra
-  let list = [...S.tx];
-  if (tipoFiltro !== "todos") list = list.filter(x => x.tipo === tipoFiltro);
-  if (q) list = list.filter(x =>
-    (x.descricao||"").toLowerCase().includes(q) ||
-    (x.categoria||"").toLowerCase().includes(q)
-  );
-
-  // ordena
-  if (order === "valor_desc") {
-    list.sort((a,b) => (Number(b.valor)||0) - (Number(a.valor)||0));
-  } else {
-    // data_desc
-    list.sort((a,b) => (b.data||"").localeCompare(a.data||""));
+  function renderRecentes() {
+    const ul = qs("#listaRecentes");
+    if (!ul) return;
+    const list = [...S.tx].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 10);
+    ul.innerHTML = "";
+    list.forEach(x => ul.append(itemTx(x, true)));
   }
-
-  // recorta
-  const sliced = list.slice(0, S._recentesPage);
-
-  ul.innerHTML = "";
-
-  if (!sliced.length) {
-    const li = document.createElement("li");
-    li.className = "item";
-    li.innerHTML = `<div class="left">
-      <strong>Nenhum lançamento encontrado</strong>
-      <div class="meta">Ajuste filtros ou crie um novo lançamento.</div>
-    </div>`;
-    ul.appendChild(li);
-    return;
-  }
-
-  // Agrupar por dia com separadores
-  const today = new Date(); const todayYMD = toYMD(today);
-  const yestYMD = toYMD(new Date(today.getFullYear(), today.getMonth(), today.getDate()-1));
-  let lastDate = "";
-
-  const makeSep = (iso) => {
-    let label;
-    if (iso === todayYMD) label = "Hoje";
-    else if (iso === yestYMD) label = "Ontem";
-    else {
-      const [Y,M,D] = iso.split("-").map(Number);
-      label = new Date(Y, M-1, D).toLocaleDateString("pt-BR", { day:"2-digit", month:"2-digit" });
-    }
-    const sep = document.createElement("div");
-    sep.className = "date-sep";
-    sep.textContent = label;
-    ul.appendChild(sep);
-  };
-
-  sliced.forEach(x=>{
-    const v = isFinite(Number(x.valor)) ? Number(x.valor) : 0;
-    if (x.data !== lastDate) { makeSep(x.data); lastDate = x.data; }
-
-    const li = document.createElement("li");
-    li.className = "item";
-    const tipoPill =
-      x.tipo === "Despesa" ? "pill desp" :
-      x.tipo === "Receita" ? "pill rec"  : "pill trans";
-
-    li.innerHTML = `
-      <div class="left">
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <span class="${tipoPill}">${x.tipo}</span>
-          <strong>${x.descricao || "-"}</strong>
-        </div>
-        <div class="meta">${x.categoria || "-"} • ${x.data}</div>
-      </div>
-      <div style="display:flex;gap:6px;align-items:center">
-        <div class="${S.hide ? "blurred" : ""}" style="font-weight:700">${fmtMoney(v)}</div>
-        <button class="icon edit" title="Editar"><i class="ph ph-pencil-simple"></i></button>
-        <button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button>
-      </div>`;
-
-    // ações rápidas
-    li.querySelector(".edit").onclick = () => openEdit(x.id);
-    li.querySelector(".del").onclick  = async () => {
-      if (confirm("Excluir lançamento?")) {
-        await deleteTx(x.id);
-        loadAll();
-      }
-    };
-
-    ul.appendChild(li);
-  });
-
-  // Atualiza botão "Carregar mais"
-  const btnMore = document.getElementById("btnCarregarMais");
-  if (btnMore) {
-    btnMore.disabled = S._recentesPage >= list.length;
-    btnMore.textContent = btnMore.disabled ? "Tudo carregado" : "Carregar mais";
-  }
-}
-
 
   function renderLancamentos() {
     const ul = qs("#listaLanc");
