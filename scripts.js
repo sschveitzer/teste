@@ -127,8 +127,7 @@ window.onload = function () {
       });
     }
     syncRecurrenceVisibility();
-  }
-
+  
 
   // ========= LOAD DATA =========
   async function loadAll() {
@@ -176,7 +175,7 @@ window.onload = function () {
         const m = String(today.getMonth() + 1).padStart(2, "0");
         S.month = `${y}-${m}`;
       }
-// ENSURE_S_MONTH: garante mês atual como default se não houver salvo
+
     if (!S.month) {
       const today = new Date();
       const y = today.getFullYear();
@@ -346,25 +345,27 @@ window.onload = function () {
 
   let modalTipo = "Despesa";
   function syncTipoTabs() {
-    qsa("#tipoTabs button").forEach(b =>
-      b.classList.toggle("active", b.dataset.type === modalTipo)
-    );
-    if (!S.editingId) {
-      qs("#modalTitle").textContent = "Nova " + modalTipo;
-    }
+  qsa("#tipoTabs button").forEach(b => {
+    b.classList.toggle("active", b.dataset.type === modalTipo);
+  });
+  if (!S.editingId) {
+    qs("#modalTitle").textContent = "Nova " + modalTipo;
+  }
+}
   }
 
   function rebuildCatSelect(selected) {
-    const sel = qs("#mCategoria");
-    if (!sel) return;
-    sel.innerHTML = '<option value="">Selecione…</option>';
-    S.cats.forEach(c => {
-      const o = document.createElement("option");
-      o.value = c.nome;
-      o.textContent = c.nome;
-      if (c.nome === selected) o.selected = true;
-      sel.append(o);
-    });
+  const sel = qs("#mCategoria");
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Selecione…</option>';
+  S.cats.forEach(c => {
+    const o = document.createElement("option");
+    o.value = c.nome;
+    o.textContent = c.nome;
+    if (c.nome === selected) o.selected = true;
+    sel.append(o);
+  });
+}
   }
 
   // ========= TRANSAÇÕES =========
@@ -561,7 +562,7 @@ window.onload = function () {
     const sal = rec - des;
     el.innerHTML = '';
     const mk = (icon, label, val, color)=> `<span class="pill" style="color:${color}"><i class="ph ${icon}"></i> ${label}: <strong>${fmtMoney(val)}</strong></span>`;
-    el.insertAdjacentHTML('beforeend', mk('ph-trend-up','Receitas',rec,'var(--ok)'));
+el.insertAdjacentHTML('beforeend', mk('ph-trend-up','Receitas',rec,'var(--ok)'));
     el.insertAdjacentHTML('beforeend', mk('ph-trend-down','Despesas',des,'var(--warn)'));
     el.insertAdjacentHTML('beforeend', mk('ph-wallet','Saldo',sal,'var(--brand)'));
   }
@@ -751,8 +752,6 @@ window.onload = function () {
     applyDelta(elRecDelta, dRec, true);   // subir receita = bom
     applyDelta(elDesDelta, dDes, false);  // subir despesa = ruim
     applyDelta(elSalDelta, dSal, true);   // subir saldo = bom
-  }
-);
   }
 
   let chartSaldo, chartPie, chartFluxo;
@@ -1288,4 +1287,4 @@ mesesDisponiveis.forEach(m => {
 
   // Start!
   loadAll();
-};
+;
