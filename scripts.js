@@ -5,6 +5,17 @@ if (!S.lf) S.lf = { tipo:'todos', cat:'todas', q:'', sort:'data_desc', compact:f
 const qs  = (sel, ctx=document) => ctx.querySelector(sel);
 const qsa = (sel, ctx=document) => Array.from(ctx.querySelectorAll(sel));
 const $on = (el, ev, fn) => el && el.addEventListener(ev, fn);
+// ==== State guards ====
+if (!S.tx) S.tx = [];
+if (!S.cats) S.cats = [];
+(function ensureMonth(){
+  if (!S.month){
+    const d=new Date();
+    const y=d.getFullYear();
+    const m=String(d.getMonth()+1).padStart(2,'0');
+    S.month = `${y}-${m}`;
+  }
+})();
 window.onload = function () {
   // Usa o supabase já criado no dashboard.html
   const supabaseClient = window.supabaseClient || supabase;
@@ -705,6 +716,8 @@ el.insertAdjacentHTML('beforeend', mk('ph-trend-up','Receitas',rec,'var(--ok)'))
   // ========= RELATÓRIOS / KPIs / GRÁFICOS EXISTENTES =========
   
   function updateKpis() {
+    if (!S || !Array.isArray(S.tx)) { return; }
+
     const txMonth = S.tx.filter(x => x.data && x.data.startsWith(S.month));
     const receitas = txMonth.filter(x => x.tipo === "Receita").reduce((a, b) => a + Number(b.valor), 0);
     const despesas = txMonth.filter(x => x.tipo === "Despesa").reduce((a, b) => a + Number(b.valor), 0);
