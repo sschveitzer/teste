@@ -797,7 +797,7 @@ body.dark .error { background:#3b1f20; border-color:#ef4444; color:#fecaca; }
 .card { padding: var(--space-4); }
 
 /* Emphasis card for Saldo */
-.grid.cards .card.emphasis { grid-column: span 2; }
+.grid.cards .card.emphasis { grid-column: span 1; border: 1px solid var(--brand); box-shadow: 0 0 0 3px rgba(124,58,237,.08), var(--shadow);}
 @media(max-width:1100px){ .grid.cards .card.emphasis { grid-column: span 1; } }
 
 /* Stronger active tab */
