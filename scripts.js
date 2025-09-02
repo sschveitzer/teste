@@ -558,7 +558,15 @@ window.onload = function () {
     [kpiReceitas, kpiDespesas, kpiSaldo].forEach(el => {
       if (el) el.classList.toggle("blurred", S.hide);
     });
-  }
+  
+    // Split (½) baseado nas despesas do mês
+    const kpiSplit = qs("#kpiSplit");
+    const kpiSplitHint = qs("#kpiSplitHint");
+    const half = despesas / 2;
+    if (kpiSplit) kpiSplit.textContent = fmtMoney(half);
+    if (kpiSplitHint) kpiSplitHint.textContent = "½ de despesas";
+    [kpiSplit].forEach(el => { if (el) el.classList.toggle("blurred", S.hide); });
+}
 
   let chartSaldo, chartPie, chartFluxo;
   function renderCharts() {
@@ -862,7 +870,7 @@ window.onload = function () {
     renderTendenciaSaldo();
     renderForecastChart();
     renderHeatmap();
-  }
+}
 
   // ========= EVENTOS =========
   qsa(".tab").forEach(btn =>
@@ -1061,14 +1069,7 @@ window.onload = function () {
   // Start!
   loadAll();
 };
-// ====== Painel "Despesas do mês & divisão por 2" ======
-function computeMonthExpenses() {
-  const txMonth = (S.tx || []).filter(x => x.data && x.data.startsWith(S.month));
-  const despesas = txMonth
-    .filter(x => x.tipo === "Despesa")
-    .reduce((a, b) => a + (Number(b.valor) || 0), 0);
-  return despesas;
-}
+
 
 function renderSplitPanel() {
   const totalEl = document.getElementById("splitTotal");
