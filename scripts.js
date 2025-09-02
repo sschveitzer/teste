@@ -1,10 +1,13 @@
 var S;
+if (!S) S = {};
+if (!S.lf) S.lf = { tipo:'todos', cat:'todas', q:'', sort:'data_desc', compact:false };
 window.onload = function () {
   // Usa o supabase já criado no dashboard.html
   const supabaseClient = window.supabaseClient || supabase;
 
   // ========= ESTADO GLOBAL =========
   S = {
+    lf: S.lf || { tipo:'todos', cat:'todas', q:'', sort:'data_desc', compact:false } ,
     month: nowYMD().slice(0, 7),
     hide: false,
     dark: false,
