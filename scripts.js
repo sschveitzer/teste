@@ -347,7 +347,7 @@ window.onload = function () {
   let modalTipo = "Despesa";
   function syncTipoTabs() {
     qsa("#tipoTabs button").forEach(b =>
-      b.classList.toggle("active", b.dataset.type === modalTipo)
+      b.classList.toggle("active", b.dataset.type === modalTipo));
     if (!S.editingId) {
       qs("#modalTitle").textContent = "Nova " + modalTipo;
     }
