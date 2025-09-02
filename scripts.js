@@ -1,10 +1,3 @@
-// garante que o seletor abra no mês atual se não houver um mês salvo
-if (!S.month) {
-  const today = new Date();
-  const y = today.getFullYear();
-  const m = String(today.getMonth() + 1).padStart(2, "0");
-  S.month = `${y}-${m}`;
-}
 window.onload = function () {
   // Usa o supabase já criado no dashboard.html
   const supabaseClient = window.supabaseClient || supabase;
@@ -116,7 +109,29 @@ window.onload = function () {
       S.month = prefs.month ?? S.month;
       S.hide = !!prefs.hide;
       S.dark = !!prefs.dark;
+    
+    
+      // ENSURE_S_MONTH: garante mês atual como default se não houver salvo
+      if (!S.month) {
+        const today = new Date();
+        const y = today.getFullYear();
+        const m = String(today.getMonth() + 1).padStart(2, "0");
+        S.month = `${y}-${m}`;
+      }
+// ENSURE_S_MONTH: garante mês atual como default se não houver salvo
+    if (!S.month) {
+      const today = new Date();
+      const y = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, "0");
+      S.month = `${y}-${mm}`;
     }
+}
+        try {
+      const dNow = new Date();
+      const cur = new Date(dNow.getTime() - dNow.getTimezoneOffset() * 60000).toISOString().slice(0,7);
+      S.month = cur;
+    } catch(e){}
+
 
     // Recorrências
     const { data: recs, error: recErr } = await supabaseClient
@@ -651,7 +666,19 @@ window.onload = function () {
     sel.innerHTML = "";
     const mesesDisponiveis = [...new Set(S.tx.filter(x=>x.data).map(x => x.data.slice(0, 7)))];
     mesesDisponiveis.sort((a, b) => b.localeCompare(a));
-    mesesDisponiveis.forEach(m => {
+    
+    /* ENSURE_CURRENT_MONTH_OPTION */ 
+    (function(){
+      const dNow = new Date();
+      const cur = new Date(dNow.getTime() - dNow.getTimezoneOffset() * 60000).toISOString().slice(0,7);
+      if (!mesesDisponiveis.includes(cur)) mesesDisponiveis.unshift(cur);
+      // Remove duplicatas novamente por segurança mantendo ordem
+      const seen = new Set(); 
+      for (let i = 0; i < mesesDisponiveis.length; i++) {
+        if (seen.has(mesesDisponiveis[i])) { mesesDisponiveis.splice(i,1); i--; } else { seen.add(mesesDisponiveis[i]); }
+      }
+    })();
+mesesDisponiveis.forEach(m => {
       const opt = document.createElement("option");
       opt.value = m;
       const [ano, mes] = m.split("-");
