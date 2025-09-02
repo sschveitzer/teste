@@ -72,6 +72,64 @@ window.onload = function () {
   const qs = s => document.querySelector(s);
   const qsa = s => [...document.querySelectorAll(s)];
 
+  // ========= Recorrência: UI logic =========
+  function syncRecurrenceVisibility(){
+    const chk = qs('#mRepetir'); const box = qs('#recurrenceFields');
+    const per = qs('#mPeriodicidade')?.value || 'Mensal';
+    const fDiaMes = qs('#fieldDiaMes'); const fDiaSem = qs('#fieldDiaSemana'); const fMes = qs('#fieldMes');
+    if (!chk || !box) return;
+    box.style.display = chk.checked ? 'block' : 'none';
+
+    if (per === 'Semanal'){
+      if (fDiaMes) fDiaMes.classList.add('hide');
+      if (fDiaSem) fDiaSem.classList.remove('hide');
+      if (fMes)    fMes.classList.add('hide');
+    } else if (per === 'Anual'){
+      if (fDiaMes) fDiaMes.classList.remove('hide');
+      if (fDiaSem) fDiaSem.classList.add('hide');
+      if (fMes)    fMes.classList.remove('hide');
+    } else { // Mensal
+      if (fDiaMes) fDiaMes.classList.remove('hide');
+      if (fDiaSem) fDiaSem.classList.add('hide');
+      if (fMes)    fMes.classList.add('hide');
+    }
+  }
+
+  function attachRecurrenceHandlers(){
+    const chk = qs('#mRepetir');
+    const per = qs('#mPeriodicidade');
+    if (chk) chk.onchange = syncRecurrenceVisibility;
+    if (per) per.onchange  = syncRecurrenceVisibility;
+
+    // presets: buttons inserted once
+    const recBox = qs('#recurrenceFields');
+    if (recBox && !recBox.querySelector('.preset-group')){
+      const div = document.createElement('div');
+      div.className = 'preset-group';
+      div.innerHTML = `
+        <button type="button" class="preset" data-pre="mensal-5"><i class="ph ph-calendar-check"></i> Mensal no dia 5</button>
+        <button type="button" class="preset" data-pre="mensal-ultimo"><i class="ph ph-calendar-x"></i> Mensal no último dia</button>
+        <button type="button" class="preset" data-pre="semanal-sexta"><i class="ph ph-calendar"></i> Semanal na sexta</button>
+        <button type="button" class="preset" data-pre="anual-jan"><i class="ph ph-calendar-blank"></i> Anual em Jan, dia 1</button>
+      `;
+      recBox.prepend(div);
+      div.addEventListener('click', (e)=>{
+        const b = e.target.closest('.preset'); if (!b) return;
+        const selPer = qs('#mPeriodicidade');
+        const inpDM = qs('#mDiaMes'); const selDW = qs('#mDiaSemana'); const selM = qs('#mMes');
+        const chkAdj = qs('#mAjusteFimMes');
+        const today = new Date();
+        if (b.dataset.pre === 'mensal-5'){ if (selPer) selPer.value='Mensal'; if (inpDM) inpDM.value=5; if (chkAdj) chkAdj.checked=true; }
+        if (b.dataset.pre === 'mensal-ultimo'){ if (selPer) selPer.value='Mensal'; if (inpDM) inpDM.value=31; if (chkAdj) chkAdj.checked=true; }
+        if (b.dataset.pre === 'semanal-sexta'){ if (selPer) selPer.value='Semanal'; if (selDW) selDW.value='5'; }
+        if (b.dataset.pre === 'anual-jan'){ if (selPer) selPer.value='Anual'; if (selM) selM.value='1'; if (inpDM) inpDM.value=1; if (chkAdj) chkAdj.checked=true; }
+        syncRecurrenceVisibility();
+      });
+    }
+    syncRecurrenceVisibility();
+  }
+
+
   // ========= LOAD DATA =========
   async function loadAll() {
     // Transações
@@ -252,7 +310,6 @@ window.onload = function () {
       rebuildCatSelect();
       qs("#mDesc").value = "";
       qs("#mObs").value = "";
-      const selPayNew = qs("#mMeio"); if (selPayNew) selPayNew.value = "";
       qs("#mValorBig").value = "";
       modalTipo = "Despesa";
       syncTipoTabs();
@@ -273,6 +330,7 @@ window.onload = function () {
       const selPer = qs("#mPeriodicidade");
       const chkAdj = qs("#mAjusteFimMes");
       if (inpIni) inpIni.value = nowYMD();
+      attachRecurrenceHandlers();
       if (inpFim) inpFim.value = "";
       if (inpDM) inpDM.value = new Date().getDate();
       if (selDW) selDW.value = String(new Date().getDay() || 1);
@@ -312,15 +370,14 @@ window.onload = function () {
   // ========= TRANSAÇÕES =========
   async function addOrUpdate() {
     const valor = parseMoneyMasked(qs("#mValorBig").value);
-    const meioSel = (qs('#mMeio')?.value || '').toLowerCase();
     const t = {
       id: S.editingId || gid(),
       tipo: modalTipo,
-      categoria: qs('#mCategoria').value,
-      data: isIsoDate(qs('#mData').value) ? qs('#mData').value : nowYMD(),
-      descricao: (qs('#mDesc').value || '').trim(),
+      categoria: qs("#mCategoria").value,
+      data: isIsoDate(qs("#mData").value) ? qs("#mData").value : nowYMD(),
+      descricao: (qs("#mDesc").value || "").trim(),
       valor: isFinite(valor) ? valor : 0,
-      obs: (encodePayTag(meioSel) + stripPayTag((qs('#mObs').value || '')).trim()).trim()
+      obs: (qs("#mObs").value || "").trim()
     };
     if (!t.categoria) return alert("Selecione categoria");
     if (!t.descricao) return alert("Descrição obrigatória");
@@ -460,8 +517,7 @@ window.onload = function () {
     qs("#mData").value = isIsoDate(x.data) ? x.data : nowYMD();
     qs("#mDesc").value = x.descricao || "";
     qs("#mValorBig").value = fmtMoney(Number(x.valor) || 0);
-    qs("#mObs").value = stripPayTag(x.obs || "");
-    const selPay = qs("#mMeio"); if (selPay) selPay.value = parsePay(x.obs || "") || "";
+    qs("#mObs").value = x.obs || "";
     qs("#modalTitle").textContent = "Editar lançamento";
 
     // Edição: esconde blocos de recorrência (edita só esta instância)
