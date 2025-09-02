@@ -557,7 +557,7 @@ body.dark .error { background:#3b1f20; border-color:#ef4444; color:#fecaca; }
 /*  Lançamentos em GRID      */
 /* ========================= */
 
-#listaLanc.lanc-grid{
+#listaLanc.lanc-grid,#listaRecentes.lanc-grid{
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); /* 4 no desktop, 2 no tablet, 1 no celular */
   gap: 16px;
@@ -566,7 +566,7 @@ body.dark .error { background:#3b1f20; border-color:#ef4444; color:#fecaca; }
 }
 
 /* Cada <li> como card */
-#listaLanc.lanc-grid > li.item{
+#listaLanc.lanc-grid > li.item,#listaRecentes.lanc-grid > li.item{
   display: flex;
   flex-direction: column;
   border: 1px solid var(--border);
@@ -577,17 +577,17 @@ body.dark .error { background:#3b1f20; border-color:#ef4444; color:#fecaca; }
   transition: transform .15s ease, box-shadow .15s ease;
 }
 
-#listaLanc.lanc-grid > li.item:hover{
+#listaLanc.lanc-grid > li.item:hover,#listaRecentes.lanc-grid > li.item:hover{
   transform: translateY(-2px);
 }
 
 /* Zera herança da .list (vertical) só aqui */
-#listaLanc.lanc-grid.list{
+#listaLanc.lanc-grid.list,#listaRecentes.lanc-grid.list{
   display: grid;
 }
 
 /* Conteúdo interno */
-#listaLanc .chip{ 
+#listaLanc .chip,#listaRecentes .chip,#listaRecentes .chip{ 
   background: var(--chip);
   padding: 4px 10px;
   border-radius: 999px;
@@ -596,7 +596,7 @@ body.dark .error { background:#3b1f20; border-color:#ef4444; color:#fecaca; }
   margin-bottom: 6px;
 }
 
-#listaLanc .titulo{
+#listaLanc .titulo,#listaRecentes .titulo,#listaRecentes .titulo{
   font-weight: 700;
   font-size: 16px;
   line-height: 1.2;
@@ -608,14 +608,14 @@ body.dark .error { background:#3b1f20; border-color:#ef4444; color:#fecaca; }
   text-align: left;
 }
 
-#listaLanc .subinfo{
+#listaLanc .subinfo,#listaRecentes .subinfo,#listaRecentes .subinfo{
   color: var(--muted);
   font-size: 13px;
   margin-bottom: 6px;
   text-align: left;
 }
 
-#listaLanc .valor{
+#listaLanc .valor,#listaRecentes .valor{
   font-size: 18px;
   font-weight: 800;
   margin: 8px 0;
@@ -623,14 +623,14 @@ body.dark .error { background:#3b1f20; border-color:#ef4444; color:#fecaca; }
 }
 
 /* Área de ações (botões) alinhada à direita */
-#listaLanc .acoes{
+#listaLanc .acoes,#listaRecentes .acoes{
   margin-top: 12px;
   display: flex;
   justify-content: flex-end;
   gap: 8px;
 }
 
-#listaLanc .btn-acao{
+#listaLanc .btn-acao,#listaRecentes .btn-acao{
   width: 36px; height: 36px;
   border-radius: 10px;
   display: grid; place-items: center;
@@ -639,24 +639,24 @@ body.dark .error { background:#3b1f20; border-color:#ef4444; color:#fecaca; }
   cursor: pointer;
 }
 
-#listaLanc .btn-acao:focus-visible{
+#listaLanc .btn-acao:focus-visible,#listaRecentes .btn-acao:focus-visible{
   outline: 2px solid var(--brand);
   outline-offset: 2px;
 }
 
 /* Cores por tipo */
-#listaLanc li[data-tipo="Despesa"] .chip{ background: rgba(220,38,38,.10); color:#dc2626; }
-#listaLanc li[data-tipo="Receita"] .chip{ background: rgba(34,197,94,.10);  color:#16a34a; }
-#listaLanc li[data-tipo="Transferência"] .chip{ background: rgba(124,58,237,.10); color:#7c3aed; }
+#listaLanc li[data-tipo="Despesa"] .chip,#listaRecentes li[data-tipo="Despesa"] .chip{ background: rgba(220,38,38,.10); color:#dc2626; }
+#listaLanc li[data-tipo="Receita"] .chip,#listaRecentes li[data-tipo="Receita"] .chip{ background: rgba(34,197,94,.10);  color:#16a34a; }
+#listaLanc li[data-tipo="Transferência"] .chip,#listaRecentes li[data-tipo="Transferência"] .chip{ background: rgba(124,58,237,.10); color:#7c3aed; }
 
 /* Acessibilidade: menos animações */
 @media (prefers-reduced-motion: reduce){
-  #listaLanc.lanc-grid > li.item{ transition: none; }
+  #listaLanc.lanc-grid > li.item,#listaRecentes.lanc-grid > li.item{ transition: none; }
 }
 /* === Ajuste de alinhamento dos cards de Lançamentos === */
 
 /* garante coluna e ignora o justify original do tema */
-#listaLanc.lanc-grid > li.item{
+#listaLanc.lanc-grid > li.item,#listaRecentes.lanc-grid > li.item{
   display:flex;
   flex-direction: column;     /* conteúdo em coluna */
   align-items: stretch;       /* largura total */
@@ -664,16 +664,16 @@ body.dark .error { background:#3b1f20; border-color:#ef4444; color:#fecaca; }
 }
 
 /* tudo do conteúdo fica alinhado à esquerda */
-#listaLanc .left,
-#listaLanc .chip,
-#listaLanc .titulo,
-#listaLanc .subinfo,
-#listaLanc .valor{
+#listaLanc .left,#listaRecentes .left,
+#listaLanc .chip,#listaRecentes .chip,
+#listaLanc .titulo,#listaRecentes .titulo,
+#listaLanc .subinfo,#listaRecentes .subinfo,
+#listaLanc .valor,#listaRecentes .valor{
   text-align: left;
 }
 
 /* área dos botões: embaixo e à direita */
-#listaLanc li.item .right{
+#listaLanc li.item .right,#listaRecentes li.item .right{
   margin-top: 12px;           /* espaço abaixo do valor */
   align-self: flex-end;       /* alinha o bloco no canto direito */
   display: flex;
@@ -682,7 +682,7 @@ body.dark .error { background:#3b1f20; border-color:#ef4444; color:#fecaca; }
 }
 
 /* se os botões forem links/ícones sem classe, dá tamanho de toque */
-#listaLanc li.item .right > *{
+#listaLanc li.item .right > *,#listaRecentes li.item .right > *{
   width: 36px;
   height: 36px;
   border-radius: 10px;
