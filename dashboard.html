@@ -84,10 +84,26 @@
     <section id="lancamentos">
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <h3>Lançamentos</h3>
-          <button class="btn" id="btnNovo">Novo lançamento</button>
-        </div>
-        <ul id="listaLanc" class="list lanc-grid" style="margin-top:12px"></ul>
+<h3>Últimos lançamentos</h3>
+<div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+  <select id="filterTipo">
+    <option value="todos">Todos</option>
+    <option value="Receita">Receitas</option>
+    <option value="Despesa">Despesas</option>
+    <option value="Transferência">Transferências</option>
+  </select>
+  <input type="text" id="searchLanc" placeholder="Buscar...">
+  <select id="orderRecentes" title="Ordenar">
+    <option value="data_desc">Data ↓</option>
+    <option value="valor_desc">Valor ↓</option>
+  </select>
+  <div style="margin-left:auto;display:flex;gap:8px">
+    <button class="btn secondary" id="btnCarregarMais">Carregar mais</button>
+    <button class="btn" id="btnVerTodos">Ver todos</button>
+  </div>
+</div>
+<ul id="listaRecentes" class="list"></ul>
+
       </div>
     </section>
 <!-- Relatórios -->
