@@ -213,9 +213,9 @@
 
       <!-- Recorrência -->
       <div class="field span-2" style="margin-top:8px">
-        <label><input type="checkbox" id="mRepetir"> Repetir este lançamento</label>
+        <label class="switch"><input type="checkbox" id="mRepetir"> Tornar recorrente</label>
 
-        <div id="recurrenceFields" style="display:none">
+        <div id="recurrenceFields" class="rec-card" style="display:none">
           <div class="form-grid" style="margin-top:8px">
             <div class="field">
               <label for="mPeriodicidade">Periodicidade</label>
@@ -281,12 +281,7 @@
       <div id="formError" class="error" role="alert" hidden></div>
 
       <div class="actions">
-        <div class="left">
-          Atalhos:
-          <span class="kbd">N</span> novo •
-          <span class="kbd">Enter</span> salvar •
-          <span class="kbd">Esc</span> cancelar
-        </div>
+        
         <div class="right">
           <button class="btn-cancel" id="cancelar">Cancelar</button>
           <button class="btn-save" id="salvar">Salvar</button>
