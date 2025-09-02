@@ -1,9 +1,10 @@
+var S;
 window.onload = function () {
   // Usa o supabase já criado no dashboard.html
   const supabaseClient = window.supabaseClient || supabase;
 
   // ========= ESTADO GLOBAL =========
-  let S = {
+  S = {
     month: nowYMD().slice(0, 7),
     hide: false,
     dark: false,
