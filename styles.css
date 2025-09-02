@@ -848,3 +848,37 @@ button:focus-visible, [role="button"]:focus-visible, .tab:focus-visible, .btn:fo
 
 /* Utility: left align everything inside list cards */
 .l-left { text-align:left; align-items:flex-start; }
+
+
+/* === Alinhamento consistente dos cards de lançamentos === */
+.lanc-card{
+  display:grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto auto;
+  grid-template-areas:
+    "chip valor"
+    "titulo valor"
+    "subinfo valor";
+  gap: 6px 12px;
+  align-items: start;
+}
+.lanc-card .chip{ grid-area: chip; }
+.lanc-card .titulo{ grid-area: titulo; }
+.lanc-card .subinfo{ grid-area: subinfo; }
+.lanc-card .valor{ grid-area: valor; justify-self: end; align-self: center; }
+.lanc-card .acoes{ grid-column: 1 / -1; justify-self: end; margin-top: 8px; display:flex; gap:8px; }
+
+/* Em telas pequenas, mantém leitura vertical */
+@media (max-width: 520px){
+  .lanc-card{
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+    grid-template-areas:
+      "chip"
+      "titulo"
+      "subinfo"
+      "valor";
+  }
+  .lanc-card .valor{ justify-self: start; }
+  .lanc-card .acoes{ justify-self: stretch; }
+}
