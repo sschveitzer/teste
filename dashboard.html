@@ -181,9 +181,9 @@
         <div id="valorHelp" class="helper">Use vírgula para centavos. Ex.: 125,90</div>
 
         <div class="segmented" id="tipoTabs" role="tablist" aria-label="Tipo de lançamento">
-          <button type="button" role="tab" aria-selected="true" data-type="Despesa" class="active">Despesa</button>
-          <button type="button" role="tab" aria-selected="false" data-type="Receita">Receita</button>
-          <button type="button" role="tab" aria-selected="false" data-type="Transferência">Transferência</button>
+          <button type="button" role="tab" aria-selected="true" data-type="Despesa" class="active"><i class="ph ph-trend-down"></i> Despesa</button>
+          <button type="button" role="tab" aria-selected="false" data-type="Receita"><i class="ph ph-trend-up"></i> Receita</button>
+          <button type="button" role="tab" aria-selected="false" data-type="Transferência"><i class="ph ph-arrows-left-right"></i> Transferência</button>
         </div>
       </div>
 
@@ -192,21 +192,6 @@
           <label for="mCategoria">Categoria</label>
           <select id="mCategoria"></select>
           <div class="helper">Escolha a categoria (digite para filtrar)</div>
-        </div>
-
-        <div class="field">
-          <label for="mMeio">Forma de pagamento</label>
-          <select id="mMeio">
-            <option value="">Selecione…</option>
-            <option value="dinheiro">Dinheiro</option>
-            <option value="credito">Cartão crédito</option>
-            <option value="debito">Cartão débito</option>
-            <option value="pix">Pix</option>
-            <option value="boleto">Boleto</option>
-            <option value="transferencia">Transferência</option>
-            <option value="outros">Outros</option>
-          </select>
-          <div class="helper">Opcional</div>
         </div>
 
         <div class="field">
