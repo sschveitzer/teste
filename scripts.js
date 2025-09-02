@@ -32,6 +32,26 @@ window.onload = function () {
     return /^\d{4}-\d{2}-\d{2}$/.test(s);
   }
   function fmtMoney(v) {
+
+// ==== MoM delta helpers ====
+function prevMonthStr(ym){
+  const [y,m] = ym.split('-').map(Number);
+  let yy = y, mm = m - 1;
+  if (mm < 1){ mm = 12; yy -= 1; }
+  return `${yy}-${String(mm).padStart(2,'0')}`;
+}
+function pctDelta(curr, prev){
+  const c = Number(curr)||0, p = Number(prev)||0;
+  if (p === 0){
+    return null; // indeterminado sem base
+  }
+  return ((c - p) / Math.abs(p)) * 100;
+}
+function fmtPct(p){
+  const sign = (p>0?'+':'');
+  return `${sign}${p.toFixed(1)}%`;
+}
+
     const n = Number(v);
     return isFinite(n)
       ? n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
@@ -589,6 +609,40 @@ window.onload = function () {
     [kpiReceitas, kpiDespesas, kpiSaldo, kpiSplit].forEach(el => {
       if (el) el.classList.toggle("blurred", S.hide);
     });
+    // --- Month-over-month deltas ---
+    const prevYM = prevMonthStr(S.month);
+    const txPrev = S.tx.filter(x => x.data && x.data.startsWith(prevYM));
+    const receitasPrev = txPrev.filter(x => x.tipo === "Receita").reduce((a,b)=>a+(Number(b.valor)||0),0);
+    const despesasPrev = txPrev.filter(x => x.tipo === "Despesa").reduce((a,b)=>a+(Number(b.valor)||0),0);
+    const saldoPrev = receitasPrev - despesasPrev;
+
+    const elRecDelta = qs("#kpiReceitasDelta");
+    const elDesDelta = qs("#kpiDespesasDelta");
+    const elSalDelta = qs("#kpiSaldoDelta");
+
+    const dRec = pctDelta(receitas, receitasPrev);
+    const dDes = pctDelta(despesas, despesasPrev);
+    const dSal = pctDelta(saldo, saldoPrev);
+
+    function applyDelta(el, d, goodWhenUp = true){
+      if (!el) return;
+      if (d === null){
+        el.textContent = "—";
+        el.title = "Sem base de comparação com o mês anterior";
+        el.style.color = "";
+        return;
+      }
+      el.textContent = fmtPct(d);
+      el.title = `Variação vs mês anterior (${prevYM})`;
+      const isUp = d > 0;
+      const color = (goodWhenUp ? (isUp ? "var(--ok)" : "var(--warn)") : (isUp ? "var(--warn)" : "var(--ok)"));
+      el.style.color = color;
+    }
+
+    applyDelta(elRecDelta, dRec, true);
+    applyDelta(elDesDelta, dDes, false);
+    applyDelta(elSalDelta, dSal, true);
+
   }
 
   let chartSaldo, chartPie, chartFluxo;
