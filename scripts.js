@@ -694,14 +694,11 @@ window.onload = function () {
   }
 
   // ========= RELATÓRIOS / KPIs / GRÁFICOS EXISTENTES =========
+  
   function updateKpis() {
     const txMonth = S.tx.filter(x => x.data && x.data.startsWith(S.month));
-    const receitas = txMonth
-      .filter(x => x.tipo === "Receita")
-      .reduce((a, b) => a + Number(b.valor), 0);
-    const despesas = txMonth
-      .filter(x => x.tipo === "Despesa")
-      .reduce((a, b) => a + Number(b.valor), 0);
+    const receitas = txMonth.filter(x => x.tipo === "Receita").reduce((a, b) => a + Number(b.valor), 0);
+    const despesas = txMonth.filter(x => x.tipo === "Despesa").reduce((a, b) => a + Number(b.valor), 0);
     const saldo = receitas - despesas;
 
     const kpiReceitas = qs("#kpiReceitas");
@@ -713,13 +710,49 @@ window.onload = function () {
     if (kpiReceitas) kpiReceitas.textContent = fmtMoney(receitas);
     if (kpiDespesas) kpiDespesas.textContent = fmtMoney(despesas);
     if (kpiSaldo) kpiSaldo.textContent = fmtMoney(saldo);
-
     if (kpiSplit) kpiSplit.textContent = fmtMoney(despesas / 2);
     if (kpiSplitHint) kpiSplitHint.textContent = "½ de despesas";
 
     [kpiReceitas, kpiDespesas, kpiSaldo, kpiSplit].forEach(el => {
       if (el) el.classList.toggle("blurred", S.hide);
     });
+
+    // --- Month-over-month deltas ---
+    const prevYM = prevMonthStr(S.month);
+    const txPrev = S.tx.filter(x => x.data && x.data.startsWith(prevYM));
+    const receitasPrev = txPrev.filter(x => x.tipo === "Receita").reduce((a,b)=>a+Number(b.valor),0);
+    const despesasPrev = txPrev.filter(x => x.tipo === "Despesa").reduce((a,b)=>a+Number(b.valor),0);
+    const saldoPrev = receitasPrev - despesasPrev;
+
+    const elRecDelta = qs("#kpiReceitasDelta");
+    const elDesDelta = qs("#kpiDespesasDelta");
+    const elSalDelta = qs("#kpiSaldoDelta");
+
+    const dRec = pctDelta(receitas, receitasPrev);
+    const dDes = pctDelta(despesas, despesasPrev);
+    const dSal = pctDelta(saldo, saldoPrev);
+
+    function applyDelta(el, d, goodWhenUp = true){
+      if (!el) return;
+      if (d === null){
+        el.textContent = "—";
+        el.title = "Sem base de comparação com o mês anterior";
+        el.style.color = "";
+        return;
+      }
+      el.textContent = fmtPct(d);
+      el.title = `Variação vs mês anterior (${prevYM})`;
+      // color logic
+      const isUp = d > 0;
+      const color = (goodWhenUp ? (isUp ? "var(--ok)" : "var(--warn)") : (isUp ? "var(--warn)" : "var(--ok)"));
+      el.style.color = color;
+    }
+
+    applyDelta(elRecDelta, dRec, true);   // subir receita = bom
+    applyDelta(elDesDelta, dDes, false);  // subir despesa = ruim
+    applyDelta(elSalDelta, dSal, true);   // subir saldo = bom
+  }
+);
   }
 
   let chartSaldo, chartPie, chartFluxo;
@@ -838,6 +871,27 @@ mesesDisponiveis.forEach(m => {
     }
     return out;
   }
+
+  function prevMonthStr(ym){
+    const [y,m] = ym.split('-').map(Number);
+    let yy = y, mm = m - 1;
+    if (mm < 1){ mm = 12; yy -= 1; }
+    return `${yy}-${String(mm).padStart(2,'0')}`;
+  }
+  function pctDelta(curr, prev){
+    if (!isFinite(curr)) curr = 0;
+    if (!isFinite(prev)) prev = 0;
+    if (prev === 0){
+      return null; // indeterminado
+    }
+    const pct = ((curr - prev) / Math.abs(prev)) * 100;
+    return pct;
+  }
+  function fmtPct(p){
+    const sign = (p>0?'+':'');
+    return `${sign}${p.toFixed(1)}%`;
+  }
+
   function monthDays(ym) {
     const [y, m] = ym.split('-').map(Number);
     return new Date(y, m, 0).getDate();
