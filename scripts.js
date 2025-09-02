@@ -124,6 +124,7 @@ window.onload = function () {
         if (b.dataset.pre === 'semanal-sexta'){ if (selPer) selPer.value='Semanal'; if (selDW) selDW.value='5'; }
         if (b.dataset.pre === 'anual-jan'){ if (selPer) selPer.value='Anual'; if (selM) selM.value='1'; if (inpDM) inpDM.value=1; if (chkAdj) chkAdj.checked=true; }
         syncRecurrenceVisibility();
+      });
     }
     syncRecurrenceVisibility();
   }
@@ -175,7 +176,7 @@ window.onload = function () {
         const m = String(today.getMonth() + 1).padStart(2, "0");
         S.month = `${y}-${m}`;
       }
-
+// ENSURE_S_MONTH: garante mês atual como default se não houver salvo
     if (!S.month) {
       const today = new Date();
       const y = today.getFullYear();
@@ -345,26 +346,26 @@ window.onload = function () {
 
   let modalTipo = "Despesa";
   function syncTipoTabs() {
-  qsa("#tipoTabs button").forEach(b => {
-    b.classList.toggle("active", b.dataset.type === modalTipo);
-  if (!S.editingId) {
-    qs("#modalTitle").textContent = "Nova " + modalTipo;
-  }
-}
+    qsa("#tipoTabs button").forEach(b =>
+      b.classList.toggle("active", b.dataset.type === modalTipo)
+    );
+    if (!S.editingId) {
+      qs("#modalTitle").textContent = "Nova " + modalTipo;
+    }
   }
 
   function rebuildCatSelect(selected) {
-  const sel = qs("#mCategoria");
-  if (!sel) return;
-  sel.innerHTML = '<option value="">Selecione…</option>';
-  S.cats.forEach(c => {
-    const o = document.createElement("option");
-    o.value = c.nome;
-    o.textContent = c.nome;
-    if (c.nome === selected) o.selected = true;
-    sel.append(o);
-};
-  
+    const sel = qs("#mCategoria");
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Selecione…</option>';
+    S.cats.forEach(c => {
+      const o = document.createElement("option");
+      o.value = c.nome;
+      o.textContent = c.nome;
+      if (c.nome === selected) o.selected = true;
+      sel.append(o);
+    });
+  }
 
   // ========= TRANSAÇÕES =========
   async function addOrUpdate() {
@@ -518,6 +519,7 @@ window.onload = function () {
       o.value = c.nome; o.textContent = c.nome;
       if (S.lf.cat === c.nome) o.selected = true;
       selCat.appendChild(o);
+    });
 
     // valores atuais
     selTipo.value = S.lf.tipo;
@@ -559,7 +561,7 @@ window.onload = function () {
     const sal = rec - des;
     el.innerHTML = '';
     const mk = (icon, label, val, color)=> `<span class="pill" style="color:${color}"><i class="ph ${icon}"></i> ${label}: <strong>${fmtMoney(val)}</strong></span>`;
-el.insertAdjacentHTML('beforeend', mk('ph-trend-up','Receitas',rec,'var(--ok)'));
+    el.insertAdjacentHTML('beforeend', mk('ph-trend-up','Receitas',rec,'var(--ok)'));
     el.insertAdjacentHTML('beforeend', mk('ph-trend-down','Despesas',des,'var(--warn)'));
     el.insertAdjacentHTML('beforeend', mk('ph-wallet','Saldo',sal,'var(--brand)'));
   }
@@ -688,6 +690,7 @@ el.insertAdjacentHTML('beforeend', mk('ph-trend-up','Receitas',rec,'var(--ok)'))
       li.appendChild(left);
       li.appendChild(right);
       ul.appendChild(li);
+    });
   }
 
   // ========= RELATÓRIOS / KPIs / GRÁFICOS EXISTENTES =========
@@ -712,6 +715,7 @@ el.insertAdjacentHTML('beforeend', mk('ph-trend-up','Receitas',rec,'var(--ok)'))
 
     [kpiReceitas, kpiDespesas, kpiSaldo, kpiSplit].forEach(el => {
       if (el) el.classList.toggle("blurred", S.hide);
+    });
 
     // --- Month-over-month deltas ---
     const prevYM = prevMonthStr(S.month);
@@ -748,6 +752,8 @@ el.insertAdjacentHTML('beforeend', mk('ph-trend-up','Receitas',rec,'var(--ok)'))
     applyDelta(elDesDelta, dDes, false);  // subir despesa = ruim
     applyDelta(elSalDelta, dSal, true);   // subir saldo = bom
   }
+);
+  }
 
   let chartSaldo, chartPie, chartFluxo;
   function renderCharts() {
@@ -774,6 +780,7 @@ el.insertAdjacentHTML('beforeend', mk('ph-trend-up','Receitas',rec,'var(--ok)'))
       chartSaldo = new Chart(ctxSaldo, {
         type: "line",
         data: { labels: months, datasets: [{ label: "Saldo", data: saldoData }] }
+      });
     }
 
     // Pizza por categoria (mês atual)
@@ -786,9 +793,11 @@ el.insertAdjacentHTML('beforeend', mk('ph-trend-up','Receitas',rec,'var(--ok)'))
         .filter(x => x.tipo === "Despesa")
         .forEach(x => {
           porCat[x.categoria] = (porCat[x.categoria] || 0) + Number(x.valor);
+        });
       chartPie = new Chart(ctxPie, {
         type: "pie",
         data: { labels: Object.keys(porCat), datasets: [{ data: Object.values(porCat) }] }
+      });
     }
 
     // Fluxo por mês
@@ -802,6 +811,7 @@ el.insertAdjacentHTML('beforeend', mk('ph-trend-up','Receitas',rec,'var(--ok)'))
         porMes[ym] =
           (porMes[ym] || 0) +
           Number(x.valor) * (x.tipo === "Despesa" ? -1 : 1);
+      });
       const labels = Object.keys(porMes).sort();
       chartFluxo = new Chart(ctxFluxo, {
         type: "bar",
@@ -809,6 +819,7 @@ el.insertAdjacentHTML('beforeend', mk('ph-trend-up','Receitas',rec,'var(--ok)'))
           labels,
           datasets: [{ label: "Fluxo", data: labels.map(l => porMes[l]) }]
         }
+      });
     }
   }
 
@@ -838,8 +849,10 @@ mesesDisponiveis.forEach(m => {
       opt.textContent = new Date(ano, mes - 1, 1).toLocaleDateString("pt-BR", {
         month: "long",
         year: "numeric"
+      });
       if (m === S.month) opt.selected = true;
       sel.append(opt);
+    });
     sel.onchange = () => {
       S.month = sel.value;
       savePrefs();
@@ -901,6 +914,7 @@ mesesDisponiveis.forEach(m => {
       if (dt >= from && dt <= cutoff) {
         sum[x.categoria] = (sum[x.categoria]||0) + (Number(x.valor)||0);
       }
+    });
     const rows = Object.entries(sum)
       .sort((a,b)=>b[1]-a[1])
       .slice(0,limit);
@@ -912,6 +926,7 @@ mesesDisponiveis.forEach(m => {
         const tr = document.createElement('tr');
         tr.innerHTML = `<td>${cat||'-'}</td><td>${fmtMoney(total)}</td>`;
         tbody.appendChild(tr);
+      });
     }
   }
 
@@ -925,6 +940,8 @@ mesesDisponiveis.forEach(m => {
           const k = x.categoria || '(sem categoria)';
           byCatMonth[k] = byCatMonth[k] || {};
           byCatMonth[k][m] = (byCatMonth[k][m]||0) + (Number(x.valor)||0);
+        });
+    });
     const medias = Object.entries(byCatMonth).map(([cat, map])=>{
       const tot = months.reduce((a,m)=>a+(map[m]||0),0);
       return [cat, tot/windowMonths];
@@ -937,6 +954,7 @@ mesesDisponiveis.forEach(m => {
         const tr = document.createElement('tr');
         tr.innerHTML = `<td>${cat}</td><td>${fmtMoney(avg)}</td>`;
         tbody.appendChild(tr);
+      });
     }
   }
 
@@ -979,6 +997,7 @@ mesesDisponiveis.forEach(m => {
       const a = Math.max(0,i-2);
       const slice = serie.slice(a,i+1);
       return slice.reduce((x,y)=>x+y,0)/slice.length;
+    });
 
     chartForecast = new Chart(ctx, {
       type: 'line',
@@ -992,6 +1011,7 @@ mesesDisponiveis.forEach(m => {
           { label:'Média móvel (3m)', data: ma }
         ]
       }
+    });
   }
 
   // Heatmap de gastos por dia do mês
@@ -1007,6 +1027,7 @@ mesesDisponiveis.forEach(m => {
       if (!x.data.startsWith(ym)) return;
       const d = Number(x.data.slice(8,10));
       gastosPorDia[d-1] += Number(x.valor)||0;
+    });
 
     const max = Math.max(...gastosPorDia, 0);
     wrap.innerHTML = '';
@@ -1018,6 +1039,7 @@ mesesDisponiveis.forEach(m => {
       h.textContent = lbl;
       h.style.fontWeight = '700';
       wrap.appendChild(h);
+    });
 
     // Células
     for (let d=1; d<=days; d++){
@@ -1073,6 +1095,7 @@ mesesDisponiveis.forEach(m => {
   // ========= EVENTOS =========
   qsa(".tab").forEach(btn =>
     btn.addEventListener("click", () => setTab(btn.dataset.tab))
+  );
 
   const fab = qs("#fab");
   if (fab) fab.onclick = () => toggleModal(true);
@@ -1094,6 +1117,7 @@ mesesDisponiveis.forEach(m => {
       modalTipo = b.dataset.type;
       syncTipoTabs();
     })
+  );
 
   const btnAddCat = qs("#addCat");
   if (btnAddCat) btnAddCat.onclick = async () => {
@@ -1115,6 +1139,7 @@ mesesDisponiveis.forEach(m => {
       S.dark = !!btnDark.checked;
       document.body.classList.toggle("dark", S.dark);
       await savePrefs();
+    });
     // clique também alterna (para botões sem checkbox)
     btnDark.addEventListener('click', async (e) => {
       if (btnDark.tagName === 'BUTTON') {
@@ -1122,6 +1147,7 @@ mesesDisponiveis.forEach(m => {
         document.body.classList.toggle("dark", S.dark);
         await savePrefs();
       }
+    });
   }
 
   // Suporta #toggleHide (novo) e #cfgHide (antigo)
@@ -1140,6 +1166,7 @@ mesesDisponiveis.forEach(m => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
         setTab('config');
+      });
     }
   }
   wireBtnConfig();
@@ -1149,6 +1176,7 @@ mesesDisponiveis.forEach(m => {
       e.preventDefault();
       setTab('config');
     }
+  });
 
   // Recorrência: mostrar/ocultar campos conforme checkbox/periodicidade
   const chkRepetir = qs("#mRepetir");
@@ -1191,6 +1219,7 @@ mesesDisponiveis.forEach(m => {
           setAmount();
           e.preventDefault();
         }
+      });
       valorInput.addEventListener('input', (e) => {
         const d = (e.data ?? '').replace(/\D/g,'');
         if (d) {
@@ -1203,11 +1232,15 @@ mesesDisponiveis.forEach(m => {
         requestAnimationFrame(() => {
           const len = valorInput.value.length;
           valorInput.setSelectionRange(len,len);
+        });
+      });
       valorInput.addEventListener('focus', () => {
         if (!valorInput.value) setAmount();
         requestAnimationFrame(() => {
           const len = valorInput.value.length;
           valorInput.setSelectionRange(len,len);
+        });
+      });
     }
 
     // validate before save
@@ -1237,6 +1270,7 @@ mesesDisponiveis.forEach(m => {
           e.preventDefault();
           btnCancelar?.click();
         }
+      });
 
       // Trap de foco + Tab
       dialog.addEventListener('keydown', (e) => {
@@ -1248,9 +1282,10 @@ mesesDisponiveis.forEach(m => {
         const last = focusables[focusables.length - 1];
         if (e.shiftKey && document.activeElement === first) { last.focus(); e.preventDefault(); }
         else if (!e.shiftKey && document.activeElement === last) { first.focus(); e.preventDefault(); }
+      });
     }
   })();
 
   // Start!
   loadAll();
-;
+};
