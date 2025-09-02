@@ -34,7 +34,6 @@ window.onload = function () {
   function fmtMoney(v) {
 
 // ==== MoM delta helpers ====
-return `${yy}
 // ==== MoM delta helpers ====
 function prevMonthStr(ym){
   const [y,m] = ym.split('-').map(Number);
