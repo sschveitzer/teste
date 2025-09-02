@@ -346,18 +346,16 @@ window.onload = function () {
 
   let modalTipo = "Despesa";
   function syncTipoTabs() {
-    qsa("#tipoTabs button").forEach(b =>);
-      b.classList.toggle("active", b.dataset.type === modalTipo));
-    if (!S.editingId) {
-      qs("#modalTitle").textContent = "Nova " + modalTipo;
-    }
-  }
+    qsa("#tipoTabs button").forEach(b => {
+      b.classList.toggle("active", b.dataset.type === modalTipo);
+    });
 
+  }
   function rebuildCatSelect(selected) {
     const sel = qs("#mCategoria");
     if (!sel) return;
     sel.innerHTML = '<option value="">Selecione…</option>';
-    S.cats.forEach(c => {);
+    S.cats.forEach(c => {
       const o = document.createElement("option");
       o.value = c.nome;
       o.textContent = c.nome;
