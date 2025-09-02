@@ -176,7 +176,7 @@ window.onload = function () {
         const m = String(today.getMonth() + 1).padStart(2, "0");
         S.month = `${y}-${m}`;
       }
-// ENSURE_S_MONTH: garante mês atual como default se não houver salvo
+
     if (!S.month) {
       const today = new Date();
       const y = today.getFullYear();
@@ -346,22 +346,27 @@ window.onload = function () {
 
   let modalTipo = "Despesa";
   function syncTipoTabs() {
-    qsa("#tipoTabs button").forEach(b => {
-      b.classList.toggle("active", b.dataset.type === modalTipo);
-    });
-
+  qsa("#tipoTabs button").forEach(b => {
+    b.classList.toggle("active", b.dataset.type === modalTipo);
+  });
+  if (!S.editingId) {
+    qs("#modalTitle").textContent = "Nova " + modalTipo;
   }
+}
+  }
+
   function rebuildCatSelect(selected) {
-    const sel = qs("#mCategoria");
-    if (!sel) return;
-    sel.innerHTML = '<option value="">Selecione…</option>';
-    S.cats.forEach(c => {
-      const o = document.createElement("option");
-      o.value = c.nome;
-      o.textContent = c.nome;
-      if (c.nome === selected) o.selected = true;
-      sel.append(o);
-    });
+  const sel = qs("#mCategoria");
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Selecione…</option>';
+  S.cats.forEach(c => {
+    const o = document.createElement("option");
+    o.value = c.nome;
+    o.textContent = c.nome;
+    if (c.nome === selected) o.selected = true;
+    sel.append(o);
+  });
+});
   }
 
   // ========= TRANSAÇÕES =========
@@ -511,7 +516,7 @@ window.onload = function () {
     // categorias
     selCat.innerHTML = '<option value="todas">Todas as categorias</option>';
     const list = Array.isArray(S.cats) ? [...S.cats].sort((a,b)=> (a.nome||'').localeCompare(b.nome||'')) : [];
-    list.forEach(c => {
+    list.forEach(c=>{
       const o = document.createElement('option');
       o.value = c.nome; o.textContent = c.nome;
       if (S.lf.cat === c.nome) o.selected = true;
@@ -558,7 +563,7 @@ window.onload = function () {
     const sal = rec - des;
     el.innerHTML = '';
     const mk = (icon, label, val, color)=> `<span class="pill" style="color:${color}"><i class="ph ${icon}"></i> ${label}: <strong>${fmtMoney(val)}</strong></span>`;
-    el.insertAdjacentHTML('beforeend', mk('ph-trend-up','Receitas',rec,'var(--ok)'));
+el.insertAdjacentHTML('beforeend', mk('ph-trend-up','Receitas',rec,'var(--ok)'));
     el.insertAdjacentHTML('beforeend', mk('ph-trend-down','Despesas',des,'var(--warn)'));
     el.insertAdjacentHTML('beforeend', mk('ph-wallet','Saldo',sal,'var(--brand)'));
   }
@@ -627,7 +632,7 @@ window.onload = function () {
       return;
     }
 
-    list.forEach(c => {);
+    list.forEach(c => {
       const li = document.createElement("li");
       li.className = "item";
 
@@ -710,7 +715,7 @@ window.onload = function () {
     if (kpiSplit) kpiSplit.textContent = fmtMoney(despesas / 2);
     if (kpiSplitHint) kpiSplitHint.textContent = "½ de despesas";
 
-    [kpiReceitas, kpiDespesas, kpiSaldo, kpiSplit].forEach(el => {);
+    [kpiReceitas, kpiDespesas, kpiSaldo, kpiSplit].forEach(el => {
       if (el) el.classList.toggle("blurred", S.hide);
     });
 
@@ -786,7 +791,7 @@ window.onload = function () {
       const porCat = {};
       txMonth
         .filter(x => x.tipo === "Despesa")
-        .forEach(x => {);
+        .forEach(x => {
           porCat[x.categoria] = (porCat[x.categoria] || 0) + Number(x.valor);
         });
       chartPie = new Chart(ctxPie, {
@@ -800,7 +805,7 @@ window.onload = function () {
     const ctxFluxo = qs("#chartFluxo");
     if (ctxFluxo && window.Chart) {
       const porMes = {};
-      S.tx.forEach(x => {);
+      S.tx.forEach(x => {
         if (!x.data) return;
         const ym = x.data.slice(0, 7);
         porMes[ym] =
@@ -837,7 +842,7 @@ window.onload = function () {
         if (seen.has(mesesDisponiveis[i])) { mesesDisponiveis.splice(i,1); i--; } else { seen.add(mesesDisponiveis[i]); }
       }
     })();
-mesesDisponiveis.forEach(m => {);
+mesesDisponiveis.forEach(m => {
       const opt = document.createElement("option");
       opt.value = m;
       const [ano, mes] = m.split("-");
@@ -903,7 +908,7 @@ mesesDisponiveis.forEach(m => {);
     const cutoff = new Date();
     const from = new Date(cutoff.getFullYear(), cutoff.getMonth()-11, 1);
     const sum = {};
-    S.tx.forEach(x=>{);
+    S.tx.forEach(x=>{
       if (!x.data || x.tipo!=="Despesa") return;
       const dt = new Date(x.data);
       if (dt >= from && dt <= cutoff) {
@@ -917,7 +922,7 @@ mesesDisponiveis.forEach(m => {);
     const tbody = document.querySelector('#tblTop tbody');
     if (tbody){
       tbody.innerHTML = '';
-      rows.forEach(([cat, total])=>{);
+      rows.forEach(([cat, total])=>{
         const tr = document.createElement('tr');
         tr.innerHTML = `<td>${cat||'-'}</td><td>${fmtMoney(total)}</td>`;
         tbody.appendChild(tr);
@@ -929,9 +934,9 @@ mesesDisponiveis.forEach(m => {);
   function renderMediaPorCategoria(windowMonths=6){
     const months = monthsBack(windowMonths);
     const byCatMonth = {};
-    months.forEach(m=>{);
+    months.forEach(m=>{
       S.tx.filter(x=>x.data && x.data.startsWith(m) && x.tipo==="Despesa")
-        .forEach(x=>{);
+        .forEach(x=>{
           const k = x.categoria || '(sem categoria)';
           byCatMonth[k] = byCatMonth[k] || {};
           byCatMonth[k][m] = (byCatMonth[k][m]||0) + (Number(x.valor)||0);
@@ -945,7 +950,7 @@ mesesDisponiveis.forEach(m => {);
     const tbody = document.querySelector('#tblMediaCats tbody');
     if (tbody){
       tbody.innerHTML = '';
-      medias.forEach(([cat, avg])=>{);
+      medias.forEach(([cat, avg])=>{
         const tr = document.createElement('tr');
         tr.innerHTML = `<td>${cat}</td><td>${fmtMoney(avg)}</td>`;
         tbody.appendChild(tr);
@@ -1017,7 +1022,7 @@ mesesDisponiveis.forEach(m => {);
     const days = monthDays(ym);
     const gastosPorDia = Array.from({length: days}, ()=>0);
 
-    S.tx.forEach(x=>{);
+    S.tx.forEach(x=>{
       if (!x.data || x.tipo!=="Despesa") return;
       if (!x.data.startsWith(ym)) return;
       const d = Number(x.data.slice(8,10));
@@ -1028,7 +1033,7 @@ mesesDisponiveis.forEach(m => {);
     wrap.innerHTML = '';
 
     // Cabeçalho com iniciais (S T Q Q S S D)
-    ['S','T','Q','Q','S','S','D'].forEach(lbl=>{);
+    ['S','T','Q','Q','S','S','D'].forEach(lbl=>{
       const h = document.createElement('div');
       h.className = 'cell';
       h.textContent = lbl;
@@ -1088,8 +1093,9 @@ mesesDisponiveis.forEach(m => {);
   }
 
   // ========= EVENTOS =========
-  qsa(".tab").forEach(btn =>);
-  qsa(".tab").forEach(btn => btn.addEventListener("click", () => setTab(btn.dataset.tab)));
+  qsa(".tab").forEach(btn =>
+    btn.addEventListener("click", () => setTab(btn.dataset.tab))
+  );
 
   const fab = qs("#fab");
   if (fab) fab.onclick = () => toggleModal(true);
@@ -1106,11 +1112,12 @@ mesesDisponiveis.forEach(m => {);
   const btnSalvar = qs("#salvar");
   if (btnSalvar) btnSalvar.onclick = addOrUpdate;
 
-  qsa("#tipoTabs button").forEach(b =>);
+  qsa("#tipoTabs button").forEach(b =>
     b.addEventListener("click", () => {
       modalTipo = b.dataset.type;
       syncTipoTabs();
     })
+  );
 
   const btnAddCat = qs("#addCat");
   if (btnAddCat) btnAddCat.onclick = async () => {
