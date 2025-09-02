@@ -34,6 +34,8 @@ window.onload = function () {
   function fmtMoney(v) {
 
 // ==== MoM delta helpers ====
+return `${yy}
+// ==== MoM delta helpers ====
 function prevMonthStr(ym){
   const [y,m] = ym.split('-').map(Number);
   let yy = y, mm = m - 1;
@@ -50,6 +52,15 @@ function pctDelta(curr, prev){
 function fmtPct(p){
   const sign = (p>0?'+':'');
   return `${sign}${p.toFixed(1)}%`;
+}
+-${String(mm).padStart(2,'0')}`;
+}
+return ((c - p) / Math.abs(p)) * 100;
+}
+${p.toFixed(1)}%`;
+}
+// ==== MoM delta helpers ====
+  return ((c - p) / Math.abs(p)) * 100;
 }
 
     const n = Number(v);
