@@ -348,7 +348,6 @@ window.onload = function () {
   function syncTipoTabs() {
     qsa("#tipoTabs button").forEach(b =>
       b.classList.toggle("active", b.dataset.type === modalTipo)
-    );
     if (!S.editingId) {
       qs("#modalTitle").textContent = "Nova " + modalTipo;
     }
@@ -752,8 +751,6 @@ window.onload = function () {
     applyDelta(elDesDelta, dDes, false);  // subir despesa = ruim
     applyDelta(elSalDelta, dSal, true);   // subir saldo = bom
   }
-);
-  }
 
   let chartSaldo, chartPie, chartFluxo;
   function renderCharts() {
@@ -1095,7 +1092,6 @@ mesesDisponiveis.forEach(m => {
   // ========= EVENTOS =========
   qsa(".tab").forEach(btn =>
     btn.addEventListener("click", () => setTab(btn.dataset.tab))
-  );
 
   const fab = qs("#fab");
   if (fab) fab.onclick = () => toggleModal(true);
@@ -1117,7 +1113,6 @@ mesesDisponiveis.forEach(m => {
       modalTipo = b.dataset.type;
       syncTipoTabs();
     })
-  );
 
   const btnAddCat = qs("#addCat");
   if (btnAddCat) btnAddCat.onclick = async () => {
