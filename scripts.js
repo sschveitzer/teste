@@ -644,7 +644,7 @@ window.onload = function () {
         });
       chartPie = new Chart(ctxPie, {
         type: "pie",
-        data: { labels: Object.keys(porCat), datasets: [{ data: Object.values(porCat), backgroundColor: Object.keys(porCat).map(()=> cssVar('--brand')) }] },
+        data: { labels: Object.keys(porCat), datasets: [{ data: Object.values(porCat), backgroundColor: Object.keys(porCat).map((_,i)=> `hsl(${Math.floor(i*360/Math.max(1,Object.keys(porCat).length))}, 70%, 60%)`) }] },
         options: { plugins: { tooltip: { callbacks: { label: (ctx)=> `${ctx.label}: ${BRL.format(ctx.parsed||0)}` } } } }
       });
     }
@@ -662,9 +662,10 @@ window.onload = function () {
           Number(x.valor) * (x.tipo === "Despesa" ? -1 : 1);
       });
       const labels = Object.keys(porMes).sort();
+      const fluxoVals = labels.map(l => porMes[l]);
       chartFluxo = new Chart(ctxFluxo, {
         type: "bar",
-        data: { labels, datasets: [{ label: "Fluxo", data: labels.map(l => porMes[l]), backgroundColor: labels.map(v=> cssVar('--brand')) }] },
+        data: { labels, datasets: [{ label: "Fluxo", data: fluxoVals, backgroundColor: fluxoVals.map(v => v >= 0 ? cssVar('--ok') : cssVar('--warn')) }] },
         options: { plugins: { tooltip: { callbacks: { label: (ctx)=> `${ctx.dataset.label}: ${BRL.format(ctx.parsed.y||0)}` } } } }
       });
     }
