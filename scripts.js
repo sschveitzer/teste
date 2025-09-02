@@ -1061,3 +1061,25 @@ window.onload = function () {
   // Start!
   loadAll();
 };
+// ====== Painel "Despesas do mês & divisão por 2" ======
+function computeMonthExpenses() {
+  const txMonth = (S.tx || []).filter(x => x.data && x.data.startsWith(S.month));
+  const despesas = txMonth
+    .filter(x => x.tipo === "Despesa")
+    .reduce((a, b) => a + (Number(b.valor) || 0), 0);
+  return despesas;
+}
+
+function renderSplitPanel() {
+  const totalEl = document.getElementById("splitTotal");
+  const halfEl  = document.getElementById("splitHalf");
+  if (!totalEl || !halfEl) return;
+
+  const total = computeMonthExpenses();
+  const half  = total / 2;
+
+  totalEl.textContent = fmtMoney(total);
+  halfEl.textContent  = fmtMoney(half);
+
+  [totalEl, halfEl].forEach(el => el.classList.toggle("blurred", !!S.hide));
+}
