@@ -39,29 +39,54 @@
     <!-- Dashboard -->
     <section id="dashboard" class="active">
       <div class="grid cards">
-        
-        
-        
+        <div class="card">
+          <div class="kpi earn">
+            <i class="ph ph-trend-up icon"></i>
+            <div><div class="muted">Receitas (mês)</div><div id="kpiReceitas" class="value">R$ 0,00</div></div>
+            <span class="chip" id="kpiReceitasDelta">+0.0%</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="kpi exp">
+            <i class="ph ph-trend-down icon"></i>
+            <div><div class="muted">Despesas (mês)</div><div id="kpiDespesas" class="value">R$ 0,00</div></div>
+            <span class="chip" id="kpiDespesasDelta">+0.0%</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="kpi balance">
+            <i class="ph ph-wallet icon"></i>
+            <div><div class="muted">Saldo (mês)</div><div id="kpiSaldo" class="value">R$ 0,00</div></div>
+            <span class="chip" id="kpiSaldoDelta">+0.0%</span>
+          </div>
+        </div>
       
-        
-      </div>
-      <div class="grid two" style="margin-top:16px">
-        
-        
-      </div>
-      
-<div class="kpi balance" style="border:1px solid var(--border); border-radius:12px; padding:12px">
-          <i class="ph ph-user icon"></i>
-          <div>
-            <div class="muted">Cada um (½)</div>
-            
+        <div class="card">
+          <div class="kpi balance">
+            <i class="ph ph-users-three icon"></i>
+            <div><div class="muted">Cada um (½)</div><div id="kpiSplit" class="value">R$ 0,00</div></div>
+            <span class="chip" id="kpiSplitHint">½ de despesas</span>
           </div>
         </div>
       </div>
-    </div>
-
-
-</section>
+      <div class="grid two" style="margin-top:16px">
+        <div class="card"><h3>Saldo acumulado (12 meses)</h3><canvas id="chartSaldo"></canvas></div>
+        <div class="card"><h3>Despesas por categoria</h3><canvas id="chartPie"></canvas></div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h3>Últimos lançamentos</h3>
+        <div style="display:flex;gap:10px;margin-bottom:10px">
+          <select id="filterTipo">
+            <option value="todos">Todos</option>
+            <option value="Receita">Receitas</option>
+            <option value="Despesa">Despesas</option>
+            <option value="Transferência">Transferências</option>
+          </select>
+          <input type="text" id="searchLanc" placeholder="Buscar...">
+        </div>
+        <ul id="listaRecentes" class="lanc-grid"></ul>
+      </div>
+    </section>
 
     <!-- Lançamentos -->
     <section id="lancamentos">
