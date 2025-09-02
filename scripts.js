@@ -124,7 +124,6 @@ window.onload = function () {
         if (b.dataset.pre === 'semanal-sexta'){ if (selPer) selPer.value='Semanal'; if (selDW) selDW.value='5'; }
         if (b.dataset.pre === 'anual-jan'){ if (selPer) selPer.value='Anual'; if (selM) selM.value='1'; if (inpDM) inpDM.value=1; if (chkAdj) chkAdj.checked=true; }
         syncRecurrenceVisibility();
-      });
     }
     syncRecurrenceVisibility();
   }
@@ -310,7 +309,6 @@ window.onload = function () {
       rebuildCatSelect();
       qs("#mDesc").value = "";
       qs("#mObs").value = "";
-      const selPayNew = qs("#mMeio"); if (selPayNew) selPayNew.value = "";
       qs("#mValorBig").value = "";
       modalTipo = "Despesa";
       syncTipoTabs();
@@ -349,7 +347,6 @@ window.onload = function () {
   function syncTipoTabs() {
   qsa("#tipoTabs button").forEach(b => {
     b.classList.toggle("active", b.dataset.type === modalTipo);
-  });
   if (!S.editingId) {
     qs("#modalTitle").textContent = "Nova " + modalTipo;
   }
@@ -366,14 +363,12 @@ window.onload = function () {
     o.textContent = c.nome;
     if (c.nome === selected) o.selected = true;
     sel.append(o);
-  });
-});
-  }
+};
+  
 
   // ========= TRANSAÇÕES =========
   async function addOrUpdate() {
     const valor = parseMoneyMasked(qs("#mValorBig").value);
-    const meioSel = (qs("#mMeio")?.value || "").toLowerCase();
     const t = {
       id: S.editingId || gid(),
       tipo: modalTipo,
@@ -381,7 +376,7 @@ window.onload = function () {
       data: isIsoDate(qs("#mData").value) ? qs("#mData").value : nowYMD(),
       descricao: (qs("#mDesc").value || "").trim(),
       valor: isFinite(valor) ? valor : 0,
-      obs: (encodePayTag(meioSel) + stripPayTag((qs("#mObs").value || "")).trim()).trim()
+      obs: (qs("#mObs").value || "").trim()
     };
     if (!t.categoria) return alert("Selecione categoria");
     if (!t.descricao) return alert("Descrição obrigatória");
@@ -523,7 +518,6 @@ window.onload = function () {
       o.value = c.nome; o.textContent = c.nome;
       if (S.lf.cat === c.nome) o.selected = true;
       selCat.appendChild(o);
-    });
 
     // valores atuais
     selTipo.value = S.lf.tipo;
@@ -593,8 +587,7 @@ el.insertAdjacentHTML('beforeend', mk('ph-trend-up','Receitas',rec,'var(--ok)'))
     qs("#mData").value = isIsoDate(x.data) ? x.data : nowYMD();
     qs("#mDesc").value = x.descricao || "";
     qs("#mValorBig").value = fmtMoney(Number(x.valor) || 0);
-    qs("#mObs").value = stripPayTag(x.obs || "");
-    const selPay = qs("#mMeio"); if (selPay) selPay.value = parsePay(x.obs || "") || "";
+    qs("#mObs").value = x.obs || "";
     qs("#modalTitle").textContent = "Editar lançamento";
 
     // Edição: esconde blocos de recorrência (edita só esta instância)
@@ -695,7 +688,6 @@ el.insertAdjacentHTML('beforeend', mk('ph-trend-up','Receitas',rec,'var(--ok)'))
       li.appendChild(left);
       li.appendChild(right);
       ul.appendChild(li);
-    });
   }
 
   // ========= RELATÓRIOS / KPIs / GRÁFICOS EXISTENTES =========
@@ -720,7 +712,6 @@ el.insertAdjacentHTML('beforeend', mk('ph-trend-up','Receitas',rec,'var(--ok)'))
 
     [kpiReceitas, kpiDespesas, kpiSaldo, kpiSplit].forEach(el => {
       if (el) el.classList.toggle("blurred", S.hide);
-    });
 
     // --- Month-over-month deltas ---
     const prevYM = prevMonthStr(S.month);
@@ -783,7 +774,6 @@ el.insertAdjacentHTML('beforeend', mk('ph-trend-up','Receitas',rec,'var(--ok)'))
       chartSaldo = new Chart(ctxSaldo, {
         type: "line",
         data: { labels: months, datasets: [{ label: "Saldo", data: saldoData }] }
-      });
     }
 
     // Pizza por categoria (mês atual)
@@ -796,11 +786,9 @@ el.insertAdjacentHTML('beforeend', mk('ph-trend-up','Receitas',rec,'var(--ok)'))
         .filter(x => x.tipo === "Despesa")
         .forEach(x => {
           porCat[x.categoria] = (porCat[x.categoria] || 0) + Number(x.valor);
-        });
       chartPie = new Chart(ctxPie, {
         type: "pie",
         data: { labels: Object.keys(porCat), datasets: [{ data: Object.values(porCat) }] }
-      });
     }
 
     // Fluxo por mês
@@ -814,7 +802,6 @@ el.insertAdjacentHTML('beforeend', mk('ph-trend-up','Receitas',rec,'var(--ok)'))
         porMes[ym] =
           (porMes[ym] || 0) +
           Number(x.valor) * (x.tipo === "Despesa" ? -1 : 1);
-      });
       const labels = Object.keys(porMes).sort();
       chartFluxo = new Chart(ctxFluxo, {
         type: "bar",
@@ -822,7 +809,6 @@ el.insertAdjacentHTML('beforeend', mk('ph-trend-up','Receitas',rec,'var(--ok)'))
           labels,
           datasets: [{ label: "Fluxo", data: labels.map(l => porMes[l]) }]
         }
-      });
     }
   }
 
@@ -852,10 +838,8 @@ mesesDisponiveis.forEach(m => {
       opt.textContent = new Date(ano, mes - 1, 1).toLocaleDateString("pt-BR", {
         month: "long",
         year: "numeric"
-      });
       if (m === S.month) opt.selected = true;
       sel.append(opt);
-    });
     sel.onchange = () => {
       S.month = sel.value;
       savePrefs();
@@ -917,7 +901,6 @@ mesesDisponiveis.forEach(m => {
       if (dt >= from && dt <= cutoff) {
         sum[x.categoria] = (sum[x.categoria]||0) + (Number(x.valor)||0);
       }
-    });
     const rows = Object.entries(sum)
       .sort((a,b)=>b[1]-a[1])
       .slice(0,limit);
@@ -929,7 +912,6 @@ mesesDisponiveis.forEach(m => {
         const tr = document.createElement('tr');
         tr.innerHTML = `<td>${cat||'-'}</td><td>${fmtMoney(total)}</td>`;
         tbody.appendChild(tr);
-      });
     }
   }
 
@@ -943,8 +925,6 @@ mesesDisponiveis.forEach(m => {
           const k = x.categoria || '(sem categoria)';
           byCatMonth[k] = byCatMonth[k] || {};
           byCatMonth[k][m] = (byCatMonth[k][m]||0) + (Number(x.valor)||0);
-        });
-    });
     const medias = Object.entries(byCatMonth).map(([cat, map])=>{
       const tot = months.reduce((a,m)=>a+(map[m]||0),0);
       return [cat, tot/windowMonths];
@@ -957,7 +937,6 @@ mesesDisponiveis.forEach(m => {
         const tr = document.createElement('tr');
         tr.innerHTML = `<td>${cat}</td><td>${fmtMoney(avg)}</td>`;
         tbody.appendChild(tr);
-      });
     }
   }
 
@@ -1000,7 +979,6 @@ mesesDisponiveis.forEach(m => {
       const a = Math.max(0,i-2);
       const slice = serie.slice(a,i+1);
       return slice.reduce((x,y)=>x+y,0)/slice.length;
-    });
 
     chartForecast = new Chart(ctx, {
       type: 'line',
@@ -1014,7 +992,6 @@ mesesDisponiveis.forEach(m => {
           { label:'Média móvel (3m)', data: ma }
         ]
       }
-    });
   }
 
   // Heatmap de gastos por dia do mês
@@ -1030,7 +1007,6 @@ mesesDisponiveis.forEach(m => {
       if (!x.data.startsWith(ym)) return;
       const d = Number(x.data.slice(8,10));
       gastosPorDia[d-1] += Number(x.valor)||0;
-    });
 
     const max = Math.max(...gastosPorDia, 0);
     wrap.innerHTML = '';
@@ -1042,7 +1018,6 @@ mesesDisponiveis.forEach(m => {
       h.textContent = lbl;
       h.style.fontWeight = '700';
       wrap.appendChild(h);
-    });
 
     // Células
     for (let d=1; d<=days; d++){
@@ -1098,7 +1073,6 @@ mesesDisponiveis.forEach(m => {
   // ========= EVENTOS =========
   qsa(".tab").forEach(btn =>
     btn.addEventListener("click", () => setTab(btn.dataset.tab))
-  );
 
   const fab = qs("#fab");
   if (fab) fab.onclick = () => toggleModal(true);
@@ -1120,7 +1094,6 @@ mesesDisponiveis.forEach(m => {
       modalTipo = b.dataset.type;
       syncTipoTabs();
     })
-  );
 
   const btnAddCat = qs("#addCat");
   if (btnAddCat) btnAddCat.onclick = async () => {
@@ -1142,7 +1115,6 @@ mesesDisponiveis.forEach(m => {
       S.dark = !!btnDark.checked;
       document.body.classList.toggle("dark", S.dark);
       await savePrefs();
-    });
     // clique também alterna (para botões sem checkbox)
     btnDark.addEventListener('click', async (e) => {
       if (btnDark.tagName === 'BUTTON') {
@@ -1150,7 +1122,6 @@ mesesDisponiveis.forEach(m => {
         document.body.classList.toggle("dark", S.dark);
         await savePrefs();
       }
-    });
   }
 
   // Suporta #toggleHide (novo) e #cfgHide (antigo)
@@ -1169,7 +1140,6 @@ mesesDisponiveis.forEach(m => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
         setTab('config');
-      });
     }
   }
   wireBtnConfig();
@@ -1179,7 +1149,6 @@ mesesDisponiveis.forEach(m => {
       e.preventDefault();
       setTab('config');
     }
-  });
 
   // Recorrência: mostrar/ocultar campos conforme checkbox/periodicidade
   const chkRepetir = qs("#mRepetir");
@@ -1222,7 +1191,6 @@ mesesDisponiveis.forEach(m => {
           setAmount();
           e.preventDefault();
         }
-      });
       valorInput.addEventListener('input', (e) => {
         const d = (e.data ?? '').replace(/\D/g,'');
         if (d) {
@@ -1235,15 +1203,11 @@ mesesDisponiveis.forEach(m => {
         requestAnimationFrame(() => {
           const len = valorInput.value.length;
           valorInput.setSelectionRange(len,len);
-        });
-      });
       valorInput.addEventListener('focus', () => {
         if (!valorInput.value) setAmount();
         requestAnimationFrame(() => {
           const len = valorInput.value.length;
           valorInput.setSelectionRange(len,len);
-        });
-      });
     }
 
     // validate before save
@@ -1273,7 +1237,6 @@ mesesDisponiveis.forEach(m => {
           e.preventDefault();
           btnCancelar?.click();
         }
-      });
 
       // Trap de foco + Tab
       dialog.addEventListener('keydown', (e) => {
@@ -1285,10 +1248,9 @@ mesesDisponiveis.forEach(m => {
         const last = focusables[focusables.length - 1];
         if (e.shiftKey && document.activeElement === first) { last.focus(); e.preventDefault(); }
         else if (!e.shiftKey && document.activeElement === last) { first.focus(); e.preventDefault(); }
-      });
     }
   })();
 
   // Start!
   loadAll();
-};
+;
