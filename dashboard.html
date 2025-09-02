@@ -98,6 +98,31 @@
           <table id="tblTop"><thead><tr><th>Categoria</th><th>Total</th></tr></thead><tbody></tbody></table>
         </div>
       </div>
+
+      <div class="grid two" style="margin-top:16px">
+  <div class="card">
+    <h3>Tendência & Previsão</h3>
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
+      <span class="tag">Projeção do saldo no fim do mês</span>
+      <strong id="kpiForecastFinal" style="font-size:16px">–</strong>
+    </div>
+    <canvas id="chartForecast" height="160"></canvas>
+  </div>
+
+  <div class="card">
+    <h3>Média de gastos por categoria (6 meses)</h3>
+    <table id="tblMediaCats">
+      <thead><tr><th>Categoria</th><th>Média mensal</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <h3>Heatmap de despesas (mês atual)</h3>
+  <div id="heatmap" class="heatmap"></div>
+</div>
+      
     </section>
 
     <!-- Config -->
