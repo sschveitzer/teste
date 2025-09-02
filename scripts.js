@@ -1,6 +1,10 @@
 var S;
 if (!S) S = {};
 if (!S.lf) S.lf = { tipo:'todos', cat:'todas', q:'', sort:'data_desc', compact:false };
+// ==== Query helpers ====
+const qs  = (sel, ctx=document) => ctx.querySelector(sel);
+const qsa = (sel, ctx=document) => Array.from(ctx.querySelectorAll(sel));
+const $on = (el, ev, fn) => el && el.addEventListener(ev, fn);
 window.onload = function () {
   // Usa o supabase já criado no dashboard.html
   const supabaseClient = window.supabaseClient || supabase;
