@@ -1,3 +1,10 @@
+// garante que o seletor abra no mês atual se não houver um mês salvo
+if (!S.month) {
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = String(today.getMonth() + 1).padStart(2, "0");
+  S.month = `${y}-${m}`;
+}
 window.onload = function () {
   // Usa o supabase já criado no dashboard.html
   const supabaseClient = window.supabaseClient || supabase;
