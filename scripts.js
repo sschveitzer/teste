@@ -31,6 +31,12 @@ window.onload = function () {
   function isIsoDate(s) {
     return /^\d{4}-\d{2}-\d{2}$/.test(s);
   }
+  
+  function cssVar(name){
+    return getComputedStyle(document.body).getPropertyValue(name).trim();
+  }
+  const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
   function fmtMoney(v) {
     const n = Number(v);
     return isFinite(n)
@@ -399,26 +405,31 @@ window.onload = function () {
     }
   }
 
+  
   function itemTx(x, readOnly = false) {
     const li = document.createElement("li");
     li.className = "item";
+    li.setAttribute('data-tipo', x.tipo);
     const v = isFinite(Number(x.valor)) ? Number(x.valor) : 0;
+
+    const tipoIcon = x.tipo === "Receita" ? "ph-trend-up" : (x.tipo === "Transferência" ? "ph-arrows-left-right" : "ph-trend-down");
     const actions = readOnly
       ? ""
       : `
-        <button class="icon edit" title="Editar"><i class="ph ph-pencil-simple"></i></button>
-        <button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button>`;
+        <button class="icon edit" title="Editar" aria-label="Editar lançamento"><i class="ph ph-pencil-simple" aria-hidden="true"></i></button>
+        <button class="icon del" title="Excluir" aria-label="Excluir lançamento"><i class="ph ph-trash" aria-hidden="true"></i></button>`;
+
     li.innerHTML = `
-      <div class="left">
-        <div class="tag">${x.tipo}</div>
-        <div>
-          <div><strong>${x.descricao || "-"}</strong></div>
-          <div class="muted" style="font-size:12px">${x.categoria} • ${x.data}</div>
-        </div>
+      <div class="left l-left">
+        <div class="chip"><i class="ph ${tipoIcon}"></i> ${x.tipo}</div>
+        <div class="titulo clamp-2"><strong>${x.descricao || "-"}</strong></div>
+        <div class="subinfo muted">${x.categoria || '-'} • ${x.data || ''}</div>
       </div>
-      <div style="display:flex;gap:6px;align-items:center">
-        <div class="${S.hide ? "blurred" : ""}" style="font-weight:700">${fmtMoney(v)}</div>${actions}
+      <div class="right">
+        <div class="${S.hide ? "blurred" : ""} valor" style="font-weight:800">${fmtMoney(v)}</div>
+        ${actions}
       </div>`;
+
     if (!readOnly) {
       const btnEdit = li.querySelector(".edit");
       const btnDel  = li.querySelector(".del");
@@ -615,7 +626,8 @@ window.onload = function () {
       }
       chartSaldo = new Chart(ctxSaldo, {
         type: "line",
-        data: { labels: months, datasets: [{ label: "Saldo", data: saldoData }] }
+        data: { labels: months, datasets: [{ label: "Saldo", data: saldoData, borderColor: cssVar('--brand'), backgroundColor: cssVar('--chip') }] },
+        options: { plugins: { tooltip: { callbacks: { label: (ctx)=> `${ctx.dataset.label}: ${BRL.format(ctx.parsed.y||0)}` } } } }
       });
     }
 
@@ -632,7 +644,8 @@ window.onload = function () {
         });
       chartPie = new Chart(ctxPie, {
         type: "pie",
-        data: { labels: Object.keys(porCat), datasets: [{ data: Object.values(porCat) }] }
+        data: { labels: Object.keys(porCat), datasets: [{ data: Object.values(porCat), backgroundColor: Object.keys(porCat).map(()=> cssVar('--brand')) }] },
+        options: { plugins: { tooltip: { callbacks: { label: (ctx)=> `${ctx.label}: ${BRL.format(ctx.parsed||0)}` } } } }
       });
     }
 
@@ -651,10 +664,8 @@ window.onload = function () {
       const labels = Object.keys(porMes).sort();
       chartFluxo = new Chart(ctxFluxo, {
         type: "bar",
-        data: {
-          labels,
-          datasets: [{ label: "Fluxo", data: labels.map(l => porMes[l]) }]
-        }
+        data: { labels, datasets: [{ label: "Fluxo", data: labels.map(l => porMes[l]), backgroundColor: labels.map(v=> cssVar('--brand')) }] },
+        options: { plugins: { tooltip: { callbacks: { label: (ctx)=> `${ctx.dataset.label}: ${BRL.format(ctx.parsed.y||0)}` } } } }
       });
     }
   }
@@ -817,15 +828,13 @@ mesesDisponiveis.forEach(m => {
     chartForecast = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: months.map(m=>{
-          const [Y,M]=m.split('-');
-          return new Date(Y, M-1, 1).toLocaleDateString('pt-BR',{month:'short'});
-        }),
+        labels: months.map(m=>{ const [Y,M]=m.split('-'); return new Date(Y, M-1, 1).toLocaleDateString('pt-BR',{month:'short'}); }),
         datasets: [
-          { label:'Saldo mensal', data: serie },
-          { label:'Média móvel (3m)', data: ma }
+          { label:'Saldo mensal', data: serie, borderColor: cssVar('--brand'), backgroundColor: cssVar('--chip') },
+          { label:'Média móvel (3m)', data: ma, borderColor: cssVar('--ok') }
         ]
-      }
+      },
+      options: { plugins: { tooltip: { callbacks: { label: (ctx)=> `${ctx.dataset.label}: ${BRL.format(ctx.parsed.y||0)}` } } } }
     });
   }
 
