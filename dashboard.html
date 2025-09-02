@@ -22,15 +22,15 @@
     <div class="wrap">
       <div class="badge"><i class="ph ph-wallet"></i> FinanceAPP <span style="opacity:.9;font-weight:600">V3.7.10</span></div>
       <div class="tabs">
-        <button class="tab active" data-tab="dashboard">Dashboard</button>
-        <button class="tab" data-tab="lancamentos">Lançamentos</button>
-<button class="tab" data-tab="relatorios">Relatórios</button>
+        <button class="tab active" data-tab="dashboard"><i class="ph ph-gauge"></i> Dashboard</button>
+        <button class="tab" data-tab="lancamentos"><i class="ph ph-list-bullets"></i> Lançamentos</button>
+<button class="tab" data-tab="relatorios"><i class="ph ph-chart-line-up"></i> Relatórios</button>
       </div>
       <div class="right">
         <select id="monthSelect" title="Mês"></select>
         <!-- Ícone de Config substitui os controles rápidos na topbar -->
-        <button class="icon" id="btnConfig" title="Configurações"><i class="ph ph-gear"></i></button>
-        <button class="icon" id="logoutBtn" title="Sair"><i class="ph ph-sign-out"></i></button>
+        <button class="icon" id="btnConfig" title="Configurações" aria-label="Abrir configurações"><i class="ph ph-gear" aria-hidden="true"></i></button>
+        <button class="icon" id="logoutBtn" title="Sair" aria-label="Sair"><i class="ph ph-sign-out" aria-hidden="true"></i></button>
       </div>
     </div>
   </div>
@@ -53,7 +53,7 @@
             <span class="chip" id="kpiDespesasDelta">+0.0%</span>
           </div>
         </div>
-        <div class="card">
+        <div class="card emphasis">
           <div class="kpi balance">
             <i class="ph ph-wallet icon"></i>
             <div><div class="muted">Saldo (mês)</div><div id="kpiSaldo" class="value">R$ 0,00</div></div>
@@ -172,7 +172,7 @@
     <div class="content" tabindex="-1">
       <div class="title">
         <h3 id="modalTitle">Nova Despesa</h3>
-        <button class="close icon" id="closeModal" aria-label="Fechar"><i class="ph ph-x"></i></button>
+        <button class="close icon" id="closeModal" aria-label="Fechar"><i class="ph ph-x" aria-hidden="true"></i></button>
       </div>
 
       <div class="amount-wrap">
@@ -296,7 +296,7 @@
   </div>
 
   <!-- Botão flutuante -->
-  <button class="fab" id="fab" title="Nova despesa"><i class="ph ph-plus"></i></button>
+  <button class="fab brand" id="fab" title="Novo lançamento" aria-label="Novo lançamento"><i class="ph ph-plus" aria-hidden="true"></i></button>
 
   <!-- JS: checagem de sessão -->
   <script>
