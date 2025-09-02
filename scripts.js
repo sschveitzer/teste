@@ -33,10 +33,8 @@ window.onload = function () {
   }
 function fmtMoney(v) {
   const n = Number(v);
-  return isFinite(n)
-    ? n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-    : 'R$ 0,00';
-}
+  return isFinite(n) ? n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00';
+
 // ==== MoM delta helpers (ensured) ====
 function prevMonthStr(ym){
   const [y,m] = ym.split('-').map(Number);
@@ -49,21 +47,22 @@ function pctDelta(curr, prev){
   if (p === 0){
     return null; // sem base
   }
+// ==== MoM delta helpers ====
+function prevMonthStr(ym){
+  const [y,m] = ym.split('-').map(Number);
+  let yy = y, mm = m - 1;
+  if (mm < 1){ mm = 12; yy -= 1; }
+  return `${yy}-${String(mm).padStart(2,'0')}`;
+}
+function pctDelta(curr, prev){
+  const c = Number(curr)||0, p = Number(prev)||0;
+  if (p === 0) return null;
   return ((c - p) / Math.abs(p)) * 100;
 }
 function fmtPct(p){
   const sign = (p>0?'+':'');
   return `${sign}${p.toFixed(1)}%`;
 }
-      : "R$ 0,00";
-  }
-
-  // ==== MoM delta helpers ====
-  function prevMonthStr(ym){
-    const [y,m] = ym.split('-').map(Number);
-    let yy = y, mm = m - 1;
-    if (mm < 1){ mm = 12; yy -= 1; }
-    return `${yy}-${String(mm).padStart(2,'0')}`;
   }
   function pctDelta(curr, prev){
     const c = Number(curr)||0, p = Number(prev)||0;
