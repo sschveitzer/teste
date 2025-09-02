@@ -1171,3 +1171,6 @@ mesesDisponiveis.forEach(m => {
   // Start!
   loadAll();
 };
+
+}
+
