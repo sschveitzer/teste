@@ -310,6 +310,7 @@ window.onload = function () {
       rebuildCatSelect();
       qs("#mDesc").value = "";
       qs("#mObs").value = "";
+      const selPayNew = qs("#mMeio"); if (selPayNew) selPayNew.value = "";
       qs("#mValorBig").value = "";
       modalTipo = "Despesa";
       syncTipoTabs();
@@ -372,6 +373,7 @@ window.onload = function () {
   // ========= TRANSAÇÕES =========
   async function addOrUpdate() {
     const valor = parseMoneyMasked(qs("#mValorBig").value);
+    const meioSel = (qs("#mMeio")?.value || "").toLowerCase();
     const t = {
       id: S.editingId || gid(),
       tipo: modalTipo,
@@ -379,7 +381,7 @@ window.onload = function () {
       data: isIsoDate(qs("#mData").value) ? qs("#mData").value : nowYMD(),
       descricao: (qs("#mDesc").value || "").trim(),
       valor: isFinite(valor) ? valor : 0,
-      obs: (qs("#mObs").value || "").trim()
+      obs: (encodePayTag(meioSel) + stripPayTag((qs("#mObs").value || "")).trim()).trim()
     };
     if (!t.categoria) return alert("Selecione categoria");
     if (!t.descricao) return alert("Descrição obrigatória");
@@ -591,7 +593,8 @@ el.insertAdjacentHTML('beforeend', mk('ph-trend-up','Receitas',rec,'var(--ok)'))
     qs("#mData").value = isIsoDate(x.data) ? x.data : nowYMD();
     qs("#mDesc").value = x.descricao || "";
     qs("#mValorBig").value = fmtMoney(Number(x.valor) || 0);
-    qs("#mObs").value = x.obs || "";
+    qs("#mObs").value = stripPayTag(x.obs || "");
+    const selPay = qs("#mMeio"); if (selPay) selPay.value = parsePay(x.obs || "") || "";
     qs("#modalTitle").textContent = "Editar lançamento";
 
     // Edição: esconde blocos de recorrência (edita só esta instância)
