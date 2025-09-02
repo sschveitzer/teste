@@ -60,6 +60,14 @@
             <span class="chip" id="kpiSaldoDelta">+0.0%</span>
           </div>
         </div>
+      
+        <div class="card">
+          <div class="kpi balance">
+            <i class="ph ph-users-three icon"></i>
+            <div><div class="muted">Cada um (½)</div><div id="kpiSplit" class="value">R$ 0,00</div></div>
+            <span class="chip" id="kpiSplitHint">–</span>
+          </div>
+        </div>
       </div>
       <div class="grid two" style="margin-top:16px">
         <div class="card"><h3>Saldo acumulado (12 meses)</h3><canvas id="chartSaldo"></canvas></div>
@@ -78,19 +86,7 @@
         </div>
         <ul id="listaRecentes" class="list"></ul>
       </div>
-    
-    <!-- Painel simples: Despesas do mês e divisão por 2 -->
-    <div class="card" id="painelSplit" style="margin-top:16px">
-      <h3>🏠 Despesas do mês & divisão</h3>
-      <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 12px; margin-top:8px">
-        <div class="kpi exp" style="border:1px solid var(--border); border-radius:12px; padding:12px">
-          <i class="ph ph-trend-down icon"></i>
-          <div>
-            <div class="muted">Despesas do mês</div>
-            <div id="splitTotal" class="value">R$ 0,00</div>
-          </div>
-        </div>
-        <div class="kpi balance" style="border:1px solid var(--border); border-radius:12px; padding:12px">
+<div class="kpi balance" style="border:1px solid var(--border); border-radius:12px; padding:12px">
           <i class="ph ph-user icon"></i>
           <div>
             <div class="muted">Cada um (½)</div>
