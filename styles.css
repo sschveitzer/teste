@@ -777,3 +777,28 @@ body.dark .error { background:#3b1f20; border-color:#ef4444; color:#fecaca; }
 @media (prefers-reduced-motion: reduce){
   #listaCats.cats-grid > li.item{ transition: none; }
 }
+
+
+/* Grid style for últimos gastos */
+#listaLanc.lanc-grid, #listaRecentes.lanc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  list-style: none;
+  margin: 0; padding: 0;
+}
+
+#listaRecentes.lanc-grid > li.item {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+
+#listaRecentes.lanc-grid > li.item:hover {
+  transform: translateY(-2px);
+}
