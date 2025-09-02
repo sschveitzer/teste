@@ -78,7 +78,30 @@
         </div>
         <ul id="listaRecentes" class="list"></ul>
       </div>
-    </section>
+    
+    <!-- Painel simples: Despesas do mês e divisão por 2 -->
+    <div class="card" id="painelSplit" style="margin-top:16px">
+      <h3>🏠 Despesas do mês & divisão</h3>
+      <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 12px; margin-top:8px">
+        <div class="kpi exp" style="border:1px solid var(--border); border-radius:12px; padding:12px">
+          <i class="ph ph-trend-down icon"></i>
+          <div>
+            <div class="muted">Despesas do mês</div>
+            <div id="splitTotal" class="value">R$ 0,00</div>
+          </div>
+        </div>
+        <div class="kpi balance" style="border:1px solid var(--border); border-radius:12px; padding:12px">
+          <i class="ph ph-user icon"></i>
+          <div>
+            <div class="muted">Cada um (½)</div>
+            <div id="splitHalf" class="value">R$ 0,00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+</section>
 
     <!-- Lançamentos -->
     <section id="lancamentos">
