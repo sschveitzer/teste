@@ -75,6 +75,11 @@ body {
   font-weight: 700;
   box-shadow: var(--shadow);
 }
+.badge img.logo {
+  height: 24px;   /* ajuste conforme tamanho desejado */
+  width: auto;
+  display: block;
+}
 
 .tabs {
   display: flex;
