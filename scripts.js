@@ -586,17 +586,21 @@ window.onload = function () {
     if (kpiSplit) kpiSplit.textContent = fmtMoney(despesas / 2);
     if (kpiSplitHint) kpiSplitHint.textContent = "½ de despesas";
 
-    [kpiReceitas, kpiDespesas, kpiSaldo, kpiSplit].forEach(el => {
-      if (el) el.classList.toggle("blurred", S.hide);// Percentual de Despesas sobre Receitas (chip #kpiDespesasPct)
+        [kpiReceitas, kpiDespesas, kpiSaldo, kpiSplit].forEach(el => {
+      if (el) el.classList.toggle("blurred", S.hide);
+    });
+
+    // Percentual de Despesas sobre Receitas (chip #kpiDespesasPct)
     const kpiDespesasPct = qs("#kpiDespesasPct");
     let pctDespesas = "—";
     if (receitas > 0) {
       const d = (despesas / receitas) * 100;
       pctDespesas = d.toFixed(1).replace(".", ",") + "%";
     }
-    if (kpiDespesasPct) kpiDespesasPct.textContent = pctDespesas;
-    if (kpiDespesasPct) kpiDespesasPct.classList.toggle("blurred", S.hide);
-});
+    if (kpiDespesasPct) {
+      kpiDespesasPct.textContent = pctDespesas;
+      kpiDespesasPct.classList.toggle("blurred", S.hide);
+    }
   }
 
   let chartSaldo, chartPie, chartFluxo;
