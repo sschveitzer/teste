@@ -68,7 +68,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(90deg, #8b5cf6, #7c3aed);
+  
   color: #fff;
   border-radius: 12px;
   padding: 8px 12px;
