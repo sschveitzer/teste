@@ -51,6 +51,7 @@
             <i class="ph ph-trend-down icon"></i>
             <div><div class="muted">Despesas (mês)</div><div id="kpiDespesas" class="value">R$ 0,00</div></div>
             <span class="chip" id="kpiDespesasDelta" title="Variação vs mês anterior">—</span>
+            <span class="chip" id="kpiDespesasPct" title="Despesas / Receitas">—</span>
           </div>
         </div>
         <div class="card">
@@ -334,6 +335,42 @@
   </script>
   
   <!-- JS -->
-  <script src="scripts.js"></script>
+  <script src="scripts.js"></script><script>
+(function(){
+  function parseBRL(s){
+    if (!s) return 0;
+    s = String(s)
+      .replace(/\u00A0/g, ' ') // NBSP -> space
+      .replace(/[^\d,.-]/g, '') // keep digits, comma, dot, minus
+      .replace(/\./g, '')       // remove thousands dot
+      .replace(',', '.');        // decimal comma -> dot
+    var v = parseFloat(s);
+    return isNaN(v) ? 0 : v;
+  }
+  function updatePct(){
+    var recEl = document.getElementById('kpiReceitas');
+    var desEl = document.getElementById('kpiDespesas');
+    var pctEl = document.getElementById('kpiDespesasPct');
+    if (!recEl || !desEl || !pctEl) return;
+    var rec = parseBRL(recEl.textContent);
+    var des = parseBRL(desEl.textContent);
+    var pct = (rec > 0) ? (des / rec * 100) : null;
+    pctEl.textContent = (pct !== null) ? (pct.toFixed(1).replace('.', ',') + '%') : '—';
+    var hide = recEl.classList.contains('blurred') || desEl.classList.contains('blurred');
+    pctEl.classList.toggle('blurred', hide);
+  }
+  function observe(el){
+    if (!el || !window.MutationObserver) return;
+    var obs = new MutationObserver(function(){ updatePct(); });
+    obs.observe(el, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+  }
+  document.addEventListener('DOMContentLoaded', function(){
+    updatePct();
+    observe(document.getElementById('kpiReceitas'));
+    observe(document.getElementById('kpiDespesas'));
+  });
+  window.addEventListener('load', updatePct);
+})();
+</script>
 </body>
 </html>
