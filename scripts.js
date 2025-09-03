@@ -591,12 +591,17 @@ window.onload = function () {
 
     // Percentuais (Despesas/Receitas e Saldo/Receitas)
     const kpiDespesasPct = qs("#kpiDespesasPct");
-let pctDespesas = "—";
-if (receitas > 0) {
-  const d = (despesas / receitas) * 100;
-  pctDespesas = d.toFixed(1).replace(".", ",") + "%";
-}
-if (kpiDespesasPct) kpiDespesasPct.textContent = pctDespesas;
+    const kpiSaldoPct = qs("#kpiSaldoPct");
+    let pctDespesas = "—";
+    let pctSaldo = "—";
+    if (receitas > 0) {
+      const d = (despesas / receitas) * 100;
+      const s = (saldo / receitas) * 100;
+      pctDespesas = d.toFixed(1).replace(".", ",") + "%";
+      pctSaldo = s.toFixed(1).replace(".", ",") + "%";
+    }
+    if (kpiDespesasPct) kpiDespesasPct.textContent = pctDespesas;
+    if (kpiSaldoPct) kpiSaldoPct.textContent = pctSaldo;
     [kpiDespesasPct, kpiSaldoPct].forEach(el => {
       if (el) el.classList.toggle("blurred", S.hide);
     });
