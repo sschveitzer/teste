@@ -588,6 +588,23 @@ window.onload = function () {
 
     [kpiReceitas, kpiDespesas, kpiSaldo, kpiSplit].forEach(el => {
       if (el) el.classList.toggle("blurred", S.hide);
+
+    // Percentuais (Despesas/Receitas e Saldo/Receitas)
+    const kpiDespesasPct = qs("#kpiDespesasPct");
+    const kpiSaldoPct = qs("#kpiSaldoPct");
+    let pctDespesas = "—";
+    let pctSaldo = "—";
+    if (receitas > 0) {
+      const d = (despesas / receitas) * 100;
+      const s = (saldo / receitas) * 100;
+      pctDespesas = d.toFixed(1).replace(".", ",") + "%";
+      pctSaldo = s.toFixed(1).replace(".", ",") + "%";
+    }
+    if (kpiDespesasPct) kpiDespesasPct.textContent = pctDespesas;
+    if (kpiSaldoPct) kpiSaldoPct.textContent = pctSaldo;
+    [kpiDespesasPct, kpiSaldoPct].forEach(el => {
+      if (el) el.classList.toggle("blurred", S.hide);
+    });
     });
   }
 
