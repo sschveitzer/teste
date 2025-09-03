@@ -626,20 +626,7 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
     // Aplica "blurred" só nos valores principais
     [kpiReceitas, kpiDespesas, kpiSaldo, kpiSplit].forEach(el => {
       if (el) el.classList.toggle("blurred", S.hide);
-    });
-
-    // Percentual de Despesas sobre Receitas (chip #kpiDespesasPct)
-    let pctDespesas = "—";
-    if (receitas > 0) {
-      const d = (despesas / receitas) * 100;
-      pctDespesas = d.toFixed(1).replace(".", ",") + "%";
-    }
-    if (kpiDespesasPct) {
-      kpiDespesasPct.textContent = pctDespesas;
-      kpiDespesasPct.classList.toggle("blurred", S.hide);
-    }
-  
-    });
+});
 
     // Percentual de Despesas sobre Receitas (chip #kpiDespesasPct)
     const kpiDespesasPct = qs("#kpiDespesasPct");
