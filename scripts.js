@@ -587,24 +587,7 @@ window.onload = function () {
     if (kpiSplitHint) kpiSplitHint.textContent = "½ de despesas";
 
     [kpiReceitas, kpiDespesas, kpiSaldo, kpiSplit].forEach(el => {
-      if (el) el.classList.toggle("blurred", S.hide);
-
-    // Percentuais (Despesas/Receitas e Saldo/Receitas)
-    const kpiDespesasPct = qs("#kpiDespesasPct");
-    let pctDespesas = "—";
-    if (receitas > 0) {
-      const d = (despesas / receitas) * 100;
-      const s = (saldo / receitas) * 100;
-      pctDespesas = d.toFixed(1).replace(".", ",") + "%";
-       = s.toFixed(1).replace(".", ",") + "%";
-    }
-    if (kpiDespesasPct) kpiDespesasPct.textContent = pctDespesas;
-    [kpiDespesasPct, ].forEach(el => {
-      if (el) el.classList.toggle("blurred", S.hide);
-    });
-    
-
-    // Percentual de Despesas sobre Receitas (chip #kpiDespesasPct)
+      if (el) el.classList.toggle("blurred", S.hide);// Percentual de Despesas sobre Receitas (chip #kpiDespesasPct)
     const kpiDespesasPct = qs("#kpiDespesasPct");
     let pctDespesas = "—";
     if (receitas > 0) {
