@@ -50,7 +50,21 @@ window.onload = function () {
   function lastDayOfMonth(y, m) {
     return new Date(y, m, 0).getDate(); // m = 1..12
   }
-  function incMonthly(ymd, diaMes, ajusteFimMes = true) {
+  
+
+  // Retorna "YYYY-MM" do mês anterior ao fornecido (também "YYYY-MM")
+  function prevYM(ym) {
+    try {
+      const [y, m] = ym.split("-").map(Number);
+      const d = new Date(y, (m - 1) - 1, 1);
+      return d.toISOString().slice(0, 7);
+    } catch (e) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - 1);
+      return d.toISOString().slice(0, 7);
+    }
+  }
+function incMonthly(ymd, diaMes, ajusteFimMes = true) {
     const [y, m] = ymd.split("-").map(Number);
     let yy = y, mm = m + 1;
     if (mm > 12) { mm = 1; yy += 1; }
@@ -564,30 +578,67 @@ window.onload = function () {
 
   // ========= RELATÓRIOS / KPIs / GRÁFICOS EXISTENTES =========
   function updateKpis() {
+    // Transações do mês selecionado
     const txMonth = S.tx.filter(x => x.data && x.data.startsWith(S.month));
-    const receitas = txMonth
-      .filter(x => x.tipo === "Receita")
-      .reduce((a, b) => a + Number(b.valor), 0);
-    const despesas = txMonth
-      .filter(x => x.tipo === "Despesa")
-      .reduce((a, b) => a + Number(b.valor), 0);
+    const receitas = txMonth.filter(x => x.tipo === "Receita").reduce((a, b) => a + Number(b.valor), 0);
+    const despesas = txMonth.filter(x => x.tipo === "Despesa").reduce((a, b) => a + Number(b.valor), 0);
     const saldo = receitas - despesas;
 
+    // Elementos de KPI
     const kpiReceitas = qs("#kpiReceitas");
     const kpiDespesas = qs("#kpiDespesas");
     const kpiSaldo = qs("#kpiSaldo");
     const kpiSplit = qs("#kpiSplit");
     const kpiSplitHint = qs("#kpiSplitHint");
 
+    // Atualiza números
     if (kpiReceitas) kpiReceitas.textContent = fmtMoney(receitas);
     if (kpiDespesas) kpiDespesas.textContent = fmtMoney(despesas);
     if (kpiSaldo) kpiSaldo.textContent = fmtMoney(saldo);
-
     if (kpiSplit) kpiSplit.textContent = fmtMoney(despesas / 2);
     if (kpiSplitHint) kpiSplitHint.textContent = "½ de despesas";
 
-        [kpiReceitas, kpiDespesas, kpiSaldo, kpiSplit].forEach(el => {
+    // --- Variação vs mês anterior (em %) ---
+    const ymPrev = prevYM(S.month);
+    const txPrev = S.tx.filter(x => x.data && x.data.startsWith(ymPrev));
+    const receitasPrev = txPrev.filter(x => x.tipo === "Receita").reduce((a, b) => a + Number(b.valor), 0);
+    const despesasPrev = txPrev.filter(x => x.tipo === "Despesa").reduce((a, b) => a + Number(b.valor), 0);
+    const saldoPrev = receitasPrev - despesasPrev;
+
+    function formatDeltaPct(cur, prev) {
+      if (prev > 0) {
+        const pct = ((cur - prev) / prev) * 100;
+        return pct.toFixed(1).replace(".", ",") + "%";
+      }
+      return "—";
+    }
+    function setChip(id, val) {
+      const el = qs(id);
+      if (el) {
+        el.textContent = val;
+        el.classList.toggle("blurred", S.hide);
+      }
+    }
+    setChip("#kpiReceitasDelta", formatDeltaPct(receitas, receitasPrev));
+    setChip("#kpiDespesasDelta", formatDeltaPct(despesas, despesasPrev));
+    setChip("#kpiSaldoDelta", formatDeltaPct(saldo, saldoPrev));
+
+    // Aplica "blurred" só nos valores principais
+    [kpiReceitas, kpiDespesas, kpiSaldo, kpiSplit].forEach(el => {
       if (el) el.classList.toggle("blurred", S.hide);
+    });
+
+    // Percentual de Despesas sobre Receitas (chip #kpiDespesasPct)
+    let pctDespesas = "—";
+    if (receitas > 0) {
+      const d = (despesas / receitas) * 100;
+      pctDespesas = d.toFixed(1).replace(".", ",") + "%";
+    }
+    if (kpiDespesasPct) {
+      kpiDespesasPct.textContent = pctDespesas;
+      kpiDespesasPct.classList.toggle("blurred", S.hide);
+    }
+  
     });
 
     // Percentual de Despesas sobre Receitas (chip #kpiDespesasPct)
