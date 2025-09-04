@@ -648,7 +648,7 @@ window.onload = function () {
   // ========= RELATÓRIOS / KPIs / GRÁFICOS EXISTENTES =========
   function updateKpis() {
     // Transações do mês selecionado
-    const txMonth = (S.tx || []).filter(x => x.data && inSelectedMonth(x)));
+    const txMonth = (S.tx || []).filter(x => x.data && inSelectedMonth(x));
     const receitas = txMonth.filter(x => x.tipo === "Receita").reduce((a, b) => a + Number(b.valor), 0);
     const despesas = txMonth.filter(x => x.tipo === "Despesa").reduce((a, b) => a + Number(b.valor), 0);
     const saldo = receitas - despesas;
@@ -738,7 +738,7 @@ window.onload = function () {
     if (chartPie) chartPie.destroy();
     const ctxPie = qs("#chartPie");
     if (ctxPie && window.Chart) {
-      const txMonth = (S.tx || []).filter(x => x.data && inSelectedMonth(x)));
+      const txMonth = (S.tx || []).filter(x => x.data && inSelectedMonth(x));
       const porCat = {};
       txMonth.filter(x => x.tipo === "Despesa").forEach(x => {
         porCat[x.categoria] = (porCat[x.categoria] || 0) + Number(x.valor);
