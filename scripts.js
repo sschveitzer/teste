@@ -912,7 +912,9 @@ const qs = s => document.querySelector(s);
       // Remove duplicatas novamente por segurança mantendo ordem
       const seen = new Set(); 
       for (let i = 0; i < mesesDisponiveis.length; i++) {
-        if (seen.has(mesesDisponiveis[i])) { mesesDisponiveis.splice(i,1); i--; } else { seen.add(mesesDisponiveis[i]); }))();
+        if (seen.has(mesesDisponiveis[i])) { mesesDisponiveis.splice(i,1); i--; } else { seen.add(mesesDisponiveis[i]); }
+      }
+    })();
 mesesDisponiveis.forEach(m => {
       const opt = document.createElement("option");
       opt.value = m;
@@ -1166,7 +1168,8 @@ function render() {
 
   // ========= EVENTOS =========
   qsa(".tab").forEach(btn =>
-    btn.addEventListener("click", () => setTab(btn.dataset.tab));
+    btn.addEventListener("click", () => setTab(btn.dataset.tab))
+  );
 
   const fab = qs("#fab");
   if (fab) fab.onclick = () => toggleModal(true);
@@ -1558,7 +1561,8 @@ function render() {
       ensureChart('chartFluxo2', {
         type:'bar',
         data:{ labels, datasets:[{ label:'Fluxo', data: labels.map(l=>byYM[l]) }] },
-        options:{ scales:{ x:{ grid:{ color: theme.grid } }, y:{ grid:{ color: theme.grid } } }));
+        options:{ scales:{ x:{ grid:{ color: theme.grid } }, y:{ grid:{ color: theme.grid } } } }
+      });
     }
 
     // ==== Pie categorias (despesas)
@@ -1586,7 +1590,7 @@ function render() {
       const ma = vals.map((_,i)=>{ const a=vals[Math.max(0,i-2)]||0, b=vals[Math.max(0,i-1)]||0, c=vals[i]||0; const n = i<2? (i+1):3; return (a+b+c)/n; });
       ensureChart('chartForecast2', { type:'line', data:{ labels, datasets:[
         { label:'Fluxo', data: vals }, { label:'Tendência (MM3)', data: ma }
-      ] }, options:{ scales:{ x:{ grid:{ color: theme.grid } }, y:{ grid:{ color: theme.grid } } }));
+      ] }, options:{ scales:{ x:{ grid:{ color: theme.grid } }, y:{ grid:{ color: theme.grid } } } } });
       const kpi = document.getElementById('kpiForecastFinal2'); if (kpi){
         const last = vals.at(-1)||0; kpi.textContent = last.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
       }
@@ -1613,7 +1617,7 @@ function render() {
       const months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
       const labels = months.map(m=>m);
       const ds = years.map(y=>({ label:y, data: months.map(m=> byYearMonth[`${y}-${m}`]||0) }));
-      ensureChart('chartYoY', { type:'bar', data:{ labels, datasets: ds }, options:{ scales:{ x:{ stacked:false, grid:{ color: theme.grid } }, y:{ grid:{ color: theme.grid } } }));
+      ensureChart('chartYoY', { type:'bar', data:{ labels, datasets: ds }, options:{ scales:{ x:{ stacked:false, grid:{ color: theme.grid } }, y:{ grid:{ color: theme.grid } } } } });
     }
 
     // ==== Receitas x Despesas (stacked)
@@ -1623,7 +1627,7 @@ function render() {
       const labels = Object.keys(byYM).sort();
       const rec = labels.map(l=> byYM[l].R);
       const des = labels.map(l=> -byYM[l].D);
-      ensureChart('chartRxV', { type:'bar', data:{ labels, datasets:[ {label:'Receitas', data:rec}, {label:'Despesas', data:des} ] }, options:{ scales:{ x:{ stacked:true, grid:{ color: theme.grid } }, y:{ stacked:true, grid:{ color: theme.grid } } }));
+      ensureChart('chartRxV', { type:'bar', data:{ labels, datasets:[ {label:'Receitas', data:rec}, {label:'Despesas', data:des} ] }, options:{ scales:{ x:{ stacked:true, grid:{ color: theme.grid } }, y:{ stacked:true, grid:{ color: theme.grid } } } } });
     }
 
     // ==== Heatmap reaproveitado
