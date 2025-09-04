@@ -3,19 +3,23 @@ window.onload = function () {
   const supabaseClient = window.supabaseClient || supabase;
 
   // ========= ESTADO GLOBAL =========
-let S = {
-  tx: [],
-  cats: [],
-  recs: [], // recorrências
-  metas: { total: 0, porCat: {} },
+  let S = {
+    tx: [],
+    cats: [],
+    recs: [], // recorrências
+    metas: { total: 0, porCat: {} },
+    month: null,
+    hide: false,
+    dark: false,
+    // Preferências de fatura
+    ccDueDay: null,
+    ccClosingDay: null,
+    editingId: null
+  };
 
-  // Preferências de fatura
-  ccDueDay: null,
-  ccClosingDay: null
-};
   // ========= HELPERS GERAIS =========
   function gid() {
-    return crypto.randomUUID();
+    return (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2);
   }
   function nowYMD() {
     const d = new Date();
@@ -35,7 +39,7 @@ let S = {
     const n = Number(v);
     return isFinite(n)
       ? n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-      : "R$ 0,00";
+      : "R$ 0,00";
   }
   function parseMoneyMasked(str) {
     if (!str) return 0;
@@ -50,7 +54,6 @@ let S = {
   function lastDayOfMonth(y, m) {
     return new Date(y, m, 0).getDate(); // m = 1..12
   }
-  
 
   // Retorna "YYYY-MM" do mês anterior ao fornecido (também "YYYY-MM")
   function prevYM(ym) {
@@ -64,7 +67,7 @@ let S = {
       return d.toISOString().slice(0, 7);
     }
   }
-function incMonthly(ymd, diaMes, ajusteFimMes = true) {
+  function incMonthly(ymd, diaMes, ajusteFimMes = true) {
     const [y, m] = ymd.split("-").map(Number);
     let yy = y, mm = m + 1;
     if (mm > 12) { mm = 1; yy += 1; }
@@ -72,9 +75,7 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
     const day = ajusteFimMes ? Math.min(diaMes, ld) : diaMes;
     return toYMD(new Date(yy, mm - 1, day));
   }
-  function incWeekly(ymd) {
-    return addDays(ymd, 7);
-  }
+  function incWeekly(ymd) { return addDays(ymd, 7); }
   function incYearly(ymd, diaMes, mes, ajusteFimMes = true) {
     const [y] = ymd.split("-").map(Number);
     const yy = y + 1;
@@ -83,83 +84,45 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
     return toYMD(new Date(yy, mes - 1, day));
   }
 
-  const qs = s => document.querySelector(s);
-  const qsa = s => Array.from(document.querySelectorAll(s));
+  const qs  = (s) => document.querySelector(s);
+  const qsa = (s) => Array.from(document.querySelectorAll(s));
 
   // ========= LOAD DATA =========
   async function loadAll() {
     // Transações
-    const { data: tx, error: txError } = await supabaseClient
-      .from("transactions")
-      .select("*");
-    if (txError) {
-      console.error("Erro ao carregar transações:", txError);
-      S.tx = [];
-    } else {
-      S.tx = tx || [];
-    }
+    const { data: tx, error: txError } = await supabaseClient.from("transactions").select("*");
+    if (txError) { console.error("Erro ao carregar transações:", txError); S.tx = []; }
+    else { S.tx = tx || []; }
 
     // Categorias
-    const { data: cats, error: catsError } = await supabaseClient
-      .from("categories")
-      .select("*");
-    if (catsError) {
-      console.error("Erro ao carregar categorias:", catsError);
-      S.cats = [];
-    } else {
-      S.cats = cats || [];
-    }
+    const { data: cats, error: catsError } = await supabaseClient.from("categories").select("*");
+    if (catsError) { console.error("Erro ao carregar categorias:", catsError); S.cats = []; }
+    else { S.cats = cats || []; }
 
     // Preferências (month, hide, dark)
     const { data: prefs, error: prefsError } = await supabaseClient
-      .from("preferences")
-      .select("*")
-      .eq("id", 1)
-      .maybeSingle();
-    if (prefsError) {
-      console.error("Erro ao carregar preferências:", prefsError);
-    }
+      .from("preferences").select("*").eq("id", 1).maybeSingle();
+    if (prefsError) { console.error("Erro ao carregar preferências:", prefsError); }
     if (prefs) {
       S.month = prefs.month ?? S.month;
-      S.hide = !!prefs.hide;
-      S.dark = !!prefs.dark;
-    
-    
-      // ENSURE_S_MONTH: garante mês atual como default se não houver salvo
-      if (!S.month) {
-        const today = new Date();
-        const y = today.getFullYear();
-        const m = String(today.getMonth() + 1).padStart(2, "0");
-        S.month = `${y
-  S.ccDueDay     = prefs.ccDueDay ?? null;
-  S.ccClosingDay = prefs.ccClosingDay ?? null;
-}-${m}`;
-      }
-// ENSURE_S_MONTH: garante mês atual como default se não houver salvo
+      S.hide  = !!prefs.hide;
+      S.dark  = !!prefs.dark;
+      S.ccDueDay     = prefs.ccDueDay ?? null;
+      S.ccClosingDay = prefs.ccClosingDay ?? null;
+    }
+
+    // Garante mês atual se não houver salvo
     if (!S.month) {
       const today = new Date();
       const y = today.getFullYear();
       const m = String(today.getMonth() + 1).padStart(2, "0");
       S.month = `${y}-${m}`;
     }
-}
-        try {
-      const dNow = new Date();
-      const cur = new Date(dNow.getTime() - dNow.getTimezoneOffset() * 60000).toISOString().slice(0,7);
-      S.month = cur;
-    } catch(e){}
-
 
     // Recorrências
-    const { data: recs, error: recErr } = await supabaseClient
-      .from("recurrences")
-      .select("*");
-    if (recErr) {
-      console.error("Erro ao carregar recorrências:", recErr);
-      S.recs = [];
-    } else {
-      S.recs = recs || [];
-    }
+    const { data: recs, error: recErr } = await supabaseClient.from("recurrences").select("*");
+    if (recErr) { console.error("Erro ao carregar recorrências:", recErr); S.recs = []; }
+    else { S.recs = recs || []; }
 
     // Materializa recorrências vencidas
     await applyRecurrences();
@@ -170,29 +133,19 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
   }
 
   // ========= SAVE =========
-  async function saveTx(t) {
-    return await supabaseClient.from("transactions").upsert([t]);
-  }
-  async function deleteTx(id) {
-    return await supabaseClient.from("transactions").delete().eq("id", id);
-  }
-  async function saveCat(c) {
-    return await supabaseClient.from("categories").upsert([c]);
-  }
-  async function deleteCat(nome) {
-    return await supabaseClient.from("categories").delete().eq("nome", nome);
-  }
+  async function saveTx(t)    { return await supabaseClient.from("transactions").upsert([t]); }
+  async function deleteTx(id) { return await supabaseClient.from("transactions").delete().eq("id", id); }
+  async function saveCat(c)   { return await supabaseClient.from("categories").upsert([c]); }
+  async function deleteCat(nome){ return await supabaseClient.from("categories").delete().eq("nome", nome); }
   async function savePrefs() {
-  await supabaseClient.from("preferences").upsert([{
-    id: 1,
-    month: S.month,
-    hide: S.hide,
-    dark: S.dark,
-    ccDueDay: S.ccDueDay,
-    ccClosingDay: S.ccClosingDay
-  }]);
-}
-]);
+    await supabaseClient.from("preferences").upsert([{
+      id: 1,
+      month: S.month,
+      hide: S.hide,
+      dark: S.dark,
+      ccDueDay: S.ccDueDay,
+      ccClosingDay: S.ccClosingDay
+    }]);
   }
 
   // Atualiza categoria nas transações (rename)
@@ -255,7 +208,7 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
       }
 
       if (changed) {
-        await saveRec({ r, proxima_data: next });
+        await supabaseClient.from("recurrences").update({ proxima_data: next }).eq("id", r.id);
       }
     }
 
@@ -272,17 +225,18 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
 
   function toggleModal(show, titleOverride) {
     const m = qs("#modalLanc");
+    if (!m) return;
     m.style.display = show ? "flex" : "none";
     document.body.classList.toggle("modal-open", !!show);
     if (show) {
-      qs("#mData").value = nowYMD();
+      const vData = qs("#mData"); if (vData) vData.value = nowYMD();
       rebuildCatSelect();
-      qs("#mDesc").value = "";
-      qs("#mObs").value = "";
-      qs("#mValorBig").value = "";
+      const vDesc = qs("#mDesc"); if (vDesc) vDesc.value = "";
+      const vObs  = qs("#mObs");  if (vObs)  vObs.value  = "";
+      const vVal  = qs("#mValorBig"); if (vVal) vVal.value = "";
       modalTipo = "Despesa";
       syncTipoTabs();
-      qs("#modalTitle").textContent = titleOverride || "Nova Despesa";
+      const ttl = qs("#modalTitle"); if (ttl) ttl.textContent = titleOverride || "Nova Despesa";
 
       // Reset de recorrência
       const chk = qs("#mRepetir");
@@ -293,20 +247,20 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
       }
       const inpIni = qs("#mInicio");
       const inpFim = qs("#mFim");
-      const inpDM = qs("#mDiaMes");
-      const selDW = qs("#mDiaSemana");
-      const selM = qs("#mMes");
+      const inpDM  = qs("#mDiaMes");
+      const selDW  = qs("#mDiaSemana");
+      const selM   = qs("#mMes");
       const selPer = qs("#mPeriodicidade");
       const chkAdj = qs("#mAjusteFimMes");
       if (inpIni) inpIni.value = nowYMD();
       if (inpFim) inpFim.value = "";
-      if (inpDM) inpDM.value = new Date().getDate();
-      if (selDW) selDW.value = String(new Date().getDay() || 1);
-      if (selM) selM.value = String(new Date().getMonth() + 1);
+      if (inpDM)  inpDM.value  = new Date().getDate();
+      if (selDW)  selDW.value  = String(new Date().getDay() || 1);
+      if (selM)   selM.value   = String(new Date().getMonth() + 1);
       if (selPer) selPer.value = "Mensal";
       if (chkAdj) chkAdj.checked = true;
 
-      setTimeout(() => qs("#mValorBig").focus(), 0);
+      setTimeout(() => qs("#mValorBig")?.focus(), 0);
     } else {
       S.editingId = null;
     }
@@ -314,11 +268,9 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
 
   let modalTipo = "Despesa";
   function syncTipoTabs() {
-    qsa("#tipoTabs button").forEach(b =>
-      b.classList.toggle("active", b.dataset.type === modalTipo)
-    );
+    qsa("#tipoTabs button").forEach(b => b.classList.toggle("active", b.dataset.type === modalTipo));
     if (!S.editingId) {
-      qs("#modalTitle").textContent = "Nova " + modalTipo;
+      const ttl = qs("#modalTitle"); if (ttl) ttl.textContent = "Nova " + modalTipo;
     }
   }
 
@@ -326,7 +278,7 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
     const sel = qs("#mCategoria");
     if (!sel) return;
     sel.innerHTML = '<option value="">Selecione…</option>';
-    S.cats.forEach(c => {
+    (S.cats || []).forEach(c => {
       const o = document.createElement("option");
       o.value = c.nome;
       o.textContent = c.nome;
@@ -337,15 +289,15 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
 
   // ========= TRANSAÇÕES =========
   async function addOrUpdate() {
-    const valor = parseMoneyMasked(qs("#mValorBig").value);
+    const valor = parseMoneyMasked(qs("#mValorBig")?.value);
     const t = {
       id: S.editingId || gid(),
       tipo: modalTipo,
-      categoria: qs("#mCategoria").value,
-      data: isIsoDate(qs("#mData").value) ? qs("#mData").value : nowYMD(),
-      descricao: (qs("#mDesc").value || "").trim(),
+      categoria: qs("#mCategoria")?.value || "",
+      data: isIsoDate(qs("#mData")?.value) ? qs("#mData").value : nowYMD(),
+      descricao: (qs("#mDesc")?.value || "").trim(),
       valor: isFinite(valor) ? valor : 0,
-      obs: (qs("#mObs").value || "").trim()
+      obs: (qs("#mObs")?.value || "").trim()
     };
     if (!t.categoria) return alert("Selecione categoria");
     if (!t.descricao) return alert("Descrição obrigatória");
@@ -359,14 +311,14 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
     }
 
     // Criar recorrência
-    const selPer = qs("#mPeriodicidade");
-    const per = selPer.value;
-    const diaMes = Number(qs("#mDiaMes").value) || new Date().getDate();
-    const dow = Number(qs("#mDiaSemana").value || 1);
-    const mes = Number(qs("#mMes").value || (new Date().getMonth() + 1));
-    const inicio = isIsoDate(qs("#mInicio").value) ? qs("#mInicio").value : nowYMD();
-    const fim = isIsoDate(qs("#mFim").value) ? qs("#mFim").value : null;
-    const ajuste = !!qs("#mAjusteFimMes").checked;
+    const perEl = qs("#mPeriodicidade");
+    const per = perEl ? perEl.value : "Mensal";
+    const diaMes = Number(qs("#mDiaMes")?.value) || new Date().getDate();
+    const dow    = Number(qs("#mDiaSemana")?.value || 1);
+    const mes    = Number(qs("#mMes")?.value || (new Date().getMonth() + 1));
+    const inicio = isIsoDate(qs("#mInicio")?.value) ? qs("#mInicio").value : nowYMD();
+    const fim    = isIsoDate(qs("#mFim")?.value) ? qs("#mFim").value : null;
+    const ajuste = !!qs("#mAjusteFimMes")?.checked;
 
     // define próxima data inicial baseada no "início"
     let proxima = inicio;
@@ -385,6 +337,7 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
     }
 
     const rec = {
+      id: undefined,
       tipo: t.tipo,
       categoria: t.categoria,
       descricao: t.descricao,
@@ -407,12 +360,12 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
     }
 
     // Se o lançamento original é para a mesma data da próxima ocorrência, já materializa a primeira
-    if (t.data === rec.proxima_data) {
-      await materializeOne(saved, rec.proxima_data);
-      if (per === "Mensal") rec.proxima_data = incMonthly(rec.proxima_data, diaMes, ajuste);
-      else if (per === "Semanal") rec.proxima_data = incWeekly(rec.proxima_data);
-      else if (per === "Anual") rec.proxima_data = incYearly(rec.proxima_data, diaMes, mes, ajuste);
-      await saveRec({ saved, proxima_data: rec.proxima_data });
+    if (t.data === saved.proxima_data) {
+      await materializeOne(saved, saved.proxima_data);
+      if (per === "Mensal") saved.proxima_data = incMonthly(saved.proxima_data, diaMes, ajuste);
+      else if (per === "Semanal") saved.proxima_data = incWeekly(saved.proxima_data);
+      else if (per === "Anual") saved.proxima_data = incYearly(saved.proxima_data, diaMes, mes, ajuste);
+      await supabaseClient.from("recurrences").update({ proxima_data: saved.proxima_data }).eq("id", saved.id);
     }
 
     await loadAll();
@@ -456,150 +409,146 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
   }
 
   function renderRecentes() {
-  const ul = qs("#listaRecentes");
-  if (!ul) return;
-  const list = [S.tx]
-    .filter(x => x.tipo === "Despesa")
-    .sort((a, b) => b.data.localeCompare(a.data))
-    .slice(0, 4);
-  ul.innerHTML = "";
-  if (!ul.classList.contains("lanc-grid")) ul.classList.add("lanc-grid");
-  list.forEach(x => ul.append(itemTx(x, true)));
-}
+    const ul = qs("#listaRecentes");
+    if (!ul) return;
+    const list = (S.tx || [])
+      .filter(x => x.tipo === "Despesa")
+      .sort((a, b) => String(b.data||"").localeCompare(String(a.data||"")))
+      .slice(0, 4);
+    ul.innerHTML = "";
+    if (!ul.classList.contains("lanc-grid")) ul.classList.add("lanc-grid");
+    list.forEach(x => ul.append(itemTx(x, true)));
+  }
 
   function renderLancamentos() {
-const qs = s => document.querySelector(s);
-  const Sref = S;
+    const _qs = s => document.querySelector(s);
+    const Sref = S;
 
-  const selTipo   = qs('#lancTipo');
-  const selCat    = qs('#lancCat');
-  const inpBusca  = qs('#lancSearch');
-  const selSort   = qs('#lancSort');
-  const chkCompact= qs('#lancCompact');
-  const ul        = qs('#listaLanc');
-  const sumEl     = qs('#lancSummary');
+    const selTipo    = _qs('#lancTipo');
+    const selCat     = _qs('#lancCat');
+    const inpBusca   = _qs('#lancSearch');
+    const selSort    = _qs('#lancSort');
+    const chkCompact = _qs('#lancCompact');
+    const ul         = _qs('#listaLanc');
+    const sumEl      = _qs('#lancSummary');
 
-  if (chkCompact) {
-    const compactPref = localStorage.getItem('lancCompact') === '1';
-    if (chkCompact.checked !== compactPref) chkCompact.checked = compactPref;
-    document.body.classList.toggle('compact', chkCompact.checked);
-  }
-
-  const tipo  = (selTipo && selTipo.value) || 'todos';
-  const cat   = (selCat && selCat.value) || 'todas';
-  const q     = ((inpBusca && inpBusca.value) || '').trim().toLowerCase();
-  const sort  = (selSort && selSort.value) || 'data_desc';
-
-  let list = Array.isArray(Sref.tx) ? Sref.tx.slice() : [];
-
-  list = list.filter(x => {
-    if (tipo !== 'todos' && x.tipo !== tipo) return false;
-    if (cat  !== 'todas' && x.categoria !== cat) return false;
-    if (q) {
-      const hay = `${x.descricao||''} ${x.categoria||''} ${x.obs||''}`.toLowerCase();
-      if (!hay.includes(q)) return false;
+    if (chkCompact) {
+      const compactPref = localStorage.getItem('lancCompact') === '1';
+      if (chkCompact.checked !== compactPref) chkCompact.checked = compactPref;
+      document.body.classList.toggle('compact', chkCompact.checked);
     }
-    return true;
-  });
 
-  const by = {
-    data_desc: (a,b)=> String(b.data||'').localeCompare(String(a.data||'')),
-    data_asc:  (a,b)=> String(a.data||'').localeCompare(String(b.data||'')),
-    valor_desc:(a,b)=> (Number(b.valor)||0) - (Number(a.valor)||0),
-    valor_asc: (a,b)=> (Number(a.valor)||0) - (Number(b.valor)||0),
-  };
-  list.sort(by[sort] || by.data_desc);
+    const tipo  = (selTipo && selTipo.value) || 'todos';
+    const cat   = (selCat && selCat.value) || 'todas';
+    const q     = ((inpBusca && inpBusca.value) || '').trim().toLowerCase();
+    const sort  = (selSort && selSort.value) || 'data_desc';
 
-  const fmt = v=> (Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-  const totDesp = list.filter(x=>x.tipo==='Despesa').reduce((a,b)=>a+(Number(b.valor)||0),0);
-  const totRec  = list.filter(x=>x.tipo==='Receita').reduce((a,b)=>a+(Number(b.valor)||0),0);
-  const saldo   = totRec - totDesp;
+    let list = Array.isArray(Sref.tx) ? Sref.tx.slice() : [];
 
-  if (sumEl){
-    sumEl.innerHTML = '';
-    const pill = (txt, cls='')=>{ const s=document.createElement('span'); s.className=`pill ${cls}`; s.textContent=txt; return s; };
-    sumEl.append(
-      pill(`Itens: ${list.length}`),
-      pill(`Receitas: ${fmt(totRec)}`, 'ok'),
-      pill(`Despesas: ${fmt(totDesp)}`, 'warn'),
-      pill(`Saldo: ${fmt(saldo)}`)
-    );
-  }
+    list = list.filter(x => {
+      if (tipo !== 'todos' && x.tipo !== tipo) return false;
+      if (cat  !== 'todas' && x.categoria !== cat) return false;
+      if (q) {
+        const hay = `${x.descricao||''} ${x.categoria||''} ${x.obs||''}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
 
-  if (!ul) return;
-  ul.innerHTML = '';
+    const by = {
+      data_desc: (a,b)=> String(b.data||'').localeCompare(String(a.data||'')),
+      data_asc:  (a,b)=> String(a.data||'').localeCompare(String(b.data||'')),
+      valor_desc:(a,b)=> (Number(b.valor)||0) - (Number(a.valor)||0),
+      valor_asc: (a,b)=> (Number(a.valor)||0) - (Number(b.valor)||0),
+    };
+    list.sort(by[sort] || by.data_desc);
 
-  if (!list.length){
-    const li = document.createElement('li');
-    li.className = 'item';
-    li.innerHTML = '<div class=\"empty\"><div class=\"title\">Nenhum lançamento encontrado</div><div class=\"hint\">Ajuste os filtros ou crie um novo lançamento.</div></div>';
-    ul.append(li);
-    return;
-  }
+    const fmt = v=> (Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+    const totDesp = list.filter(x=>x.tipo==='Despesa').reduce((a,b)=>a+(Number(b.valor)||0),0);
+    const totRec  = list.filter(x=>x.tipo==='Receita').reduce((a,b)=>a+(Number(b.valor)||0),0);
+    const saldo   = totRec - totDesp;
 
-  list.forEach(x => {
-    const li = document.createElement('li');
-    li.className = 'item';
-    li.dataset.tipo = x.tipo;
-    const v = Number(x.valor)||0;
-    const valor = fmt(v);
-    li.innerHTML = `
-      <div class=\"left\">
-        <div class=\"chip\">${x.tipo||'-'}</div>
-        <div class=\"titulo\"><strong>${x.descricao||'-'}</strong></div>
-        <div class=\"subinfo muted\">${x.categoria||'-'} • ${x.data||'-'}</div>
-      </div>
-      <div class=\"right\">
-        <div class=\"valor\">${valor}</div>
-        <button class=\"icon edit\" title=\"Editar\"><i class=\"ph ph-pencil-simple\"></i></button>
-        <button class=\"icon del\" title=\"Excluir\"><i class=\"ph ph-trash\"></i></button>
-      </div>`;
-    const btnEdit = li.querySelector('.edit');
-    const btnDel  = li.querySelector('.del');
-    if (btnEdit) btnEdit.onclick = ()=> openEdit && openEdit(x.id);
-    if (btnDel)  btnDel.onclick  = ()=> delTx && delTx(x.id);
-    ul.append(li);
-  });
-
-  if (!renderLancamentos._wired){
-    if (selTipo) selTipo.onchange = renderLancamentos;
-    if (selCat) selCat.onchange = renderLancamentos;
-    if (inpBusca) inpBusca.oninput = renderLancamentos;
-    if (selSort) selSort.onchange = renderLancamentos;
-    if (chkCompact){
-      chkCompact.onchange = ()=>{
-        localStorage.setItem('lancCompact', chkCompact.checked ? '1':'0');
-        document.body.classList.toggle('compact', chkCompact.checked);
-      };
+    if (sumEl){
+      sumEl.innerHTML = '';
+      const pill = (txt, cls='')=>{ const s=document.createElement('span'); s.className=`pill ${cls}`; s.textContent=txt; return s; };
+      sumEl.append(
+        pill(`Itens: ${list.length}`),
+        pill(`Receitas: ${fmt(totRec)}`, 'ok'),
+        pill(`Despesas: ${fmt(totDesp)}`, 'warn'),
+        pill(`Saldo: ${fmt(saldo)}`)
+      );
     }
-    renderLancamentos._wired = true;
-  }
-}
 
+    if (!ul) return;
+    ul.innerHTML = '';
+
+    if (!list.length){
+      const li = document.createElement('li');
+      li.className = 'item';
+      li.innerHTML = '<div class="empty"><div class="title">Nenhum lançamento encontrado</div><div class="hint">Ajuste os filtros ou crie um novo lançamento.</div></div>';
+      ul.append(li);
+      return;
+    }
+
+    list.forEach(x => {
+      const li = document.createElement('li');
+      li.className = 'item';
+      li.dataset.tipo = x.tipo;
+      const v = Number(x.valor)||0;
+      const valor = fmt(v);
+      li.innerHTML = `
+        <div class="left">
+          <div class="chip">${x.tipo||'-'}</div>
+          <div class="titulo"><strong>${x.descricao||'-'}</strong></div>
+          <div class="subinfo muted">${x.categoria||'-'} • ${x.data||'-'}</div>
+        </div>
+        <div class="right">
+          <div class="valor">${valor}</div>
+          <button class="icon edit" title="Editar"><i class="ph ph-pencil-simple"></i></button>
+          <button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button>
+        </div>`;
+      const btnEdit = li.querySelector('.edit');
+      const btnDel  = li.querySelector('.del');
+      if (btnEdit) btnEdit.onclick = ()=> openEdit && openEdit(x.id);
+      if (btnDel)  btnDel.onclick  = ()=> delTx && delTx(x.id);
+      ul.append(li);
+    });
+
+    if (!renderLancamentos._wired){
+      if (selTipo) selTipo.onchange = renderLancamentos;
+      if (selCat) selCat.onchange = renderLancamentos;
+      if (inpBusca) inpBusca.oninput = renderLancamentos;
+      if (selSort) selSort.onchange = renderLancamentos;
+      if (chkCompact){
+        chkCompact.onchange = ()=>{
+          localStorage.setItem('lancCompact', chkCompact.checked ? '1':'0');
+          document.body.classList.toggle('compact', chkCompact.checked);
+        };
+      }
+      renderLancamentos._wired = true;
+    }
+  }
 
   function openEdit(id) {
-    const x = S.tx.find(t => t.id === id);
+    const x = (S.tx || []).find(t => t.id === id);
     if (!x) return;
     S.editingId = id;
     modalTipo = x.tipo;
     syncTipoTabs();
     rebuildCatSelect(x.categoria);
-    qs("#mData").value = isIsoDate(x.data) ? x.data : nowYMD();
-    qs("#mDesc").value = x.descricao || "";
-    qs("#mValorBig").value = fmtMoney(Number(x.valor) || 0);
-    qs("#mObs").value = x.obs || "";
-    qs("#modalTitle").textContent = "Editar lançamento";
+    const mData = qs("#mData"); if (mData) mData.value = isIsoDate(x.data) ? x.data : nowYMD();
+    const mDesc = qs("#mDesc"); if (mDesc) mDesc.value = x.descricao || "";
+    const mVal  = qs("#mValorBig"); if (mVal) mVal.value = fmtMoney(Number(x.valor) || 0);
+    const mObs  = qs("#mObs"); if (mObs) mObs.value = x.obs || "";
+    const ttl   = qs("#modalTitle"); if (ttl) ttl.textContent = "Editar lançamento";
 
     // Edição: esconde blocos de recorrência (edita só esta instância)
     const chk = qs("#mRepetir");
     const box = qs("#recurrenceFields");
-    if (chk && box) {
-      chk.checked = false;
-      box.style.display = "none";
-    }
+    if (chk && box) { chk.checked = false; box.style.display = "none"; }
 
-    qs("#modalLanc").style.display = "flex";
-    setTimeout(() => qs("#mValorBig").focus(), 0);
+    const modal = qs("#modalLanc"); if (modal) modal.style.display = "flex";
+    setTimeout(() => qs("#mValorBig")?.focus(), 0);
   }
 
   // ========= CATEGORIAS =========
@@ -609,7 +558,7 @@ const qs = s => document.querySelector(s);
     ul.classList.add("cats-grid");
     ul.innerHTML = "";
 
-    const list = Array.isArray(S.cats) ? [S.cats].sort((a,b)=> (a.nome||"").localeCompare(b.nome||"")) : [];
+    const list = Array.isArray(S.cats) ? S.cats.slice().sort((a,b)=> (a.nome||"").localeCompare(b.nome||"")) : [];
     if (!list.length) {
       const li = document.createElement("li");
       li.className = "item";
@@ -668,9 +617,7 @@ const qs = s => document.querySelector(s);
         const novo = (prompt("Novo nome da categoria:", c.nome) || "").trim();
         if (!novo || novo === c.nome) return;
         await saveCat({ nome: novo });
-        if (typeof updateTxCategory === "function") {
-          await updateTxCategory(c.nome, novo);
-        }
+        await updateTxCategory(c.nome, novo);
         await deleteCat(c.nome);
         await loadAll();
       };
@@ -694,7 +641,7 @@ const qs = s => document.querySelector(s);
   // ========= RELATÓRIOS / KPIs / GRÁFICOS EXISTENTES =========
   function updateKpis() {
     // Transações do mês selecionado
-    const txMonth = S.tx.filter(x => x.data && (typeof monthKeyFor==='function' ? monthKeyFor(x)===S.month : x.data.startsWith(S.month)));
+    const txMonth = (S.tx || []).filter(x => x.data && (typeof monthKeyFor==='function' ? monthKeyFor(x)===S.month : String(x.data).startsWith(S.month)));
     const receitas = txMonth.filter(x => x.tipo === "Receita").reduce((a, b) => a + Number(b.valor), 0);
     const despesas = txMonth.filter(x => x.tipo === "Despesa").reduce((a, b) => a + Number(b.valor), 0);
     const saldo = receitas - despesas;
@@ -715,7 +662,7 @@ const qs = s => document.querySelector(s);
 
     // --- Variação vs mês anterior (em %) ---
     const ymPrev = prevYM(S.month);
-    const txPrev = S.tx.filter(x => x.data && x.data.startsWith(ymPrev));
+    const txPrev = (S.tx || []).filter(x => x.data && String(x.data).startsWith(ymPrev));
     const receitasPrev = txPrev.filter(x => x.tipo === "Receita").reduce((a, b) => a + Number(b.valor), 0);
     const despesasPrev = txPrev.filter(x => x.tipo === "Despesa").reduce((a, b) => a + Number(b.valor), 0);
     const saldoPrev = receitasPrev - despesasPrev;
@@ -741,9 +688,9 @@ const qs = s => document.querySelector(s);
     // Aplica "blurred" só nos valores principais
     [kpiReceitas, kpiDespesas, kpiSaldo, kpiSplit].forEach(el => {
       if (el) el.classList.toggle("blurred", S.hide);
-});
+    });
 
-    // Percentual de Despesas sobre Receitas (chip #kpiDespesasPct)
+    // Percentual de Despesas sobre Receitas
     const kpiDespesasPct = qs("#kpiDespesasPct");
     let pctDespesas = "—";
     if (receitas > 0) {
@@ -768,13 +715,9 @@ const qs = s => document.querySelector(s);
       for (let i = 11; i >= 0; i--) {
         const cur = new Date(d.getFullYear(), d.getMonth() - i, 1);
         const ym = cur.toISOString().slice(0, 7);
-        const txs = S.tx.filter(x => x.data && x.data.startsWith(ym));
-        const receitas = txs
-          .filter(x => x.tipo === "Receita")
-          .reduce((a, b) => a + Number(b.valor), 0);
-        const despesas = txs
-          .filter(x => x.tipo === "Despesa")
-          .reduce((a, b) => a + Number(b.valor), 0);
+        const txs = (S.tx || []).filter(x => x.data && String(x.data).startsWith(ym));
+        const receitas = txs.filter(x => x.tipo === "Receita").reduce((a, b) => a + Number(b.valor), 0);
+        const despesas = txs.filter(x => x.tipo === "Despesa").reduce((a, b) => a + Number(b.valor), 0);
         months.push(cur.toLocaleDateString("pt-BR", { month: "short" }));
         saldoData.push(receitas - despesas);
       }
@@ -788,13 +731,11 @@ const qs = s => document.querySelector(s);
     if (chartPie) chartPie.destroy();
     const ctxPie = qs("#chartPie");
     if (ctxPie && window.Chart) {
-      const txMonth = S.tx.filter(x => x.data && (typeof monthKeyFor==='function' ? monthKeyFor(x)===S.month : x.data.startsWith(S.month)));
+      const txMonth = (S.tx || []).filter(x => x.data && (typeof monthKeyFor==='function' ? monthKeyFor(x)===S.month : String(x.data).startsWith(S.month)));
       const porCat = {};
-      txMonth
-        .filter(x => x.tipo === "Despesa")
-        .forEach(x => {
-          porCat[x.categoria] = (porCat[x.categoria] || 0) + Number(x.valor);
-        });
+      txMonth.filter(x => x.tipo === "Despesa").forEach(x => {
+        porCat[x.categoria] = (porCat[x.categoria] || 0) + Number(x.valor);
+      });
       chartPie = new Chart(ctxPie, {
         type: "pie",
         data: { labels: Object.keys(porCat), datasets: [{ data: Object.values(porCat) }] }
@@ -806,20 +747,15 @@ const qs = s => document.querySelector(s);
     const ctxFluxo = qs("#chartFluxo");
     if (ctxFluxo && window.Chart) {
       const porMes = {};
-      S.tx.forEach(x => {
+      (S.tx || []).forEach(x => {
         if (!x.data) return;
-        const ym = x.data.slice(0, 7);
-        porMes[ym] =
-          (porMes[ym] || 0) +
-          Number(x.valor) * (x.tipo === "Despesa" ? -1 : 1);
+        const ym = String(x.data).slice(0, 7);
+        porMes[ym] = (porMes[ym] || 0) + Number(x.valor) * (x.tipo === "Despesa" ? -1 : 1);
       });
       const labels = Object.keys(porMes).sort();
       chartFluxo = new Chart(ctxFluxo, {
         type: "bar",
-        data: {
-          labels,
-          datasets: [{ label: "Fluxo", data: labels.map(l => porMes[l]) }]
-        }
+        data: { labels, datasets: [{ label: "Fluxo", data: labels.map(l => porMes[l]) }] }
       });
     }
   }
@@ -829,28 +765,25 @@ const qs = s => document.querySelector(s);
     const sel = qs("#monthSelect");
     if (!sel) return;
     sel.innerHTML = "";
-    const mesesDisponiveis = [new Set(S.tx.filter(x=>x.data).map(x => x.data.slice(0, 7)))];
-    mesesDisponiveis.sort((a, b) => b.localeCompare(a));
-    
-    /* ENSURE_CURRENT_MONTH_OPTION */ 
+    const mesesDisponiveis = Array.from(new Set((S.tx || []).filter(x => x.data).map(x => String(x.data).slice(0, 7)))).sort((a,b)=> b.localeCompare(a));
+
+    // Garante mês atual no seletor
     (function(){
       const dNow = new Date();
       const cur = new Date(dNow.getTime() - dNow.getTimezoneOffset() * 60000).toISOString().slice(0,7);
       if (!mesesDisponiveis.includes(cur)) mesesDisponiveis.unshift(cur);
-      // Remove duplicatas novamente por segurança mantendo ordem
-      const seen = new Set(); 
+      // Remove duplicatas mantendo ordem
+      const seen = new Set();
       for (let i = 0; i < mesesDisponiveis.length; i++) {
         if (seen.has(mesesDisponiveis[i])) { mesesDisponiveis.splice(i,1); i--; } else { seen.add(mesesDisponiveis[i]); }
       }
     })();
-mesesDisponiveis.forEach(m => {
+
+    mesesDisponiveis.forEach(m => {
       const opt = document.createElement("option");
       opt.value = m;
       const [ano, mes] = m.split("-");
-      opt.textContent = new Date(ano, mes - 1, 1).toLocaleDateString("pt-BR", {
-        month: "long",
-        year: "numeric"
-      });
+      opt.textContent = new Date(ano, mes - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
       if (m === S.month) opt.selected = true;
       sel.append(opt);
     });
@@ -877,27 +810,25 @@ mesesDisponiveis.forEach(m => {
     return new Date(y, m, 0).getDate();
   }
   function netByMonth(ym) {
-    const txs = S.tx.filter(x => x.data && x.data.startsWith(ym));
+    const txs = (S.tx || []).filter(x => x.data && String(x.data).startsWith(ym));
     const rec = txs.filter(x=>x.tipo==="Receita").reduce((a,b)=>a+Number(b.valor),0);
     const des = txs.filter(x=>x.tipo==="Despesa").reduce((a,b)=>a+Number(b.valor),0);
     return rec - des;
   }
 
-  // Top 5 categorias (12 meses) — preenche #tblTop (já existe na página)
+  // Top 5 categorias (12 meses) — preenche #tblTop
   function renderTopCategorias12m(limit=5){
     const cutoff = new Date();
     const from = new Date(cutoff.getFullYear(), cutoff.getMonth()-11, 1);
     const sum = {};
-    S.tx.forEach(x=>{
+    (S.tx || []).forEach(x=>{
       if (!x.data || x.tipo!=="Despesa") return;
       const dt = new Date(x.data);
       if (dt >= from && dt <= cutoff) {
         sum[x.categoria] = (sum[x.categoria]||0) + (Number(x.valor)||0);
       }
     });
-    const rows = Object.entries(sum)
-      .sort((a,b)=>b[1]-a[1])
-      .slice(0,limit);
+    const rows = Object.entries(sum).sort((a,b)=>b[1]-a[1]).slice(0,limit);
 
     const tbody = document.querySelector('#tblTop tbody');
     if (tbody){
@@ -910,12 +841,12 @@ mesesDisponiveis.forEach(m => {
     }
   }
 
-  // Média de gastos por categoria (janela de 6 meses) — preenche #tblMediaCats
+  // Média de gastos por categoria (6 meses) — preenche #tblMediaCats
   function renderMediaPorCategoria(windowMonths=6){
     const months = monthsBack(windowMonths);
     const byCatMonth = {};
     months.forEach(m=>{
-      S.tx.filter(x=>x.data && x.data.startsWith(m) && x.tipo==="Despesa")
+      (S.tx || []).filter(x=>x.data && String(x.data).startsWith(m) && x.tipo==="Despesa")
         .forEach(x=>{
           const k = x.categoria || '(sem categoria)';
           byCatMonth[k] = byCatMonth[k] || {};
@@ -945,7 +876,7 @@ mesesDisponiveis.forEach(m => {
     const today = new Date();
     const isCurrentMonth = (today.getFullYear()===y && (today.getMonth()+1)===m);
 
-    const txs = S.tx.filter(x=>x.data && x.data.startsWith(ym));
+    const txs = (S.tx || []).filter(x=>x.data && String(x.data).startsWith(ym));
     const receitas = txs.filter(x=>x.tipo==="Receita").reduce((a,b)=>a+Number(b.valor),0);
     const despesas = txs.filter(x=>x.tipo==="Despesa").reduce((a,b)=>a+Number(b.valor),0);
     const saldoAtual = receitas - despesas;
@@ -1002,14 +933,14 @@ mesesDisponiveis.forEach(m => {
     const days = monthDays(ym);
     const gastosPorDia = Array.from({length: days}, ()=>0);
 
-    S.tx.forEach(x=>{
+    (S.tx || []).forEach(x=>{
       if (!x.data || x.tipo!=="Despesa") return;
-      if (!x.data.startsWith(ym)) return;
-      const d = Number(x.data.slice(8,10));
+      if (!String(x.data).startsWith(ym)) return;
+      const d = Number(String(x.data).slice(8,10));
       gastosPorDia[d-1] += Number(x.valor)||0;
     });
 
-    const max = Math.max(gastosPorDia, 0);
+    const max = Math.max(...gastosPorDia, 0);
     wrap.innerHTML = '';
 
     // Cabeçalho com iniciais (S T Q Q S S D)
@@ -1048,25 +979,24 @@ mesesDisponiveis.forEach(m => {
   }
 
   // ========= RENDER PRINCIPAL =========
-  
-function buildLancCatFilter(){
-  const sel = document.querySelector('#lancCat');
-  if (!sel) return;
-  const current = sel.value || 'todas';
-  sel.innerHTML = '';
-  const optAll = document.createElement('option');
-  optAll.value = 'todas';
-  optAll.textContent = 'Todas as categorias';
-  sel.append(optAll);
-  (S.cats||[]).slice().sort((a,b)=> (a.nome||'').localeCompare(b.nome||'')).forEach(c=>{
-    const o = document.createElement('option');
-    o.value = c.nome; o.textContent = c.nome;
-    sel.append(o);
-  });
-  sel.value = current;
-}
+  function buildLancCatFilter(){
+    const sel = document.querySelector('#lancCat');
+    if (!sel) return;
+    const current = sel.value || 'todas';
+    sel.innerHTML = '';
+    const optAll = document.createElement('option');
+    optAll.value = 'todas';
+    optAll.textContent = 'Todas as categorias';
+    sel.append(optAll);
+    (S.cats||[]).slice().sort((a,b)=> (a.nome||'').localeCompare(b.nome||'')).forEach(c=>{
+      const o = document.createElement('option');
+      o.value = c.nome; o.textContent = c.nome;
+      sel.append(o);
+    });
+    sel.value = current;
+  }
 
-function render() {
+  function render() {
     document.body.classList.toggle("dark", S.dark);
 
     // sincroniza estado dos toggles (suporta ids antigos e novos)
@@ -1099,38 +1029,26 @@ function render() {
     btn.addEventListener("click", () => setTab(btn.dataset.tab))
   );
 
-  const fab = qs("#fab");
-  if (fab) fab.onclick = () => toggleModal(true);
-
-  const btnNovo = qs("#btnNovo");
-  if (btnNovo) btnNovo.onclick = () => toggleModal(true);
-
-  const btnClose = qs("#closeModal");
-  if (btnClose) btnClose.onclick = () => toggleModal(false);
-
-  const btnCancelar = qs("#cancelar");
-  if (btnCancelar) btnCancelar.onclick = () => toggleModal(false);
-
-  const btnSalvar = qs("#salvar");
-  if (btnSalvar) btnSalvar.onclick = addOrUpdate;
+  const fab = qs("#fab"); if (fab) fab.onclick = () => toggleModal(true);
+  const btnNovo = qs("#btnNovo"); if (btnNovo) btnNovo.onclick = () => toggleModal(true);
+  const btnClose = qs("#closeModal"); if (btnClose) btnClose.onclick = () => toggleModal(false);
+  const btnCancelar = qs("#cancelar"); if (btnCancelar) btnCancelar.onclick = () => toggleModal(false);
+  const btnSalvar = qs("#salvar"); if (btnSalvar) btnSalvar.onclick = addOrUpdate;
 
   qsa("#tipoTabs button").forEach(b =>
-    b.addEventListener("click", () => {
-      modalTipo = b.dataset.type;
-      syncTipoTabs();
-    })
+    b.addEventListener("click", () => { modalTipo = b.dataset.type; syncTipoTabs(); })
   );
 
   const btnAddCat = qs("#addCat");
   if (btnAddCat) btnAddCat.onclick = async () => {
-    const nome = (qs("#newCatName").value || "").trim();
+    const nome = (qs("#newCatName")?.value || "").trim();
     if (!nome) return;
-    if (S.cats.some(c => (c.nome||"").toLowerCase() === nome.toLowerCase())) {
+    if ((S.cats||[]).some(c => (c.nome||"").toLowerCase() === nome.toLowerCase())) {
       alert("Essa categoria já existe.");
       return;
     }
     await saveCat({ nome });
-    qs("#newCatName").value = "";
+    const inp = qs("#newCatName"); if (inp) inp.value = "";
     loadAll();
   };
 
@@ -1223,14 +1141,13 @@ function render() {
         }
       });
       valorInput.addEventListener('input', (e) => {
-        const d = (e.data ?? '').replace(/\D/g,'');
+        const d = (e.data ?? '').replace(/\D/g,''); 
         if (d) {
           rawCents = Math.min(9999999999, rawCents*10 + Number(d));
           setAmount();
         } else if (!e.data && !valorInput.value) {
           rawCents = 0;
         }
-        // keep caret at end
         requestAnimationFrame(() => {
           const len = valorInput.value.length;
           valorInput.setSelectionRange(len,len);
@@ -1245,14 +1162,13 @@ function render() {
       });
     }
 
-    // validate before save
     function validateModal(){
       if (!formError) return true;
       formError.hidden = true; formError.textContent = '';
       const problems = [];
-      if (rawCents <= 0 && parseMoneyMasked(valorInput.value) <= 0) problems.push('Informe um valor maior que zero.');
-      if (!document.getElementById('mCategoria').value) problems.push('Selecione uma categoria.');
-      if (!document.getElementById('mData').value) problems.push('Informe a data.');
+      if (rawCents <= 0 && parseMoneyMasked(valorInput?.value) <= 0) problems.push('Informe um valor maior que zero.');
+      if (!document.getElementById('mCategoria')?.value) problems.push('Selecione uma categoria.');
+      if (!document.getElementById('mData')?.value) problems.push('Informe a data.');
       if (problems.length){
         formError.textContent = problems.join(' ');
         formError.hidden = false;
@@ -1261,7 +1177,6 @@ function render() {
       return true;
     }
 
-    // Enter para salvar, Esc para cancelar (fora do textarea)
     if (dialog){
       dialog.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && document.activeElement && document.activeElement.tagName !== 'TEXTAREA') {
@@ -1277,8 +1192,7 @@ function render() {
       // Trap de foco + Tab
       dialog.addEventListener('keydown', (e) => {
         if (e.key !== 'Tab') return;
-        const focusables = [dialog.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
-          .filter(el => !el.hasAttribute('disabled') && !el.getAttribute('aria-hidden'));
+        const focusables = Array.from(dialog.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')).filter(el => !el.hasAttribute('disabled') && !el.getAttribute('aria-hidden'));
         if (!focusables.length) return;
         const first = focusables[0];
         const last = focusables[focusables.length - 1];
@@ -1287,7 +1201,6 @@ function render() {
       });
     }
   })();
-
 
   // ========= METAS (Supabase) =========
   async function fetchMetas(){
@@ -1331,7 +1244,7 @@ function render() {
     const obs = document.getElementById('metaObs');
 
     const gastosMes = Array.isArray(S.tx) ? S.tx
-      .filter(x=> x.data && (typeof monthKeyFor==='function' ? monthKeyFor(x)===S.month : x.data.startsWith(S.month)) && x.tipo==='Despesa')
+      .filter(x=> x.data && (typeof monthKeyFor==='function' ? monthKeyFor(x)===S.month : String(x.data).startsWith(S.month)) && x.tipo==='Despesa')
       .reduce((a,b)=> a + (Number(b.valor)||0), 0) : 0;
 
     if (kTotal) kTotal.textContent = totalMeta ? fmtBRL(totalMeta) : '—';
@@ -1394,9 +1307,6 @@ function render() {
       };
     }
   }
-  // Start!
-  loadAll();
-
 
   // ========= RELATÓRIOS: estado, filtros e subtabs =========
   let R = { tab: 'fluxo', charts: {} };
@@ -1460,10 +1370,7 @@ function render() {
 
   function chartTheme(){
     const dark = !!document.body.classList.contains('dark');
-    return {
-      color: dark? '#e5e7eb':'#0f172a',
-      grid: dark? 'rgba(255,255,255,.08)':'rgba(2,6,23,.08)',
-    };
+    return { color: dark? '#e5e7eb':'#0f172a', grid: dark? 'rgba(255,255,255,.08)':'rgba(2,6,23,.08)' };
   }
 
   function ensureChart(id, cfg){
@@ -1484,7 +1391,7 @@ function render() {
     // ==== Fluxo por mês (bar)
     {
       const byYM = {};
-      list.forEach(x=>{ const ym = x.data.slice(0,7); byYM[ym] = (byYM[ym]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
+      list.forEach(x=>{ const ym = String(x.data).slice(0,7); byYM[ym] = (byYM[ym]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
       const labels = Object.keys(byYM).sort();
       ensureChart('chartFluxo2', {
         type:'bar',
@@ -1502,19 +1409,16 @@ function render() {
       ensureChart('chartPie2', { type:'pie', data:{ labels, datasets:[{ data }] } });
       // tabela top
       const tb = document.querySelector('#tblTop2 tbody'); if (tb){
-        tb.innerHTML = labels
-          .map((l,i)=>`<tr><td>${l||'-'}</td><td>${(Number(data[i])||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</td></tr>`)
-          .join('');
+        tb.innerHTML = labels.map((l,i)=>`<tr><td>${l||'-'}</td><td>${(Number(data[i])||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</td></tr>`).join('');
       }
     }
 
     // ==== Previsão simples (média móvel) & média por categoria
     {
       const byYM = {};
-      list.forEach(x=>{ const ym=x.data.slice(0,7); byYM[ym] = (byYM[ym]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
+      list.forEach(x=>{ const ym=String(x.data).slice(0,7); byYM[ym] = (byYM[ym]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
       const labels = Object.keys(byYM).sort();
       const vals = labels.map(l=>byYM[l]);
-      // média móvel 3p
       const ma = vals.map((_,i)=>{ const a=vals[Math.max(0,i-2)]||0, b=vals[Math.max(0,i-1)]||0, c=vals[i]||0; const n = i<2? (i+1):3; return (a+b+c)/n; });
       ensureChart('chartForecast2', { type:'line', data:{ labels, datasets:[
         { label:'Fluxo', data: vals }, { label:'Tendência (MM3)', data: ma }
@@ -1525,7 +1429,7 @@ function render() {
 
       // média por categoria (despesa)
       const byCat = {};
-      list.filter(x=>x.tipo==='Despesa').forEach(x=>{ const ym=x.data.slice(0,7); byCat[x.categoria] = byCat[x.categoria]||{}; byCat[x.categoria][ym]=(byCat[x.categoria][ym]||0)+Number(x.valor||0); });
+      list.filter(x=>x.tipo==='Despesa').forEach(x=>{ const ym=String(x.data).slice(0,7); byCat[x.categoria] = byCat[x.categoria]||{}; byCat[x.categoria][ym]=(byCat[x.categoria][ym]||0)+Number(x.valor||0); });
       const tb = document.querySelector('#tblMediaCats2 tbody'); if (tb){
         const cats = Object.keys(byCat);
         const lines = cats.map(c=>{
@@ -1540,8 +1444,8 @@ function render() {
     // ==== YoY (barras lado a lado)
     {
       const byYearMonth = {};
-      list.forEach(x=>{ const y = x.data.slice(0,4); const m = x.data.slice(5,7); const key = `${y}-${m}`; byYearMonth[key]=(byYearMonth[key]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
-      const years = [new Set(list.map(x=>x.data.slice(0,4)))].sort().slice(-2);
+      list.forEach(x=>{ const y = String(x.data).slice(0,4); const m = String(x.data).slice(5,7); const key = `${y}-${m}`; byYearMonth[key]=(byYearMonth[key]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
+      const years = Array.from(new Set(list.map(x=> String(x.data).slice(0,4)))).sort().slice(-2);
       const months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
       const labels = months.map(m=>m);
       const ds = years.map(y=>({ label:y, data: months.map(m=> byYearMonth[`${y}-${m}`]||0) }));
@@ -1551,7 +1455,7 @@ function render() {
     // ==== Receitas x Despesas (stacked)
     {
       const byYM = {};
-      list.forEach(x=>{ const ym = x.data.slice(0,7); byYM[ym] = byYM[ym] || { R:0, D:0 }; if (x.tipo==='Receita') byYM[ym].R += Number(x.valor||0); if (x.tipo==='Despesa') byYM[ym].D += Number(x.valor||0); });
+      list.forEach(x=>{ const ym = String(x.data).slice(0,7); byYM[ym] = byYM[ym] || { R:0, D:0 }; if (x.tipo==='Receita') byYM[ym].R += Number(x.valor||0); if (x.tipo==='Despesa') byYM[ym].D += Number(x.valor||0); });
       const labels = Object.keys(byYM).sort();
       const rec = labels.map(l=> byYM[l].R);
       const des = labels.map(l=> -byYM[l].D);
@@ -1600,25 +1504,27 @@ function render() {
     if (!initReportsUI._done){ initReportsUI(); initReportsUI._done = true; }
     renderReports();
   };
-};
 
+  // ========= Billing config (mover para dentro do onload para ter acesso ao S e qs) =========
+  function wireBillingConfig() {
+    const inpDue = qs("#ccDueDay");
+    const inpClose = qs("#ccClosingDay");
+    if (inpDue)  inpDue.value  = S.ccDueDay ?? "";
+    if (inpClose) inpClose.value = S.ccClosingDay ?? "";
 
-function wireBillingConfig() {
-  const inpDue = qs("#ccDueDay");
-  const inpClose = qs("#ccClosingDay");
-  if (inpDue)  inpDue.value  = S.ccDueDay ?? "";
-  if (inpClose) inpClose.value = S.ccClosingDay ?? "";
-
-  const btn = qs("#saveCardPrefs");
-  if (btn && !btn._wired) {
-    btn._wired = true;
-    btn.addEventListener("click", async () => {
-      S.ccDueDay     = Number((qs("#ccDueDay")?.value || "").trim()) || null;
-      S.ccClosingDay = Number((qs("#ccClosingDay")?.value || "").trim()) || null;
-      await savePrefs();
-      alert("Fatura salva com sucesso!");
-    });
+    const btn = qs("#saveCardPrefs");
+    if (btn && !btn._wired) {
+      btn._wired = true;
+      btn.addEventListener("click", async () => {
+        S.ccDueDay     = Number((qs("#ccDueDay")?.value || "").trim()) || null;
+        S.ccClosingDay = Number((qs("#ccClosingDay")?.value || "").trim()) || null;
+        await savePrefs();
+        alert("Fatura salva com sucesso!");
+      });
+    }
   }
-}
-document.addEventListener("DOMContentLoaded", wireBillingConfig);
+  document.addEventListener("DOMContentLoaded", wireBillingConfig);
 
+  // Start!
+  loadAll();
+};
