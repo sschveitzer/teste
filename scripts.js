@@ -1034,6 +1034,9 @@ try {
     const darkToggle = qs("#toggleDark") || qs("#cfgDark");
     if (darkToggle) darkToggle.checked = S.dark;
 
+    
+    const cycleToggle = qs("#toggleCycle") || qs("#useCycleForReports");
+    if (cycleToggle) cycleToggle.checked = !!S.useCycleForReports;
     renderRecentes();
     renderLancamentos();
     renderCategorias();
