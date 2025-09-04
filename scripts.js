@@ -728,7 +728,7 @@ const qs  = (s) => document.querySelector(s);
   // ========= RELATÓRIOS / KPIs / GRÁFICOS EXISTENTES =========
   function updateKpis() {
     // Transações do mês selecionado
-    const txMonth = (S.tx || []).filter(x => x.data && (typeof monthKeyFor==='function' ? monthKeyFor(x)===S.month : String(x.data).startsWith(S.month)));
+    const txMonth = (S.tx || []).filter(x => x.data && (typeof monthKeyFor==='function' ? monthKeyFor(x)===S.month : txBucketYM(x) === S.month));
     const receitas = txMonth.filter(x => x.tipo === "Receita").reduce((a, b) => a + Number(b.valor), 0);
     const despesas = txMonth.filter(x => x.tipo === "Despesa").reduce((a, b) => a + Number(b.valor), 0);
     const saldo = receitas - despesas;
@@ -1103,7 +1103,42 @@ function syncCardPrefsUI() {
 
 
 
-  function render() {
+  
+
+  // Helper de bucket do mês respeitando ciclo do cartão.
+  // Se houver S.ccClosingDay (1..31), datas APÓS esse dia pertencem ao mês seguinte.
+  // Se não houver fechamento, inferimos ~8 dias antes do vencimento (S.ccDueDay).
+  function txBucketYM(x) {
+    try {
+      const ymd = String((x && x.data) || '');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
+        return ymd.slice(0, 7) || '';
+      }
+      let closing = Number(S && S.ccClosingDay);
+      closing = (Number.isFinite(closing) && closing >= 1 && closing <= 31) ? closing : null;
+      if (!closing) {
+        const due = Number(S && S.ccDueDay);
+        if (Number.isFinite(due) && due >= 1 && due <= 31) {
+          closing = Math.max(1, due - 8);
+        }
+      }
+      if (!closing) {
+        return ymd.slice(0, 7);
+      }
+      const [y, m, d] = ymd.split('-').map(Number);
+      if (d <= closing) {
+        return String(y) + '-' + String(m).padStart(2, '0');
+      } else {
+        let yy = y, mm = m + 1;
+        if (mm > 12) { mm = 1; yy += 1; }
+        return String(yy) + '-' + String(mm).padStart(2, '0');
+      }
+    } catch (e) {
+      return (String((x && x.data) || '').slice(0, 7) || '');
+    }
+  }
+
+function render() {
     
   try{ syncCardPrefsUI(); }catch(e){}
 syncCardPrefsUI();
@@ -1371,7 +1406,7 @@ syncCardPrefsUI();
     const obs = document.getElementById('metaObs');
 
     const gastosMes = Array.isArray(S.tx) ? S.tx
-      .filter(x=> x.data && (typeof monthKeyFor==='function' ? monthKeyFor(x)===S.month : String(x.data).startsWith(S.month)) && x.tipo==='Despesa')
+      .filter(x=> x.data && (typeof monthKeyFor==='function' ? monthKeyFor(x)===S.month : txBucketYM(x) === S.month) && x.tipo==='Despesa')
       .reduce((a,b)=> a + (Number(b.valor)||0), 0) : 0;
 
     if (kTotal) kTotal.textContent = totalMeta ? fmtBRL(totalMeta) : '—';
