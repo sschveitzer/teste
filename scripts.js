@@ -11,25 +11,11 @@ window.onload = function () {
     month: null,
     hide: false,
     dark: false,
-    
-    useCycleForReports: false,
-// Preferências de fatura
+    // Preferências de fatura
     ccDueDay: null,
     ccClosingDay: null,
     editingId: null
   };
-
-// Exponha no console para testes rápidos
-try {
-  window.S = S;
-  window.setUseCycleForReports = function(v){
-    S.useCycleForReports = !!v;
-    try { savePrefs(); } catch(e) {}
-    try { render(); } catch(e) {}
-  };
-} catch (e) {}
-
-
 
   // ========= HELPERS GERAIS =========
   function gid() {
@@ -124,7 +110,7 @@ try {
       // Lê valores em snake_case do banco
       S.ccDueDay     = Number(prefs.cc_due_day)     || null;
       S.ccClosingDay = Number(prefs.cc_closing_day) || null;
-    }
+      S.useCycleForReports = !!prefs.use_cycle_for_reports;}
 
     // Garante mês atual se não houver salvo
     if (!S.month) {
@@ -160,8 +146,8 @@ try {
       hide: !!S.hide,
       dark: !!S.dark,
       cc_due_day: (Number(S.ccDueDay) || null),
-      cc_closing_day: (Number(S.ccClosingDay) || null)
-    };
+      cc_closing_day: (Number(S.ccClosingDay) || null),
+      use_cycle_for_reports: !!S.useCycleForReports};
     const { error } = await supabaseClient.from("preferences").upsert([payload]);
     if (error) {
       console.error("Erro ao salvar preferências:", error);
@@ -662,7 +648,7 @@ try {
   // ========= RELATÓRIOS / KPIs / GRÁFICOS EXISTENTES =========
   function updateKpis() {
     // Transações do mês selecionado
-    const txMonth = (S.tx || []).filter(x => x.data && (typeof monthKeyFor==='function' ? monthKeyFor(x)===S.month : String(x.data).startsWith(S.month)));
+    const txMonth = (S.tx || []).filter(x => x.data && inSelectedMonth(x)));
     const receitas = txMonth.filter(x => x.tipo === "Receita").reduce((a, b) => a + Number(b.valor), 0);
     const despesas = txMonth.filter(x => x.tipo === "Despesa").reduce((a, b) => a + Number(b.valor), 0);
     const saldo = receitas - despesas;
@@ -752,7 +738,7 @@ try {
     if (chartPie) chartPie.destroy();
     const ctxPie = qs("#chartPie");
     if (ctxPie && window.Chart) {
-      const txMonth = (S.tx || []).filter(x => x.data && (typeof monthKeyFor==='function' ? monthKeyFor(x)===S.month : String(x.data).startsWith(S.month)));
+      const txMonth = (S.tx || []).filter(x => x.data && inSelectedMonth(x)));
       const porCat = {};
       txMonth.filter(x => x.tipo === "Despesa").forEach(x => {
         porCat[x.categoria] = (porCat[x.categoria] || 0) + Number(x.valor);
@@ -1264,9 +1250,7 @@ try {
     const bar = document.getElementById('metaProgBar');
     const obs = document.getElementById('metaObs');
 
-    const gastosMes = Array.isArray(S.tx) ? S.tx
-      .filter(x=> x.data && (typeof monthKeyFor==='function' ? monthKeyFor(x)===S.month : String(x.data).startsWith(S.month)) && x.tipo==='Despesa')
-      .reduce((a,b)=> a + (Number(b.valor)||0), 0) : 0;
+    const gastosMes = Array.isArray(S.tx) ? S.tx.filter(x => x.data && x.tipo==='Despesa' && inSelectedMonth(x)).reduce((a,b)=> a + (Number(b.valor)||0), 0) : 0;
 
     if (kTotal) kTotal.textContent = totalMeta ? fmtBRL(totalMeta) : '—';
     if (kGasto) kGasto.textContent = fmtBRL(gastosMes);
@@ -1552,9 +1536,51 @@ try {
 
   // Start!
   loadAll();
-};
+}
 
-// ===== Expor helpers no escopo global para uso no console =====
-try { if (typeof txBucketYM === 'function') window.txBucketYM = txBucketYM; } catch (e) {}
-try { if (typeof monthKeyFor === 'function') window.monthKeyFor = monthKeyFor; } catch (e) {}
+  // Bucket do mês respeitando ciclo do cartão.
+  // Se S.ccClosingDay (1..31) existir, datas APÓS esse dia pertencem ao mês seguinte.
+  // Se não houver fechamento, inferimos closing ~= max(1, ccDueDay-8). Se nada existir, usa mês-calendário.
+  function txBucketYM(x) {
+    try {
+      const ymd = String((x && x.data) || '');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
+        return ymd.slice(0, 7) || '';
+      }
+      let closing = Number(S && S.ccClosingDay);
+      closing = (Number.isFinite(closing) && closing >= 1 && closing <= 31) ? closing : null;
+      if (!closing) {
+        const due = Number(S && S.ccDueDay);
+        if (Number.isFinite(due) && due >= 1 && due <= 31) {
+          closing = Math.max(1, due - 8);
+        }
+      }
+      if (!closing) {
+        return ymd.slice(0, 7);
+      }
+      const [y, m, d] = ymd.split('-').map(Number);
+      if (d <= closing) {
+        return String(y) + '-' + String(m).padStart(2, '0');
+      } else {
+        let yy = y, mm = m + 1;
+        if (mm > 12) { mm = 1; yy += 1; }
+        return String(yy) + '-' + String(mm).padStart(2, '0');
+      }
+    } catch (e) {
+      return (String((x && x.data) || '').slice(0, 7) || '');
+    }
+  }
 
+  // Determina se a transação está no mês selecionado (calendário por padrão; ciclo se S.useCycleForReports=true)
+  function inSelectedMonth(x) {
+    const ymCal = String((x && x.data) || '').slice(0,7);
+    if (S && S.useCycleForReports) {
+      return txBucketYM(x) === S.month;
+    }
+    return ymCal === S.month;
+  }
+
+  // Expor helpers no console
+  try { window.txBucketYM = txBucketYM; window.inSelectedMonth = inSelectedMonth; } catch (e) {}
+
+;
