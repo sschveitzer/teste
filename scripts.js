@@ -10,83 +10,12 @@ window.onload = function () {
     editingId: null,
     tx: [],
     cats: [],
-    recs: [], // recorrências
+    recs: [] // recorrências
+  ,
     metas: { total: 0, porCat: {} }
   };
 
   // ========= HELPERS GERAIS =========
-  // ======== FATURA (cartão de crédito) ========
-  function inferClosingDay(dueDay) {
-    if (!dueDay) return 28;
-    const d = Number(dueDay) - 8;
-    return d > 0 ? d : 28;
-  }
-  function getBillingMonth(dateStr, closingDay) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return null;
-    const [y, m, d] = dateStr.split("-").map(Number);
-    const cut = Number(closingDay || 28);
-    let yy = y, mm = m;
-    if (d > cut) { mm++; if (mm > 12) { mm = 1; yy++; } }
-    return `${yy}-${String(mm).padStart(2,"0")}`;
-  }
-  function monthKeyFor(x) {
-    if (!x || !x.data) return null;
-    const closing = S.cc_closing_day || inferClosingDay(S.cc_due_day);
-    return getBillingMonth(x.data, closing);
-  }
-
-  // ======= METAS: atualizar UI com base no mês (fatura ou calendário) =======
-  function renderMeta() {
-    const metaTotalLabel = document.querySelector("#metaTotalLabel");
-    const metaGastoMes   = document.querySelector("#metaGastoMes");
-    const metaStatusChip = document.querySelector("#metaStatusChip");
-    const metaProgBar    = document.querySelector("#metaProgBar");
-    const metaObs        = document.querySelector("#metaObs");
-
-    const total = Number((typeof S !== "undefined" && S.metas && S.metas.total) ? S.metas.total : 0);
-    const curMonth = (typeof S !== "undefined" && S.month) ? S.month : (new Date().toISOString().slice(0,7));
-
-    const gastoMes = (typeof S !== "undefined" && Array.isArray(S.tx) ? S.tx : [])
-      .filter(x => x && x.tipo === "Despesa" && (typeof monthKeyFor === "function" ? monthKeyFor(x) : String(x.data).slice(0,7)) === curMonth)
-      .reduce((a,b) => a + (Number(b.valor) || 0), 0);
-
-    if (metaTotalLabel) metaTotalLabel.textContent = total > 0 
-      ? total.toLocaleString('pt-BR', { style:'currency', currency:'BRL' })
-      : "—";
-    if (metaGastoMes)   metaGastoMes.textContent = gastoMes.toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
-
-    if (metaProgBar) {
-      const pct = total > 0 ? Math.min(100, (gastoMes / total) * 100) : 0;
-      metaProgBar.style.width = pct.toFixed(2) + "%";
-      metaProgBar.className = "bar";
-      if (total > 0) {
-        if (gastoMes <= total * 0.8) metaProgBar.style.background = "var(--ok)";
-        else if (gastoMes <= total)  metaProgBar.style.background = "var(--brand)";
-        else                         metaProgBar.style.background = "var(--warn)";
-      } else {
-        metaProgBar.style.background = "var(--brand)";
-      }
-    }
-
-    if (metaStatusChip) {
-      if (total <= 0) {
-        metaStatusChip.textContent = "Sem meta";
-      } else if (gastoMes <= total) {
-        const sobra = total - gastoMes;
-        metaStatusChip.textContent = `Dentro da meta (sobra ${sobra.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})})`;
-      } else {
-        const excesso = gastoMes - total;
-        metaStatusChip.textContent = `Acima da meta (${excesso.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})})`;
-      }
-    }
-
-    if (metaObs) {
-      metaObs.textContent = total > 0 
-        ? "Acompanhe o progresso da meta considerando o mês da fatura."
-        : "Defina uma meta para acompanhar o progresso.";
-    }
-  }
-
   function gid() {
     return crypto.randomUUID();
   }
@@ -157,7 +86,7 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
   }
 
   const qs = s => document.querySelector(s);
-  const qsa = s => Array.from(document.querySelectorAll(s));
+  const qsa = s => [document.querySelectorAll(s)];
 
   // ========= LOAD DATA =========
   async function loadAll() {
@@ -198,10 +127,7 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
       S.dark = !!prefs.dark;
     
     
-      
-      S.cc_due_day = Number(prefs?.cc_due_day || 0) || null;
-      S.cc_closing_day = Number(prefs?.cc_closing_day || 0) || null;
-// ENSURE_S_MONTH: garante mês atual como default se não houver salvo
+      // ENSURE_S_MONTH: garante mês atual como default se não houver salvo
       if (!S.month) {
         const today = new Date();
         const y = today.getFullYear();
@@ -239,7 +165,6 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
     // Carrega metas do Supabase
     await fetchMetas();
 
-    renderMeta();
     render();
   }
 
@@ -257,15 +182,11 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
     return await supabaseClient.from("categories").delete().eq("nome", nome);
   }
   async function savePrefs() {
-  await supabaseClient.from("preferences").upsert([{
-    id: 1,
-    month: S.month,
-    hide: S.hide,
-    dark: S.dark,
-    cc_due_day: S.cc_due_day || null,
-    cc_closing_day: S.cc_closing_day || null
-  }]);
+    await supabaseClient.from("preferences").upsert([
+      { id: 1, month: S.month, hide: S.hide, dark: S.dark }
+    ]);
   }
+
   // Atualiza categoria nas transações (rename)
   async function updateTxCategory(oldName, newName) {
     if (!oldName || !newName || oldName === newName) return;
@@ -326,7 +247,7 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
       }
 
       if (changed) {
-        await saveRec({ ...r, proxima_data: next });
+        await saveRec({ r, proxima_data: next });
       }
     }
 
@@ -483,7 +404,7 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
       if (per === "Mensal") rec.proxima_data = incMonthly(rec.proxima_data, diaMes, ajuste);
       else if (per === "Semanal") rec.proxima_data = incWeekly(rec.proxima_data);
       else if (per === "Anual") rec.proxima_data = incYearly(rec.proxima_data, diaMes, mes, ajuste);
-      await saveRec({ ...saved, proxima_data: rec.proxima_data });
+      await saveRec({ saved, proxima_data: rec.proxima_data });
     }
 
     await loadAll();
@@ -493,7 +414,7 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
   async function delTx(id) {
     if (confirm("Excluir lançamento?")) {
       await deleteTx(id);
-      await loadAll();
+      loadAll();
     }
   }
 
@@ -529,7 +450,7 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
   function renderRecentes() {
   const ul = qs("#listaRecentes");
   if (!ul) return;
-  const list = [...S.tx].filter(x => monthKeyFor(x) === S.month)
+  const list = [S.tx]
     .filter(x => x.tipo === "Despesa")
     .sort((a, b) => b.data.localeCompare(a.data))
     .slice(0, 4);
@@ -680,7 +601,7 @@ const qs = s => document.querySelector(s);
     ul.classList.add("cats-grid");
     ul.innerHTML = "";
 
-    const list = (S.cats||[]).slice().sort((a,b)=> (a.nome||"").localeCompare(b.nome||"")) : [];
+    const list = Array.isArray(S.cats) ? [S.cats].sort((a,b)=> (a.nome||"").localeCompare(b.nome||"")) : [];
     if (!list.length) {
       const li = document.createElement("li");
       li.className = "item";
@@ -765,7 +686,7 @@ const qs = s => document.querySelector(s);
   // ========= RELATÓRIOS / KPIs / GRÁFICOS EXISTENTES =========
   function updateKpis() {
     // Transações do mês selecionado
-    const txMonth = S.tx.filter(x => x.data && monthKeyFor(x) === S.month);
+    const txMonth = S.tx.filter(x => x.data && (typeof monthKeyFor==='function' ? monthKeyFor(x)===S.month : x.data.startsWith(S.month)));
     const receitas = txMonth.filter(x => x.tipo === "Receita").reduce((a, b) => a + Number(b.valor), 0);
     const despesas = txMonth.filter(x => x.tipo === "Despesa").reduce((a, b) => a + Number(b.valor), 0);
     const saldo = receitas - despesas;
@@ -859,7 +780,7 @@ const qs = s => document.querySelector(s);
     if (chartPie) chartPie.destroy();
     const ctxPie = qs("#chartPie");
     if (ctxPie && window.Chart) {
-      const txMonth = S.tx.filter(x => x.data && monthKeyFor(x) === S.month);
+      const txMonth = S.tx.filter(x => x.data && (typeof monthKeyFor==='function' ? monthKeyFor(x)===S.month : x.data.startsWith(S.month)));
       const porCat = {};
       txMonth
         .filter(x => x.tipo === "Despesa")
@@ -879,7 +800,7 @@ const qs = s => document.querySelector(s);
       const porMes = {};
       S.tx.forEach(x => {
         if (!x.data) return;
-        const ym = monthKeyFor(x);
+        const ym = x.data.slice(0, 7);
         porMes[ym] =
           (porMes[ym] || 0) +
           Number(x.valor) * (x.tipo === "Despesa" ? -1 : 1);
@@ -900,7 +821,7 @@ const qs = s => document.querySelector(s);
     const sel = qs("#monthSelect");
     if (!sel) return;
     sel.innerHTML = "";
-    const mesesDisponiveis = Array.from(new Set(S.tx.filter(x=>x.data).map(x => monthKeyFor(x))));
+    const mesesDisponiveis = [new Set(S.tx.filter(x=>x.data).map(x => x.data.slice(0, 7)))];
     mesesDisponiveis.sort((a, b) => b.localeCompare(a));
     
     /* ENSURE_CURRENT_MONTH_OPTION */ 
@@ -1080,7 +1001,7 @@ mesesDisponiveis.forEach(m => {
       gastosPorDia[d-1] += Number(x.valor)||0;
     });
 
-    const max = Math.max(...gastosPorDia, 0);
+    const max = Math.max(gastosPorDia, 0);
     wrap.innerHTML = '';
 
     // Cabeçalho com iniciais (S T Q Q S S D)
@@ -1402,7 +1323,7 @@ function render() {
     const obs = document.getElementById('metaObs');
 
     const gastosMes = Array.isArray(S.tx) ? S.tx
-      .filter(x=> x.data && monthKeyFor(x) === S.month && x.tipo==='Despesa')
+      .filter(x=> x.data && (typeof monthKeyFor==='function' ? monthKeyFor(x)===S.month : x.data.startsWith(S.month)) && x.tipo==='Despesa')
       .reduce((a,b)=> a + (Number(b.valor)||0), 0) : 0;
 
     if (kTotal) kTotal.textContent = totalMeta ? fmtBRL(totalMeta) : '—';
@@ -1544,108 +1465,131 @@ function render() {
     R.charts[id] = new Chart(ctx, cfg);
   }
 
-  
-
-function renderReports(){
-  const { list } = getReportFilters();
-  const theme = chartTheme();
-  if (window.Chart){
-    Chart.defaults.color = theme.color;
-    Chart.defaults.font.family = 'Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
-  }
-
-  // ==== Fluxo por mês (bar) ====
-  {
-    const byYM = {};
-    list.forEach(x => {
-      const ym = (x.data || "").slice(0,7);
-      if (!ym) return;
-      const v = Number(x.valor) || 0;
-      byYM[ym] = (byYM[ym] || 0) + (x.tipo === 'Despesa' ? -v : v);
-    });
-    const labels = Object.keys(byYM).sort();
-    const vals = labels.map(l => byYM[l]);
-    ensureChart('chartFluxo2', {
-      type: 'bar',
-      data: { labels, datasets: [{ label: 'Fluxo', data: vals }] },
-      options: { scales: { x: { grid: { color: theme.grid } }, y: { grid: { color: theme.grid } } } }
-    });
-  }
-
-  // ==== Pie categorias (despesas) ====
-  {
-    const byCat = {};
-    list.filter(x => x.tipo === 'Despesa').forEach(x => {
-      const k = x.categoria || '—';
-      byCat[k] = (byCat[k] || 0) + (Number(x.valor) || 0);
-    });
-    const labels = Object.keys(byCat);
-    const data = labels.map(l => byCat[l]);
-    ensureChart('chartPie2', { type: 'pie', data: { labels, datasets: [{ data }] } });
-    // Tabela top categorias (média simples por categoria)
-    const tb = document.querySelector('#tblMediaCats2 tbody');
-    if (tb){
-      const lines = labels.map(c => {
-        return `<tr><td>${c}</td><td>${(byCat[c] || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</td></tr>`;
-      }).join('');
-      tb.innerHTML = lines;
+  function renderReports(){
+    const { list } = getReportFilters();
+    const theme = chartTheme();
+    if (window.Chart){
+      Chart.defaults.color = theme.color;
+      Chart.defaults.font.family = 'Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
     }
+
+    // ==== Fluxo por mês (bar)
+    {
+      const byYM = {};
+      list.forEach(x=>{ const ym = x.data.slice(0,7); byYM[ym] = (byYM[ym]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
+      const labels = Object.keys(byYM).sort();
+      ensureChart('chartFluxo2', {
+        type:'bar',
+        data:{ labels, datasets:[{ label:'Fluxo', data: labels.map(l=>byYM[l]) }] },
+        options:{ scales:{ x:{ grid:{ color: theme.grid } }, y:{ grid:{ color: theme.grid } } } }
+      });
+    }
+
+    // ==== Pie categorias (despesas)
+    {
+      const byCat = {};
+      list.filter(x=>x.tipo==='Despesa').forEach(x=>{ byCat[x.categoria] = (byCat[x.categoria]||0)+Number(x.valor||0); });
+      const labels = Object.keys(byCat);
+      const data = labels.map(l=>byCat[l]);
+      ensureChart('chartPie2', { type:'pie', data:{ labels, datasets:[{ data }] } });
+      // tabela top
+      const tb = document.querySelector('#tblTop2 tbody'); if (tb){
+        tb.innerHTML = labels
+          .map((l,i)=>`<tr><td>${l||'-'}</td><td>${(Number(data[i])||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</td></tr>`)
+          .join('');
+      }
+    }
+
+    // ==== Previsão simples (média móvel) & média por categoria
+    {
+      const byYM = {};
+      list.forEach(x=>{ const ym=x.data.slice(0,7); byYM[ym] = (byYM[ym]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
+      const labels = Object.keys(byYM).sort();
+      const vals = labels.map(l=>byYM[l]);
+      // média móvel 3p
+      const ma = vals.map((_,i)=>{ const a=vals[Math.max(0,i-2)]||0, b=vals[Math.max(0,i-1)]||0, c=vals[i]||0; const n = i<2? (i+1):3; return (a+b+c)/n; });
+      ensureChart('chartForecast2', { type:'line', data:{ labels, datasets:[
+        { label:'Fluxo', data: vals }, { label:'Tendência (MM3)', data: ma }
+      ] }, options:{ scales:{ x:{ grid:{ color: theme.grid } }, y:{ grid:{ color: theme.grid } } } } });
+      const kpi = document.getElementById('kpiForecastFinal2'); if (kpi){
+        const last = vals.at(-1)||0; kpi.textContent = last.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+      }
+
+      // média por categoria (despesa)
+      const byCat = {};
+      list.filter(x=>x.tipo==='Despesa').forEach(x=>{ const ym=x.data.slice(0,7); byCat[x.categoria] = byCat[x.categoria]||{}; byCat[x.categoria][ym]=(byCat[x.categoria][ym]||0)+Number(x.valor||0); });
+      const tb = document.querySelector('#tblMediaCats2 tbody'); if (tb){
+        const cats = Object.keys(byCat);
+        const lines = cats.map(c=>{
+          const vals = Object.values(byCat[c]);
+          const m = vals.length? (vals.reduce((a,b)=>a+b,0)/vals.length):0;
+          return `<tr><td>${c}</td><td>${m.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</td></tr>`;
+        }).join('');
+        tb.innerHTML = lines;
+      }
+    }
+
+    // ==== YoY (barras lado a lado)
+    {
+      const byYearMonth = {};
+      list.forEach(x=>{ const y = x.data.slice(0,4); const m = x.data.slice(5,7); const key = `${y}-${m}`; byYearMonth[key]=(byYearMonth[key]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
+      const years = [new Set(list.map(x=>x.data.slice(0,4)))].sort().slice(-2);
+      const months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
+      const labels = months.map(m=>m);
+      const ds = years.map(y=>({ label:y, data: months.map(m=> byYearMonth[`${y}-${m}`]||0) }));
+      ensureChart('chartYoY', { type:'bar', data:{ labels, datasets: ds }, options:{ scales:{ x:{ stacked:false, grid:{ color: theme.grid } }, y:{ grid:{ color: theme.grid } } } } });
+    }
+
+    // ==== Receitas x Despesas (stacked)
+    {
+      const byYM = {};
+      list.forEach(x=>{ const ym = x.data.slice(0,7); byYM[ym] = byYM[ym] || { R:0, D:0 }; if (x.tipo==='Receita') byYM[ym].R += Number(x.valor||0); if (x.tipo==='Despesa') byYM[ym].D += Number(x.valor||0); });
+      const labels = Object.keys(byYM).sort();
+      const rec = labels.map(l=> byYM[l].R);
+      const des = labels.map(l=> -byYM[l].D);
+      ensureChart('chartRxV', { type:'bar', data:{ labels, datasets:[ {label:'Receitas', data:rec}, {label:'Despesas', data:des} ] }, options:{ scales:{ x:{ stacked:true, grid:{ color: theme.grid } }, y:{ stacked:true, grid:{ color: theme.grid } } } } });
+    }
+
+    // ==== Heatmap reaproveitado
+    const hm = document.getElementById('heatmap2');
+    const hmOld = document.getElementById('heatmap');
+    if (hm){ hm.innerHTML = hmOld ? hmOld.innerHTML : '<div class="muted">Sem dados</div>'; }
   }
 
-  // ==== YoY (barras lado a lado) ====
-  {
-    const byYearMonth = {};
-    list.forEach(x => {
-      const y = (x.data || "").slice(0,4);
-      const m = (x.data || "").slice(5,7);
-      if (!y || !m) return;
-      const key = `${y}-${m}`;
-      const v = Number(x.valor) || 0;
-      byYearMonth[key] = (byYearMonth[key] || 0) + (x.tipo === 'Despesa' ? -v : v);
-    });
-    const years = [...new Set(list.map(x => (x.data || "").slice(0,4)).filter(Boolean))].sort().slice(-2);
-    const months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
-    const labels = months.slice();
-    const ds = years.map(y => ({ label: y, data: months.map(m => byYearMonth[`${y}-${m}`] || 0) }));
-    ensureChart('chartYoY', {
-      type: 'bar',
-      data: { labels, datasets: ds },
-      options: { scales: { x: { stacked: false, grid: { color: theme.grid } }, y: { grid: { color: theme.grid } } } }
-    });
+  // ===== Exportar gráfico para PNG =====
+  function exportChartPNG(id){
+    const map = { 'fluxo':'chartFluxo2','pie':'chartPie2','forecast':'chartForecast2','yoy':'chartYoY','rxv':'chartRxV' };
+    const c = document.getElementById(map[id]);
+    if (!c) return;
+    const link = document.createElement('a');
+    link.download = `${id}.png`;
+    link.href = c.toDataURL('image/png');
+    link.click();
   }
 
-  // ==== Receitas x Despesas (stacked) ====
-  {
-    const byYM = {};
-    list.forEach(x => {
-      const ym = (x.data || "").slice(0,7);
-      if (!ym) return;
-      const v = Number(x.valor) || 0;
-      byYM[ym] = byYM[ym] || { R: 0, D: 0 };
-      if (x.tipo === 'Despesa') byYM[ym].D += v; else byYM[ym].R += v;
-    });
-    const labels = Object.keys(byYM).sort();
-    const rec = labels.map(l => byYM[l].R);
-    const des = labels.map(l => -byYM[l].D);
-    ensureChart('chartRxV', {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [
-          { label: 'Receitas', data: rec },
-          { label: 'Despesas', data: des }
-        ]
-      },
-      options: { scales: { x: { stacked: true, grid: { color: theme.grid } }, y: { stacked: true, grid: { color: theme.grid } } } }
-    });
+  // ===== Tela cheia =====
+  function openChartFullscreen(id){
+    const map = { 'fluxo':'chartFluxo2','pie':'chartPie2','forecast':'chartForecast2','yoy':'chartYoY','rxv':'chartRxV' };
+    const srcCanvas = document.getElementById(map[id]);
+    if (!srcCanvas) return;
+    const fs = document.getElementById('chartFs');
+    const dest = document.getElementById('chartFsCanvas');
+    fs.hidden = false;
+    if (R.charts._fs) { R.charts._fs.destroy(); }
+    const cfg = R.charts[map[id]]?.config? JSON.parse(JSON.stringify(R.charts[map[id]].config)) : null;
+    if (cfg){ R.charts._fs = new Chart(dest, cfg); }
+  }
+  function closeChartFullscreen(){
+    const fs = document.getElementById('chartFs');
+    fs.hidden = true;
+    if (R.charts._fs){ R.charts._fs.destroy(); R.charts._fs = null; }
   }
 
-  // ==== Heatmap (reaproveitado) ====
-  const hm = document.getElementById('heatmap2');
-  const hmOld = document.getElementById('heatmap');
-  if (hm && hmOld) hm.innerHTML = hmOld.innerHTML;
-}
-
-
-// build marker
-console.log('scripts.reports.fixed.js - patched build');
+  // ===== Hook no render existente =====
+  const _origRender = typeof render === 'function' ? render : null;
+  render = function(){
+    if (_origRender) _origRender();
+    if (!initReportsUI._done){ initReportsUI(); initReportsUI._done = true; }
+    renderReports();
+  };
+};
