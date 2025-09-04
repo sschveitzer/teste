@@ -11,11 +11,25 @@ window.onload = function () {
     month: null,
     hide: false,
     dark: false,
-    // Preferências de fatura
+    
+    useCycleForReports: false,
+// Preferências de fatura
     ccDueDay: null,
     ccClosingDay: null,
     editingId: null
   };
+
+// Exponha no console para testes rápidos
+try {
+  window.S = S;
+  window.setUseCycleForReports = function(v){
+    S.useCycleForReports = !!v;
+    try { savePrefs(); } catch(e) {}
+    try { render(); } catch(e) {}
+  };
+} catch (e) {}
+
+
 
   // ========= HELPERS GERAIS =========
   function gid() {
@@ -67,37 +81,6 @@ window.onload = function () {
       return d.toISOString().slice(0, 7);
     }
   }
-
-
-  function monthKeyFor(tx) {
-    try {
-      const ymd = String((tx && tx.data) || '');
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
-        return ymd.slice(0, 7) || '';
-      }
-
-      const closing = Number(S && S.ccClosingDay);
-      if (!closing || closing < 1 || closing > 28) {
-        return ymd.slice(0, 7);
-      }
-
-      const [y, m, d] = ymd.split('-').map(Number);
-      if (d <= closing) {
-        return String(y) + '-' + String(m).padStart(2, '0');
-      } else {
-        let yy = y;
-        let mm = m + 1;
-        if (mm > 12) {
-          mm = 1;
-          yy += 1;
-        }
-        return String(yy) + '-' + String(mm).padStart(2, '0');
-      }
-    } catch (e) {
-      return (String((tx && tx.data) || '').slice(0, 7) || '');
-    }
-  }
-
   function incMonthly(ymd, diaMes, ajusteFimMes = true) {
     const [y, m] = ymd.split("-").map(Number);
     let yy = y, mm = m + 1;
@@ -115,56 +98,7 @@ window.onload = function () {
     return toYMD(new Date(yy, mes - 1, day));
   }
 
-  
-
-  // ===== Cartão de crédito: janela da fatura =====
-  function inferClosingDayFromDue(dueDay) {
-    if (!Number.isFinite(dueDay) || dueDay < 1 || dueDay > 31) return null;
-    const d = dueDay - 8;
-    return d >= 1 ? d : 1;
-  }
-
-  function getCardCycle(refYMD = nowYMD()) {
-    const dueDay = Number(S.ccDueDay) || null;
-    const explicitClosing = Number(S.ccClosingDay) || null;
-    if (!dueDay) return null;
-
-    const closingDay = explicitClosing ?? inferClosingDayFromDue(dueDay);
-    if (!closingDay) return null;
-
-    const Y = Number(refYMD.slice(0,4));
-    const M = Number(refYMD.slice(5,7));
-    const clamp = (y, m, d) => toYMD(new Date(y, m - 1, Math.min(d, lastDayOfMonth(y, m))));
-
-    const thisMonthClose = clamp(Y, M, closingDay);
-    let end = (refYMD <= thisMonthClose)
-      ? thisMonthClose
-      : (function () {
-          let y = Y, m = M + 1; if (m > 12) { m = 1; y += 1; }
-          return clamp(y, m, closingDay);
-        })();
-
-    const prevEnd = (function () {
-      const ymd = end;
-      let y = Number(ymd.slice(0,4));
-      let m = Number(ymd.slice(5,7)) - 1;
-      if (m < 1) { m = 12; y -= 1; }
-      return clamp(y, m, closingDay);
-    })();
-
-    const start = addDays(prevEnd, 1);
-
-    let dueY = Number(end.slice(0,4));
-    let dueM = Number(end.slice(5,7));
-    if (dueDay <= closingDay) {
-      dueM += 1; if (dueM > 12) { dueM = 1; dueY += 1; }
-    }
-    const dueDate = clamp(dueY, dueM, dueDay);
-
-    return { start, end, dueDate, closingDay, dueDay };
-  }
-
-const qs  = (s) => document.querySelector(s);
+  const qs  = (s) => document.querySelector(s);
   const qsa = (s) => Array.from(document.querySelectorAll(s));
 
   // ========= LOAD DATA =========
@@ -728,7 +662,7 @@ const qs  = (s) => document.querySelector(s);
   // ========= RELATÓRIOS / KPIs / GRÁFICOS EXISTENTES =========
   function updateKpis() {
     // Transações do mês selecionado
-    const txMonth = (S.tx || []).filter(x => x.data && txBucketYM(x) === S.month);
+    const txMonth = (S.tx || []).filter(x => x.data && (typeof monthKeyFor==='function' ? monthKeyFor(x)===S.month : String(x.data).startsWith(S.month)));
     const receitas = txMonth.filter(x => x.tipo === "Receita").reduce((a, b) => a + Number(b.valor), 0);
     const despesas = txMonth.filter(x => x.tipo === "Despesa").reduce((a, b) => a + Number(b.valor), 0);
     const saldo = receitas - despesas;
@@ -792,29 +726,33 @@ const qs  = (s) => document.querySelector(s);
 
   let chartSaldo, chartPie, chartFluxo;
   function renderCharts() {
-    
-    // Saldo acumulado (12 meses) - por bucket de fatura
+    // Saldo acumulado (12 meses)
     if (chartSaldo) chartSaldo.destroy();
     const ctxSaldo = qs("#chartSaldo");
     if (ctxSaldo && window.Chart) {
-      const allBuckets = Array.from(new Set((S.tx || []).map(txBucketYM))).filter(Boolean).sort();
-      const last12 = allBuckets.slice(-12);
-      const saldoData = last12.map(ym => {
-        const txs = (S.tx || []).filter(x => x.data && txBucketYM(x) === ym);
+      const months = [];
+      const saldoData = [];
+      const d = new Date();
+      for (let i = 11; i >= 0; i--) {
+        const cur = new Date(d.getFullYear(), d.getMonth() - i, 1);
+        const ym = cur.toISOString().slice(0, 7);
+        const txs = (S.tx || []).filter(x => x.data && String(x.data).startsWith(ym));
         const receitas = txs.filter(x => x.tipo === "Receita").reduce((a, b) => a + Number(b.valor), 0);
         const despesas = txs.filter(x => x.tipo === "Despesa").reduce((a, b) => a + Number(b.valor), 0);
-        return receitas - despesas;
-      });
+        months.push(cur.toLocaleDateString("pt-BR", { month: "short" }));
+        saldoData.push(receitas - despesas);
+      }
       chartSaldo = new Chart(ctxSaldo, {
         type: "line",
-        data: { labels: last12, datasets: [{ label: "Saldo", data: saldoData }] }
+        data: { labels: months, datasets: [{ label: "Saldo", data: saldoData }] }
       });
     }
+
     // Pizza por categoria (mês atual)
     if (chartPie) chartPie.destroy();
     const ctxPie = qs("#chartPie");
     if (ctxPie && window.Chart) {
-      const txMonth = (S.tx || []).filter(x => x.data && txBucketYM(x) === S.month);
+      const txMonth = (S.tx || []).filter(x => x.data && (typeof monthKeyFor==='function' ? monthKeyFor(x)===S.month : String(x.data).startsWith(S.month)));
       const porCat = {};
       txMonth.filter(x => x.tipo === "Despesa").forEach(x => {
         porCat[x.categoria] = (porCat[x.categoria] || 0) + Number(x.valor);
@@ -832,7 +770,7 @@ const qs  = (s) => document.querySelector(s);
       const porMes = {};
       (S.tx || []).forEach(x => {
         if (!x.data) return;
-        const ym = txBucketYM(x);
+        const ym = String(x.data).slice(0, 7);
         porMes[ym] = (porMes[ym] || 0) + Number(x.valor) * (x.tipo === "Despesa" ? -1 : 1);
       });
       const labels = Object.keys(porMes).sort();
@@ -848,7 +786,7 @@ const qs  = (s) => document.querySelector(s);
     const sel = qs("#monthSelect");
     if (!sel) return;
     sel.innerHTML = "";
-    const mesesDisponiveis = Array.from(new Set((S.tx || []).filter(x => x.data).map(x => txBucketYM(x)))).sort((a,b)=> b.localeCompare(a));
+    const mesesDisponiveis = Array.from(new Set((S.tx || []).filter(x => x.data).map(x => String(x.data).slice(0, 7)))).sort((a,b)=> b.localeCompare(a));
 
     // Garante mês atual no seletor
     (function(){
@@ -1079,18 +1017,7 @@ const qs  = (s) => document.querySelector(s);
     sel.value = current;
   }
 
-  // --- Cartão de crédito: sincroniza inputs com o estado ---
-  function syncCardPrefsUI() {
-    const dueEl = qs("#ccDueDay");
-    const closeEl = qs("#ccClosingDay");
-    if (dueEl)   dueEl.value   = (S.ccDueDay ?? "");
-    if (closeEl) closeEl.value = (S.ccClosingDay ?? "");
-  }
-
-
-
   function render() {
-    syncCardPrefsUI();
     document.body.classList.toggle("dark", S.dark);
 
     // sincroniza estado dos toggles (suporta ids antigos e novos)
@@ -1171,23 +1098,6 @@ const qs  = (s) => document.querySelector(s);
     render();
     await savePrefs();
   };
-
-  // Cartão de crédito (fatura) - salvar preferências
-  (function wireCardPrefs(){
-    const btnSaveCard = qs("#saveCardPrefs");
-    if (!btnSaveCard || btnSaveCard.__wired) return;
-    btnSaveCard.__wired = true;
-    btnSaveCard.addEventListener("click", async () => {
-      const due   = Number(qs("#ccDueDay")?.value) || null;
-      const close = Number(qs("#ccClosingDay")?.value) || null;
-      S.ccDueDay = due;
-      S.ccClosingDay = close;
-      await savePrefs();
-      alert("Fatura salva com sucesso!");
-    });
-  })();
-
-
 
   // Ícone de Config na topbar (abre a aba Config)
   function wireBtnConfig(){
@@ -1355,7 +1265,7 @@ const qs  = (s) => document.querySelector(s);
     const obs = document.getElementById('metaObs');
 
     const gastosMes = Array.isArray(S.tx) ? S.tx
-      .filter(x=> x.data && txBucketYM(x) === S.month && x.tipo==='Despesa')
+      .filter(x=> x.data && (typeof monthKeyFor==='function' ? monthKeyFor(x)===S.month : String(x.data).startsWith(S.month)) && x.tipo==='Despesa')
       .reduce((a,b)=> a + (Number(b.valor)||0), 0) : 0;
 
     if (kTotal) kTotal.textContent = totalMeta ? fmtBRL(totalMeta) : '—';
@@ -1502,7 +1412,7 @@ const qs  = (s) => document.querySelector(s);
     // ==== Fluxo por mês (bar)
     {
       const byYM = {};
-      list.forEach(x=>{ const ym = txBucketYM(x); byYM[ym] = (byYM[ym]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
+      list.forEach(x=>{ const ym = String(x.data).slice(0,7); byYM[ym] = (byYM[ym]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
       const labels = Object.keys(byYM).sort();
       ensureChart('chartFluxo2', {
         type:'bar',
@@ -1527,7 +1437,7 @@ const qs  = (s) => document.querySelector(s);
     // ==== Previsão simples (média móvel) & média por categoria
     {
       const byYM = {};
-      list.forEach(x=>{ const ym = txBucketYM(x); byYM[ym] = (byYM[ym]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
+      list.forEach(x=>{ const ym=String(x.data).slice(0,7); byYM[ym] = (byYM[ym]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
       const labels = Object.keys(byYM).sort();
       const vals = labels.map(l=>byYM[l]);
       const ma = vals.map((_,i)=>{ const a=vals[Math.max(0,i-2)]||0, b=vals[Math.max(0,i-1)]||0, c=vals[i]||0; const n = i<2? (i+1):3; return (a+b+c)/n; });
@@ -1540,7 +1450,7 @@ const qs  = (s) => document.querySelector(s);
 
       // média por categoria (despesa)
       const byCat = {};
-      list.filter(x=>x.tipo==='Despesa').forEach(x=>{ const ym = txBucketYM(x); byCat[x.categoria] = byCat[x.categoria]||{}; byCat[x.categoria][ym]=(byCat[x.categoria][ym]||0)+Number(x.valor||0); });
+      list.filter(x=>x.tipo==='Despesa').forEach(x=>{ const ym=String(x.data).slice(0,7); byCat[x.categoria] = byCat[x.categoria]||{}; byCat[x.categoria][ym]=(byCat[x.categoria][ym]||0)+Number(x.valor||0); });
       const tb = document.querySelector('#tblMediaCats2 tbody'); if (tb){
         const cats = Object.keys(byCat);
         const lines = cats.map(c=>{
@@ -1566,7 +1476,7 @@ const qs  = (s) => document.querySelector(s);
     // ==== Receitas x Despesas (stacked)
     {
       const byYM = {};
-      list.forEach(x=>{ const ym = txBucketYM(x); byYM[ym] = byYM[ym] || { R:0, D:0 }; if (x.tipo==='Receita') byYM[ym].R += Number(x.valor||0); if (x.tipo==='Despesa') byYM[ym].D += Number(x.valor||0); });
+      list.forEach(x=>{ const ym = String(x.data).slice(0,7); byYM[ym] = byYM[ym] || { R:0, D:0 }; if (x.tipo==='Receita') byYM[ym].R += Number(x.valor||0); if (x.tipo==='Despesa') byYM[ym].D += Number(x.valor||0); });
       const labels = Object.keys(byYM).sort();
       const rec = labels.map(l=> byYM[l].R);
       const des = labels.map(l=> -byYM[l].D);
@@ -1642,18 +1552,4 @@ const qs  = (s) => document.querySelector(s);
 
   // Start!
   loadAll();
-}
-
-  // Usa o ciclo de fatura (monthKeyFor) se existir; senão, mês natural (YYYY-MM)
-  function txBucketYM(x) {
-    try {
-      if (typeof monthKeyFor === "function") {
-        return monthKeyFor(x);
-      }
-      return String((x && x.data) || "").slice(0, 7);
-    } catch (e) {
-      return String((x && x.data) || "").slice(0, 7);
-    }
-  }
-
-;
+};
