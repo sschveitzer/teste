@@ -105,9 +105,9 @@ try {
   // ========= LOAD DATA =========
   async function loadAll() {
     // Transações
-    const { data: tx, error: txError 
-  render();
-} = await supabaseClient.from("transactions").select("*");
+    const { data: tx, error: txError } = await supabaseClient.from("transactions").select("*");
+    
+    
     if (txError) { console.error("Erro ao carregar transações:", txError); S.tx = []; }
     else { S.tx = tx || []; }
 
@@ -127,8 +127,10 @@ try {
       // Lê valores em snake_case do banco
       S.ccDueDay     = Number(prefs.cc_due_day)     || null;
       S.ccClosingDay = Number(prefs.cc_closing_day) || null;
-            if (prefs.use_cycle_for_reports !== undefined && prefs.use_cycle_for_reports !== null) { S.useCycleForReports = !!prefs.use_cycle_for_reports; }
-          
+      if (prefs.use_cycle_for_reports !== undefined && prefs.use_cycle_for_reports !== null) {
+        S.useCycleForReports = !!prefs.use_cycle_for_reports;
+      }
+    }
 
     // Garante mês atual se não houver salvo
     if (!S.month) {
@@ -302,7 +304,7 @@ try {
   function rebuildCatSelect(selected) {
     const sel = qs("#mCategoria");
     if (!sel) return;
-    sel.innerHTML = '<option value="">Selecione…</option>';
+    sel.innerHTML = '<option value="">Selecione...</option>';
     (S.cats || []).forEach(c => {
       const o = document.createElement("option");
       o.value = c.nome;
@@ -1617,5 +1619,3 @@ try {
 
   // Expor helpers no console
   try { window.txBucketYM = txBucketYM; window.inSelectedMonth = inSelectedMonth; } catch (e) {}
-
-};
