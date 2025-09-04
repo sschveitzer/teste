@@ -728,7 +728,7 @@ const qs  = (s) => document.querySelector(s);
   // ========= RELATÓRIOS / KPIs / GRÁFICOS EXISTENTES =========
   function updateKpis() {
     // Transações do mês selecionado
-    const txMonth = (S.tx || []).filter(x => x.data && (typeof monthKeyFor==='function' ? monthKeyFor(x)===S.month : txBucketYM(x) === S.month));
+    const txMonth = (S.tx || []).filter(x => x.data && txBucketYM(x) === S.month);
     const receitas = txMonth.filter(x => x.tipo === "Receita").reduce((a, b) => a + Number(b.valor), 0);
     const despesas = txMonth.filter(x => x.tipo === "Despesa").reduce((a, b) => a + Number(b.valor), 0);
     const saldo = receitas - despesas;
@@ -818,7 +818,7 @@ const qs  = (s) => document.querySelector(s);
     if (chartPie) chartPie.destroy();
     const ctxPie = qs("#chartPie");
     if (ctxPie && window.Chart) {
-      const txMonth = (S.tx || []).filter(x => x.data && (typeof monthKeyFor==='function' ? monthKeyFor(x)===S.month : String(x.data).startsWith(S.month)));
+      const txMonth = (S.tx || []).filter(x => x.data && txBucketYM(x) === S.month);
       const porCat = {};
       txMonth.filter(x => x.tipo === "Despesa").forEach(x => {
         porCat[x.categoria] = (porCat[x.categoria] || 0) + Number(x.valor);
@@ -1236,6 +1236,15 @@ syncCardPrefsUI();
       await savePrefs();
       alert("Fatura salva com sucesso!");
     });
+    // Recalcula bucket atual e re-renderiza após salvar preferências do cartão
+    try {
+      const today = nowYMD();
+      if (typeof txBucketYM === 'function') {
+        const curBucket = txBucketYM({ data: today });
+        if (curBucket) S.month = curBucket;
+      }
+    } catch(e) {}
+    try { render(); } catch(e) {}
     // Após salvar, recalcula o bucket atual e re-renderiza para refletir o novo ciclo
     try {
       const today = nowYMD();
@@ -1415,7 +1424,7 @@ syncCardPrefsUI();
     const obs = document.getElementById('metaObs');
 
     const gastosMes = Array.isArray(S.tx) ? S.tx
-      .filter(x=> x.data && (typeof monthKeyFor==='function' ? monthKeyFor(x)===S.month : txBucketYM(x) === S.month) && x.tipo==='Despesa')
+      .filter(x=> x.data && txBucketYM(x) === S.month && x.tipo==='Despesa')
       .reduce((a,b)=> a + (Number(b.valor)||0), 0) : 0;
 
     if (kTotal) kTotal.textContent = totalMeta ? fmtBRL(totalMeta) : '—';
