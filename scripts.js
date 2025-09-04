@@ -158,7 +158,7 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
   }
 
   const qs = s => document.querySelector(s);
-  const qsa = s => [...document.querySelectorAll(s)];
+  const qsa = s => [document.querySelectorAll(s)];
 
   // ========= LOAD DATA =========
   async function loadAll() {
@@ -209,7 +209,15 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
         const m = String(today.getMonth() + 1).padStart(2, "0");
         S.month = `${y}-${m}`;
       }
-try {
+// ENSURE_S_MONTH: garante mês atual como default se não houver salvo
+    if (!S.month) {
+      const today = new Date();
+      const y = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, "0");
+      S.month = `${y}-${mm}`;
+    }
+}
+        try {
       const dNow = new Date();
       const cur = new Date(dNow.getTime() - dNow.getTimezoneOffset() * 60000).toISOString().slice(0,7);
       S.month = cur;
@@ -250,17 +258,14 @@ try {
     return await supabaseClient.from("categories").delete().eq("nome", nome);
   }
   async function savePrefs() {
-  await supabaseClient.from("preferences").upsert([
-    {
-      id: 1,
-      month: S.month,
-      hide: S.hide,
-      dark: S.dark,
-      cc_due_day: S.cc_due_day || null,
-      cc_closing_day: S.cc_closing_day || null
-    }
-  
-]);
+  await supabaseClient.from("preferences").upsert([{
+    id: 1,
+    month: S.month,
+    hide: S.hide,
+    dark: S.dark,
+    cc_due_day: S.cc_due_day || null,
+    cc_closing_day: S.cc_closing_day || null
+  }]);
   }
   // Atualiza categoria nas transações (rename)
   async function updateTxCategory(oldName, newName) {
@@ -319,8 +324,10 @@ try {
         } else {
           break;
         }
+      }
+
       if (changed) {
-        await saveRec({ ...r, proxima_data: next });
+        await saveRec({ r, proxima_data: next });
       }
     }
 
@@ -436,7 +443,7 @@ try {
     // define próxima data inicial baseada no "início"
     let proxima = inicio;
     if (per === "Mensal") {
-      const ld = lastDayOfMonth(Number(inicio.slice(0,4)), Number(inicio.slice(5,7)));
+      const ld = lastDayOfMonth(Number(inicio.slice(0,4)), Number(inicio.slice(5,7));
       const day = (ajuste ? Math.min(diaMes, ld) : diaMes);
       const candidate = toYMD(new Date(Number(inicio.slice(0,4)), Number(inicio.slice(5,7)) - 1, day));
       proxima = (candidate < inicio) ? incMonthly(candidate, diaMes, ajuste) : candidate;
@@ -477,7 +484,7 @@ try {
       if (per === "Mensal") rec.proxima_data = incMonthly(rec.proxima_data, diaMes, ajuste);
       else if (per === "Semanal") rec.proxima_data = incWeekly(rec.proxima_data);
       else if (per === "Anual") rec.proxima_data = incYearly(rec.proxima_data, diaMes, mes, ajuste);
-      await saveRec({ ...saved, proxima_data: rec.proxima_data });
+      await saveRec({ saved, proxima_data: rec.proxima_data });
     }
 
     await loadAll();
@@ -523,13 +530,13 @@ try {
   function renderRecentes() {
   const ul = qs("#listaRecentes");
   if (!ul) return;
-  const list = [...S.tx].filter(x => monthKeyFor(x) === S.month)
+  const list = [S.tx].filter(x => monthKeyFor(x) === S.month)
     .filter(x => x.tipo === "Despesa")
     .sort((a, b) => b.data.localeCompare(a.data))
     .slice(0, 4);
   ul.innerHTML = "";
   if (!ul.classList.contains("lanc-grid")) ul.classList.add("lanc-grid");
-  list.forEach(x => ul.append(itemTx(x, true)));
+  list.forEach(x => ul.append(itemTx(x, true));
 }
 
   function renderLancamentos() {
@@ -674,7 +681,7 @@ const qs = s => document.querySelector(s);
     ul.classList.add("cats-grid");
     ul.innerHTML = "";
 
-    const list = Array.isArray(S.cats) ? [...S.cats].sort((a,b)=> (a.nome||"").localeCompare(b.nome||"")) : [];
+    const list = Array.isArray(S.cats) ? [S.cats].sort((a,b)=> (a.nome||"").localeCompare(b.nome||"")) : [];
     if (!list.length) {
       const li = document.createElement("li");
       li.className = "item";
@@ -894,7 +901,7 @@ const qs = s => document.querySelector(s);
     const sel = qs("#monthSelect");
     if (!sel) return;
     sel.innerHTML = "";
-    const mesesDisponiveis = [...new Set(S.tx.filter(x=>x.data).map(x => monthKeyFor(x)))];
+    const mesesDisponiveis = [new Set(S.tx.filter(x=>x.data).map(x => monthKeyFor(x))];
     mesesDisponiveis.sort((a, b) => b.localeCompare(a));
     
     /* ENSURE_CURRENT_MONTH_OPTION */ 
@@ -905,9 +912,7 @@ const qs = s => document.querySelector(s);
       // Remove duplicatas novamente por segurança mantendo ordem
       const seen = new Set(); 
       for (let i = 0; i < mesesDisponiveis.length; i++) {
-        if (seen.has(mesesDisponiveis[i])) { mesesDisponiveis.splice(i,1); i--; } else { seen.add(mesesDisponiveis[i]); }
-      }
-    })();
+        if (seen.has(mesesDisponiveis[i])) { mesesDisponiveis.splice(i,1); i--; } else { seen.add(mesesDisponiveis[i]); }))();
 mesesDisponiveis.forEach(m => {
       const opt = document.createElement("option");
       opt.value = m;
@@ -1074,7 +1079,7 @@ mesesDisponiveis.forEach(m => {
       gastosPorDia[d-1] += Number(x.valor)||0;
     });
 
-    const max = Math.max(...gastosPorDia, 0);
+    const max = Math.max(gastosPorDia, 0);
     wrap.innerHTML = '';
 
     // Cabeçalho com iniciais (S T Q Q S S D)
@@ -1161,8 +1166,7 @@ function render() {
 
   // ========= EVENTOS =========
   qsa(".tab").forEach(btn =>
-    btn.addEventListener("click", () => setTab(btn.dataset.tab))
-  );
+    btn.addEventListener("click", () => setTab(btn.dataset.tab));
 
   const fab = qs("#fab");
   if (fab) fab.onclick = () => toggleModal(true);
@@ -1190,7 +1194,7 @@ function render() {
   if (btnAddCat) btnAddCat.onclick = async () => {
     const nome = (qs("#newCatName").value || "").trim();
     if (!nome) return;
-    if (S.cats.some(c => (c.nome||"").toLowerCase() === nome.toLowerCase())) {
+    if (S.cats.some(c => (c.nome||"").toLowerCase() === nome.toLowerCase()) {
       alert("Essa categoria já existe.");
       return;
     }
@@ -1342,7 +1346,7 @@ function render() {
       // Trap de foco + Tab
       dialog.addEventListener('keydown', (e) => {
         if (e.key !== 'Tab') return;
-        const focusables = [...dialog.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+        const focusables = [dialog.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
           .filter(el => !el.hasAttribute('disabled') && !el.getAttribute('aria-hidden'));
         if (!focusables.length) return;
         const first = focusables[0];
@@ -1554,8 +1558,7 @@ function render() {
       ensureChart('chartFluxo2', {
         type:'bar',
         data:{ labels, datasets:[{ label:'Fluxo', data: labels.map(l=>byYM[l]) }] },
-        options:{ scales:{ x:{ grid:{ color: theme.grid } }, y:{ grid:{ color: theme.grid } } } }
-      });
+        options:{ scales:{ x:{ grid:{ color: theme.grid } }, y:{ grid:{ color: theme.grid } } }));
     }
 
     // ==== Pie categorias (despesas)
@@ -1583,7 +1586,7 @@ function render() {
       const ma = vals.map((_,i)=>{ const a=vals[Math.max(0,i-2)]||0, b=vals[Math.max(0,i-1)]||0, c=vals[i]||0; const n = i<2? (i+1):3; return (a+b+c)/n; });
       ensureChart('chartForecast2', { type:'line', data:{ labels, datasets:[
         { label:'Fluxo', data: vals }, { label:'Tendência (MM3)', data: ma }
-      ] }, options:{ scales:{ x:{ grid:{ color: theme.grid } }, y:{ grid:{ color: theme.grid } } } } });
+      ] }, options:{ scales:{ x:{ grid:{ color: theme.grid } }, y:{ grid:{ color: theme.grid } } }));
       const kpi = document.getElementById('kpiForecastFinal2'); if (kpi){
         const last = vals.at(-1)||0; kpi.textContent = last.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
       }
@@ -1606,11 +1609,11 @@ function render() {
     {
       const byYearMonth = {};
       list.forEach(x=>{ const y = x.data.slice(0,4); const m = x.data.slice(5,7); const key = `${y}-${m}`; byYearMonth[key]=(byYearMonth[key]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
-      const years = [...new Set(list.map(x=>x.data.slice(0,4)))].sort().slice(-2);
+      const years = [new Set(list.map(x=>x.data.slice(0,4))].sort().slice(-2);
       const months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
       const labels = months.map(m=>m);
       const ds = years.map(y=>({ label:y, data: months.map(m=> byYearMonth[`${y}-${m}`]||0) }));
-      ensureChart('chartYoY', { type:'bar', data:{ labels, datasets: ds }, options:{ scales:{ x:{ stacked:false, grid:{ color: theme.grid } }, y:{ grid:{ color: theme.grid } } } } });
+      ensureChart('chartYoY', { type:'bar', data:{ labels, datasets: ds }, options:{ scales:{ x:{ stacked:false, grid:{ color: theme.grid } }, y:{ grid:{ color: theme.grid } } }));
     }
 
     // ==== Receitas x Despesas (stacked)
@@ -1620,7 +1623,7 @@ function render() {
       const labels = Object.keys(byYM).sort();
       const rec = labels.map(l=> byYM[l].R);
       const des = labels.map(l=> -byYM[l].D);
-      ensureChart('chartRxV', { type:'bar', data:{ labels, datasets:[ {label:'Receitas', data:rec}, {label:'Despesas', data:des} ] }, options:{ scales:{ x:{ stacked:true, grid:{ color: theme.grid } }, y:{ stacked:true, grid:{ color: theme.grid } } } } });
+      ensureChart('chartRxV', { type:'bar', data:{ labels, datasets:[ {label:'Receitas', data:rec}, {label:'Despesas', data:des} ] }, options:{ scales:{ x:{ stacked:true, grid:{ color: theme.grid } }, y:{ stacked:true, grid:{ color: theme.grid } } }));
     }
 
     // ==== Heatmap reaproveitado
