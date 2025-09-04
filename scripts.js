@@ -13,11 +13,6 @@ let S = {
   ccDueDay: null,
   ccClosingDay: null
 };
-  // Preferências de fatura
-  ccDueDay: null,
-  ccClosingDay: null
-};
-
   // ========= HELPERS GERAIS =========
   function gid() {
     return crypto.randomUUID();
