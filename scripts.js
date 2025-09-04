@@ -820,6 +820,33 @@ window.onload = function () {
       } catch (e) { /* noop */ }
     })();
 }
+
+
+  // Usa o ciclo de fatura: se S.ccClosingDay estiver definido (1..28),
+  // datas APÓS esse dia pertencem ao bucket do mês seguinte; senão, usa mês natural.
+  function txBucketYM(x) {
+    try {
+      const ymd = String((x && x.data) || '');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
+        return ymd.slice(0, 7) || '';
+      }
+      const closing = Number(S && S.ccClosingDay);
+      if (!closing || closing < 1 || closing > 28) {
+        return ymd.slice(0, 7);
+      }
+      const [y, m, d] = ymd.split('-').map(Number);
+      if (d <= closing) {
+        return String(y) + '-' + String(m).padStart(2, '0');
+      } else {
+        let yy = y, mm = m + 1;
+        if (mm > 12) { mm = 1; yy += 1; }
+        return String(yy) + '-' + String(mm).padStart(2, '0');
+      }
+    } catch (e) {
+      return (String((x && x.data) || '').slice(0, 7) || '');
+    }
+  }
+
 // ========= NOVOS INSIGHTS / ANÁLISES =========
   // Helpers de série temporal
   function monthsBack(n) {
