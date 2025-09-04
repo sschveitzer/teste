@@ -1616,4 +1616,4 @@ try {
   // Expor helpers no console
   try { window.txBucketYM = txBucketYM; window.inSelectedMonth = inSelectedMonth; } catch (e) {}
 
-;
+};
