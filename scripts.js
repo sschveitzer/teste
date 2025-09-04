@@ -648,7 +648,11 @@ window.onload = function () {
   // ========= RELATÓRIOS / KPIs / GRÁFICOS EXISTENTES =========
   function updateKpis() {
     // Transações do mês selecionado
-    const txMonth = (S.tx || []).filter(x => x.data && inSelectedMonth(x));
+    let txMonth = (S.tx || []).filter(x => x.data && inSelectedMonth(x));
+    if (!txMonth.length) {
+      const ym = (S && S.month) || '';
+      txMonth = (S.tx || []).filter(x => x.data && String(x.data).slice(0,7) === ym);
+    }
     const receitas = txMonth.filter(x => x.tipo === "Receita").reduce((a, b) => a + Number(b.valor), 0);
     const despesas = txMonth.filter(x => x.tipo === "Despesa").reduce((a, b) => a + Number(b.valor), 0);
     const saldo = receitas - despesas;
@@ -738,7 +742,11 @@ window.onload = function () {
     if (chartPie) chartPie.destroy();
     const ctxPie = qs("#chartPie");
     if (ctxPie && window.Chart) {
-      const txMonth = (S.tx || []).filter(x => x.data && inSelectedMonth(x));
+      let txMonth = (S.tx || []).filter(x => x.data && inSelectedMonth(x));
+    if (!txMonth.length) {
+      const ym = (S && S.month) || '';
+      txMonth = (S.tx || []).filter(x => x.data && String(x.data).slice(0,7) === ym);
+    }
       const porCat = {};
       txMonth.filter(x => x.tipo === "Despesa").forEach(x => {
         porCat[x.categoria] = (porCat[x.categoria] || 0) + Number(x.valor);
@@ -1527,8 +1535,8 @@ window.onload = function () {
         const rawClose = (qs("#ccClosingDay")?.value || "").trim();
         const d = Number(rawDue);
         const c = Number(rawClose);
-        S.ccDueDay     = Number.isFinite(d) && d>0 ? d : null;
-        S.ccClosingDay = Number.isFinite(c) && c>0 ? c : null;
+        S.ccDueDay = (Number.isFinite(d) && d >= 1 && d <= 31) ? d : null;
+        S.ccClosingDay = (Number.isFinite(c) && c >= 1 && c <= 31) ? c : null;
         await savePrefs();
         alert("Fatura salva com sucesso!");
       });
