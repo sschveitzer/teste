@@ -16,6 +16,78 @@ window.onload = function () {
   };
 
   // ========= HELPERS GERAIS =========
+  // ======== FATURA (cartão de crédito) ========
+  function inferClosingDay(dueDay) {
+    if (!dueDay) return 28;
+    const d = Number(dueDay) - 8;
+    return d > 0 ? d : 28;
+  }
+  function getBillingMonth(dateStr, closingDay) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return null;
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const cut = Number(closingDay || 28);
+    let yy = y, mm = m;
+    if (d > cut) { mm++; if (mm > 12) { mm = 1; yy++; } }
+    return `${yy}-${String(mm).padStart(2,"0")}`;
+  }
+  function monthKeyFor(x) {
+    if (!x || !x.data) return null;
+    const closing = S.cc_closing_day || inferClosingDay(S.cc_due_day);
+    return getBillingMonth(x.data, closing);
+  }
+
+  // ======= METAS: atualizar UI com base no mês (fatura ou calendário) =======
+  function renderMeta() {
+    const metaTotalLabel = document.querySelector("#metaTotalLabel");
+    const metaGastoMes   = document.querySelector("#metaGastoMes");
+    const metaStatusChip = document.querySelector("#metaStatusChip");
+    const metaProgBar    = document.querySelector("#metaProgBar");
+    const metaObs        = document.querySelector("#metaObs");
+
+    const total = Number((typeof S !== "undefined" && S.metas && S.metas.total) ? S.metas.total : 0);
+    const curMonth = (typeof S !== "undefined" && S.month) ? S.month : (new Date().toISOString().slice(0,7));
+
+    const gastoMes = (typeof S !== "undefined" && Array.isArray(S.tx) ? S.tx : [])
+      .filter(x => x && x.tipo === "Despesa" && (typeof monthKeyFor === "function" ? monthKeyFor(x) : String(x.data).slice(0,7)) === curMonth)
+      .reduce((a,b) => a + (Number(b.valor) || 0), 0);
+
+    if (metaTotalLabel) metaTotalLabel.textContent = total > 0 
+      ? total.toLocaleString('pt-BR', { style:'currency', currency:'BRL' })
+      : "—";
+    if (metaGastoMes)   metaGastoMes.textContent = gastoMes.toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+
+    if (metaProgBar) {
+      const pct = total > 0 ? Math.min(100, (gastoMes / total) * 100) : 0;
+      metaProgBar.style.width = pct.toFixed(2) + "%";
+      metaProgBar.className = "bar";
+      if (total > 0) {
+        if (gastoMes <= total * 0.8) metaProgBar.style.background = "var(--ok)";
+        else if (gastoMes <= total)  metaProgBar.style.background = "var(--brand)";
+        else                         metaProgBar.style.background = "var(--warn)";
+      } else {
+        metaProgBar.style.background = "var(--brand)";
+      }
+    }
+
+    if (metaStatusChip) {
+      if (total <= 0) {
+        metaStatusChip.textContent = "Sem meta";
+      } else if (gastoMes <= total) {
+        const sobra = total - gastoMes;
+        metaStatusChip.textContent = `Dentro da meta (sobra ${sobra.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})})`;
+      } else {
+        const excesso = gastoMes - total;
+        metaStatusChip.textContent = `Acima da meta (${excesso.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})})`;
+      }
+    }
+
+    if (metaObs) {
+      metaObs.textContent = total > 0 
+        ? "Acompanhe o progresso da meta considerando o mês da fatura."
+        : "Defina uma meta para acompanhar o progresso.";
+    }
+  }
+
   function gid() {
     return crypto.randomUUID();
   }
@@ -89,67 +161,7 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
   const qsa = s => [...document.querySelectorAll(s)];
 
   // ========= LOAD DATA =========
-  
-// ======= AUX: chave de mês (usa fatura se existir) =======
-function __monthKeyForSafe(x) {
-  if (!x || !x.data) return null;
-  if (typeof monthKeyFor === "function") return monthKeyFor(x);
-  return String(x.data).slice(0, 7);
-}
-
-// ======= METAS: atualizar UI com base no mês (fatura ou calendário) =======
-function renderMeta() {
-  const metaTotalLabel = document.querySelector("#metaTotalLabel");
-  const metaGastoMes   = document.querySelector("#metaGastoMes");
-  const metaStatusChip = document.querySelector("#metaStatusChip");
-  const metaProgBar    = document.querySelector("#metaProgBar");
-  const metaObs        = document.querySelector("#metaObs");
-
-  const total = Number((typeof S !== "undefined" && S.metas && S.metas.total) ? S.metas.total : 0);
-  const curMonth = (typeof S !== "undefined" && S.month) ? S.month : (new Date().toISOString().slice(0,7));
-
-  const gastoMes = (typeof S !== "undefined" && Array.isArray(S.tx) ? S.tx : [])
-    .filter(x => x && x.tipo === "Despesa" && __monthKeyForSafe(x) === curMonth)
-    .reduce((a,b) => a + (Number(b.valor) || 0), 0);
-
-  if (metaTotalLabel) metaTotalLabel.textContent = total > 0 
-    ? total.toLocaleString('pt-BR', { style:'currency', currency:'BRL' })
-    : "—";
-  if (metaGastoMes)   metaGastoMes.textContent = gastoMes.toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
-
-  if (metaProgBar) {
-    const pct = total > 0 ? Math.min(100, (gastoMes / total) * 100) : 0;
-    metaProgBar.style.width = pct.toFixed(2) + "%";
-    metaProgBar.className = "bar";
-    if (total > 0) {
-      if (gastoMes <= total * 0.8) metaProgBar.style.background = "var(--ok)";
-      else if (gastoMes <= total)  metaProgBar.style.background = "var(--brand)";
-      else                         metaProgBar.style.background = "var(--warn)";
-    } else {
-      metaProgBar.style.background = "var(--brand)";
-    }
-  }
-
-  if (metaStatusChip) {
-    if (total <= 0) {
-      metaStatusChip.textContent = "Sem meta";
-    } else if (gastoMes <= total) {
-      const sobra = total - gastoMes;
-      metaStatusChip.textContent = `Dentro da meta (sobra ${sobra.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})})`;
-    } else {
-      const excesso = gastoMes - total;
-      metaStatusChip.textContent = `Acima da meta (${excesso.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})})`;
-    }
-  }
-
-  if (metaObs) {
-    metaObs.textContent = total > 0
-      ? "Acompanhe o progresso da meta considerando o mês da fatura."
-      : "Defina uma meta para acompanhar o progresso.";
-  }
-}
-
-async function loadAll() {
+  async function loadAll() {
     // Transações
     const { data: tx, error: txError } = await supabaseClient
       .from("transactions")
@@ -187,7 +199,10 @@ async function loadAll() {
       S.dark = !!prefs.dark;
     
     
-      // ENSURE_S_MONTH: garante mês atual como default se não houver salvo
+      
+      S.cc_due_day = Number(prefs?.cc_due_day || 0) || null;
+      S.cc_closing_day = Number(prefs?.cc_closing_day || 0) || null;
+// ENSURE_S_MONTH: garante mês atual como default se não houver salvo
       if (!S.month) {
         const today = new Date();
         const y = today.getFullYear();
@@ -243,33 +258,10 @@ async function loadAll() {
     return await supabaseClient.from("categories").delete().eq("nome", nome);
   }
   async function savePrefs() {
-  const payload = {
-    id: 1,
-    month: S.month,
-    hide: S.hide,
-    dark: S.dark,
-    cc_due_day: S.cc_due_day || null,
-    cc_closing_day: S.cc_closing_day || null
-  };
-  const { data, error } = await supabaseClient
-    .from("preferences")
-    .upsert([payload])
-    .select()
-    .maybeSingle();
-  if (error) {
-    console.error("Erro ao salvar preferências:", error);
-    alert("Erro ao salvar fatura: " + (error.message || "ver console"));
-    return null;
-  }
-  return data || payload;
-};
-  const { data, error } = await supabaseClient.from("preferences").upsert([payload]).select().maybeSingle();
-  if (error) {
-    console.error("Erro ao salvar preferências:", error);
-    alert("Erro ao salvar fatura: " + (error.message || "ver console"));
-    return null;
-  }
-  return data || payload;
+  await supabaseClient.from("preferences").upsert([{
+    id: 1, month: S.month, hide: S.hide, dark: S.dark,
+    cc_due_day: S.cc_due_day || null, cc_closing_day: S.cc_closing_day || null
+  }]);
 }
     ]);
   }
@@ -537,7 +529,7 @@ async function loadAll() {
   function renderRecentes() {
   const ul = qs("#listaRecentes");
   if (!ul) return;
-  const list = [...S.tx]
+  const list = [...S.tx].filter(x => monthKeyFor(x) === S.month)
     .filter(x => x.tipo === "Despesa")
     .sort((a, b) => b.data.localeCompare(a.data))
     .slice(0, 4);
@@ -773,7 +765,7 @@ const qs = s => document.querySelector(s);
   // ========= RELATÓRIOS / KPIs / GRÁFICOS EXISTENTES =========
   function updateKpis() {
     // Transações do mês selecionado
-    const txMonth = S.tx.filter(x => x.data && x.data.startsWith(S.month));
+    const txMonth = S.tx.filter(x => x.data && monthKeyFor(x) === S.month);
     const receitas = txMonth.filter(x => x.tipo === "Receita").reduce((a, b) => a + Number(b.valor), 0);
     const despesas = txMonth.filter(x => x.tipo === "Despesa").reduce((a, b) => a + Number(b.valor), 0);
     const saldo = receitas - despesas;
@@ -867,7 +859,7 @@ const qs = s => document.querySelector(s);
     if (chartPie) chartPie.destroy();
     const ctxPie = qs("#chartPie");
     if (ctxPie && window.Chart) {
-      const txMonth = S.tx.filter(x => x.data && x.data.startsWith(S.month));
+      const txMonth = S.tx.filter(x => x.data && monthKeyFor(x) === S.month);
       const porCat = {};
       txMonth
         .filter(x => x.tipo === "Despesa")
@@ -887,7 +879,7 @@ const qs = s => document.querySelector(s);
       const porMes = {};
       S.tx.forEach(x => {
         if (!x.data) return;
-        const ym = x.data.slice(0, 7);
+        const ym = monthKeyFor(x);
         porMes[ym] =
           (porMes[ym] || 0) +
           Number(x.valor) * (x.tipo === "Despesa" ? -1 : 1);
@@ -908,7 +900,7 @@ const qs = s => document.querySelector(s);
     const sel = qs("#monthSelect");
     if (!sel) return;
     sel.innerHTML = "";
-    const mesesDisponiveis = [...new Set(S.tx.filter(x=>x.data).map(x => x.data.slice(0, 7)))];
+    const mesesDisponiveis = [...new Set(S.tx.filter(x=>x.data).map(x => monthKeyFor(x)))];
     mesesDisponiveis.sort((a, b) => b.localeCompare(a));
     
     /* ENSURE_CURRENT_MONTH_OPTION */ 
@@ -1410,7 +1402,7 @@ function render() {
     const obs = document.getElementById('metaObs');
 
     const gastosMes = Array.isArray(S.tx) ? S.tx
-      .filter(x=> x.data && x.data.startsWith(S.month) && x.tipo==='Despesa')
+      .filter(x=> x.data && monthKeyFor(x) === S.month && x.tipo==='Despesa')
       .reduce((a,b)=> a + (Number(b.valor)||0), 0) : 0;
 
     if (kTotal) kTotal.textContent = totalMeta ? fmtBRL(totalMeta) : '—';
@@ -1663,7 +1655,7 @@ function render() {
     const dest = document.getElementById('chartFsCanvas');
     fs.hidden = false;
     if (R.charts._fs) { R.charts._fs.destroy(); }
-    const cfg = R.charts[map[id]?.config? JSON.parse(JSON.stringify(R.charts[map[id].config)) : null;
+    const cfg = R.charts[map[id]]?.config? JSON.parse(JSON.stringify(R.charts[map[id]].config)) : null;
     if (cfg){ R.charts._fs = new Chart(dest, cfg); }
   }
   function closeChartFullscreen(){
@@ -1680,3 +1672,29 @@ function render() {
     renderReports();
   };
 };
+
+// === Wiring Config inputs for credit card billing ===
+function wireBillingConfig() {
+  const inpDue = document.querySelector("#ccDueDay");
+  const inpClose = document.querySelector("#ccClosingDay");
+  if (typeof S !== "undefined") {
+    if (inpDue) inpDue.value = S.cc_due_day || "";
+    if (inpClose) inpClose.value = S.cc_closing_day || "";
+  }
+  const btnSaveCard = document.querySelector("#saveCardPrefs");
+  if (btnSaveCard && !btnSaveCard._wired) {
+    btnSaveCard._wired = true;
+    btnSaveCard.onclick = async () => {
+      const due = Number((document.querySelector("#ccDueDay")?.value || "").trim()) || null;
+      const closing = Number((document.querySelector("#ccClosingDay")?.value || "").trim()) || null;
+      if (typeof S !== "undefined") {
+        S.cc_due_day = due;
+        S.cc_closing_day = closing;
+      }
+      if (typeof savePrefs === "function") await savePrefs();
+      if (typeof render === "function") render();
+      alert("Fatura salva!");
+    };
+  }
+}
+document.addEventListener("DOMContentLoaded", wireBillingConfig);
