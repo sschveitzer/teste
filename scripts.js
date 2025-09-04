@@ -1292,9 +1292,7 @@ try {
     const bar = document.getElementById('metaProgBar');
     const obs = document.getElementById('metaObs');
 
-    const gastosMes = Array.isArray(S.tx) ? S.tx
-      .filter(x=> x.data && (typeof monthKeyFor==='function' ? monthKeyFor(x)===S.month : String(x.data).startsWith(S.month)) && x.tipo==='Despesa')
-      .reduce((a,b)=> a + (Number(b.valor)||0), 0) : 0;
+    const gastosMes = Array.isArray(S.tx) ? S.tx.filter(x => x.data && x.tipo==='Despesa' && inSelectedMonth(x)).reduce((a,b)=> a + (Number(b.valor)||0), 0) : 0;
 
     if (kTotal) kTotal.textContent = totalMeta ? fmtBRL(totalMeta) : '—';
     if (kGasto) kGasto.textContent = fmtBRL(gastosMes);
