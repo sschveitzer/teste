@@ -330,6 +330,28 @@
             <div class="helper">Deixe em branco para não aplicar meta por categoria.</div>
           </div>
         </div>
+
+      <!-- Cartão: Cartão de crédito (fatura) -->
+      <div class="card" style="margin-top:16px">
+        <h3>Cartão de crédito (fatura)</h3>
+        <div class="form-grid" style="margin-top:8px">
+          <div class="field">
+            <label for="ccDueDay">Dia de vencimento</label>
+            <input id="ccDueDay" type="number" min="1" max="31" placeholder="Ex.: 5">
+            <div class="helper">Dia do mês em que a fatura vence (ex.: 5)</div>
+          </div>
+          <div class="field">
+            <label for="ccClosingDay">Dia de fechamento (opcional)</label>
+            <input id="ccClosingDay" type="number" min="1" max="31" placeholder="Ex.: 27">
+            <div class="helper">Se vazio, será inferido ~8 dias antes do vencimento</div>
+          </div>
+        </div>
+        <div style="margin-top:10px">
+          <button class="btn" id="saveCardPrefs"><i class="ph ph-check"></i> Salvar fatura</button>
+        </div>
+      </div>
+
+
       </div>
 
       <!-- Lista de transações recorrentes -->
