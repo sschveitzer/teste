@@ -1617,3 +1617,46 @@ try {
 
   // Expor helpers no console
   try { window.txBucketYM = txBucketYM; window.inSelectedMonth = inSelectedMonth; } catch (e) {}
+
+
+// === UX: Nova Categoria (enter para enviar, valida duplicado, botão desabilita) ===
+(function enhanceNewCategory(){
+  try {
+    const inp = document.querySelector('#newCatName');
+    const btn = document.querySelector('#addCat');
+    if (!inp || !btn) return;
+
+    const norm = s => (s||'').trim().toLowerCase();
+    const isDup = (name) => Array.isArray(S?.cats) && S.cats.some(c => norm(c?.nome) === norm(name));
+
+    function updateState(){
+      const v = inp.value.trim();
+      const dup = isDup(v);
+      btn.disabled = !v || dup;
+      inp.classList.toggle('invalid', !!dup);
+      btn.title = dup ? 'Categoria já existe' : 'Adicionar';
+    }
+
+    btn.addEventListener('click', async () => {
+      const v = inp.value.trim();
+      if (!v || isDup(v)) { updateState(); return; }
+      await saveCat({ nome: v });
+      inp.value = '';
+      updateState();
+      await loadAll();
+      // foco de volta para acelerar cadastro em sequência
+      setTimeout(() => inp.focus(), 0);
+    }, { once: false });
+
+    inp.addEventListener('input', updateState);
+    inp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (!btn.disabled) btn.click();
+      }
+    });
+
+    updateState();
+  } catch(e){ console.warn('enhanceNewCategory error:', e); }
+})();
+
