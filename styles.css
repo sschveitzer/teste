@@ -350,3 +350,37 @@ section.active { display: block; }
 
 /* Estados de foco visível para acessibilidade */
 :focus-visible { outline: 3px solid color-mix(in oklab, var(--brand) 45%, transparent); outline-offset: 2px; border-radius: 10px; }
+
+/* ===== Lançamentos: toolbar fixa, chips e empty state ===== */
+#lancamentos .card { overflow: hidden; }
+#lancamentos .lanc-toolbar {
+position: sticky; top: 0; z-index: 1; background: var(--card);
+padding: 10px; margin: -18px -18px 12px; border-bottom: 1px solid var(--border);
+}
+#lancSummary { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 4px; }
+#lancSummary .pill {
+background: var(--chip); color: var(--text); border: 1px solid var(--border);
+padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;
+}
+#lancSummary .pill.ok { color: var(--ok); border-color: color-mix(in oklab, var(--ok) 40%, var(--border)); }
+#lancSummary .pill.warn { color: var(--warn); border-color: color-mix(in oklab, var(--warn) 40%, var(--border)); }
+
+
+/* Cartões de lançamento com valor destacado */
+#listaLanc.lanc-grid .valor { font-size: 18px; font-weight: 900; }
+#listaLanc li[data-tipo="Despesa"] .valor { color: var(--warn); }
+#listaLanc li[data-tipo="Receita"] .valor { color: var(--ok); }
+
+
+/* Empty state */
+.empty {
+display: grid; place-items: center; text-align: center; padding: 40px; gap: 8px;
+border: 1px dashed var(--border); border-radius: 14px; background: color-mix(in oklab, var(--chip) 60%, transparent);
+}
+.empty .title { font-weight: 800; }
+.empty .hint { color: var(--muted); }
+
+
+/* Densidade compacta */
+body.compact #listaLanc.lanc-grid > li.item { padding: 12px; }
+body.compact #listaLanc .titulo { font-size: 14px; }
