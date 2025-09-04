@@ -1054,3 +1054,109 @@ body.dark button.btn {
 body.dark button.icon:hover {
   background: rgba(255,255,255,.06);
 }
+
+
+/* ========== FORM CONTROLS & SELECTS (refined) ========== */
+
+/* Unified base for inputs & selects */
+select,
+input[type="text"],
+input[type="date"],
+input[type="number"],
+textarea {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 12px;
+  outline: none;
+  font-size: 14px;
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+
+/* Hover & focus states */
+select:hover,
+input[type="text"]:hover,
+input[type="date"]:hover,
+input[type="number"]:hover,
+textarea:hover {
+  border-color: color-mix(in oklab, var(--brand) 25%, var(--border));
+}
+
+select:focus,
+input[type="text"]:focus,
+input[type="date"]:focus,
+input[type="number"]:focus,
+textarea:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--brand) 20%, transparent);
+}
+
+/* Minimal custom arrow for <select> — no HTML changes required */
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 9l6 6 6-6' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px 16px;
+  padding-right: 36px; /* room for chevron */
+}
+
+/* Size variants (optional) */
+select.sm, input.sm, textarea.sm { padding: 8px 10px; font-size: 13px; border-radius: 10px; }
+select.lg, input.lg, textarea.lg { padding: 12px 14px; font-size: 15px; border-radius: 14px; }
+
+/* Toolbar alignment for filters */
+.lanc-toolbar select,
+.lanc-toolbar input,
+.reports-toolbar select,
+.reports-toolbar input {
+  height: 36px;
+}
+
+.lanc-toolbar select,
+.reports-toolbar select {
+  min-width: 160px;
+}
+
+/* Group chips/pills feel for quick filters if needed */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--chip);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Dark mode tweaks */
+body.dark select,
+body.dark input[type="text"],
+body.dark input[type="date"],
+body.dark input[type="number"],
+body.dark textarea {
+  background: #111827;
+  border-color: #374151;
+}
+
+body.dark select:hover,
+body.dark input[type="text"]:hover,
+body.dark input[type="date"]:hover,
+body.dark input[type="number"]:hover,
+body.dark textarea:hover {
+  border-color: color-mix(in oklab, var(--brand) 25%, #374151);
+}
+
+body.dark select:focus,
+body.dark input[type="text"]:focus,
+body.dark input[type="date"]:focus,
+body.dark input[type="number"]:focus,
+body.dark textarea:focus {
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--brand) 25%, transparent);
+}
+
