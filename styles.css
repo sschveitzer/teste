@@ -1004,3 +1004,12 @@ body.modal-open #lancamentos .lanc-toolbar{ position: static; }
 @media(max-width:1100px){
   .metas-card.span-all { grid-column: auto; }
 }
+
+
+/* Metas card positioned after the KPI grid */
+section#dashboard .metas-card{ margin-top: 12px; }
+section#dashboard .metas-card .meta-summary{ display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-bottom:8px; }
+@media(max-width: 900px){
+  section#dashboard .metas-card .meta-summary{ grid-template-columns: 1fr; }
+}
+
