@@ -162,7 +162,6 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
 
     // Materializa recorrências vencidas
     await applyRecurrences();
-
     // Carrega metas do Supabase
     await fetchMetas();
 
@@ -1082,6 +1081,9 @@ function render() {
     renderTendenciaSaldo();
     renderForecastChart();
     renderHeatmap();
+    // Metas
+    renderMetaCard();
+    renderMetasConfig();
   }
 
   // ========= EVENTOS =========
@@ -1278,6 +1280,112 @@ function render() {
     }
   })();
 
+
+  // ========= METAS (Supabase) =========
+  async function fetchMetas(){
+    try{
+      const { data, error } = await supabaseClient
+        .from('goals')
+        .select('*')
+        .eq('id', 1)
+        .maybeSingle();
+      if (error) { console.error('Erro ao carregar metas:', error); }
+      S.metas = data ? { total: Number(data.total)||0, porCat: (data.por_cat||{}) } : { total: 0, porCat: {} };
+    } catch(e){
+      console.error(e);
+      S.metas = { total: 0, porCat: {} };
+    }
+  }
+  async function persistMetas(m){
+    try{
+      const payload = { id: 1, total: Number(m.total)||0, por_cat: m.porCat||{}, updated_at: new Date().toISOString() };
+      const { error } = await supabaseClient.from('goals').upsert([payload]);
+      if (error) { console.error('Erro ao salvar metas:', error); return false; }
+      S.metas = { total: payload.total, porCat: payload.por_cat };
+      return true;
+    } catch(e){
+      console.error(e);
+      return false;
+    }
+  }
+  function parseBRL(str){
+    if (!str) return 0;
+    return Number(str.replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,''))||0;
+  }
+  function fmtBRL(v){ return (Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+  function renderMetaCard(){
+    const metas = S.metas || { total: 0, porCat: {} };
+    const totalMeta = Number(metas.total)||0;
+    const kTotal = document.getElementById('metaTotalLabel');
+    const kGasto = document.getElementById('metaGastoMes');
+    const chip = document.getElementById('metaStatusChip');
+    const bar = document.getElementById('metaProgBar');
+    const obs = document.getElementById('metaObs');
+
+    const gastosMes = Array.isArray(S.tx) ? S.tx
+      .filter(x=> x.data && x.data.startsWith(S.month) && x.tipo==='Despesa')
+      .reduce((a,b)=> a + (Number(b.valor)||0), 0) : 0;
+
+    if (kTotal) kTotal.textContent = totalMeta ? fmtBRL(totalMeta) : '—';
+    if (kGasto) kGasto.textContent = fmtBRL(gastosMes);
+
+    if (!bar || !chip) return;
+
+    if (totalMeta > 0){
+      const pct = Math.min(100, Math.round((gastosMes/totalMeta)*100));
+      bar.style.width = pct + '%';
+      chip.textContent = gastosMes <= totalMeta ? pct + '% (dentro da meta)' : Math.round((gastosMes/totalMeta)*100) + '% (estourou)';
+      chip.classList.toggle('ok', gastosMes <= totalMeta);
+      chip.classList.toggle('warn', gastosMes > totalMeta);
+      if (obs) {
+        const restante = Math.max(0, totalMeta - gastosMes);
+        obs.textContent = gastosMes <= totalMeta ? `Faltam ${fmtBRL(restante)} para atingir a meta.` : `Ultrapassou a meta em ${fmtBRL(gastosMes - totalMeta)}.`;
+      }
+    } else {
+      bar.style.width = '0%';
+      chip.textContent = '—';
+      chip.classList.remove('ok','warn');
+      if (obs) obs.textContent = 'Defina uma meta para acompanhar o progresso.';
+    }
+
+    const btnGo = document.getElementById('btnGoMetas');
+    if (btnGo){
+      btnGo.onclick = ()=>{
+        const btnCfg = document.getElementById('btnConfig');
+        if (btnCfg){ btnCfg.click(); }
+        const metasCard = document.getElementById('tblMetasCat');
+        if (metasCard){ metasCard.scrollIntoView({behavior:'smooth', block:'start'}); }
+      };
+    }
+  }
+  function renderMetasConfig(){
+    const metas = S.metas || { total:0, porCat:{} };
+    const inpTotal = document.getElementById('metaTotalInput');
+    if (inpTotal){ inpTotal.value = metas.total ? fmtBRL(metas.total) : ''; }
+
+    const tb = document.querySelector('#tblMetasCat tbody');
+    if (!tb) return;
+    const cats = Array.isArray(S.cats) ? S.cats.map(c=>c.nome) : [];
+    tb.innerHTML = cats.map(cn=>{
+      const val = metas.porCat && metas.porCat[cn] ? fmtBRL(metas.porCat[cn]) : '';
+      return `<tr><td>${cn}</td><td><input data-metacat="${cn}" placeholder="0,00" value="${val}"></td></tr>`;
+    }).join('');
+
+    const btnSalvar = document.getElementById('salvarMetas');
+    if (btnSalvar){
+      btnSalvar.onclick = async ()=>{
+        const m = { total: parseBRL(inpTotal && inpTotal.value), porCat: {} };
+        tb.querySelectorAll('input[data-metacat]').forEach(inp=>{
+          const cat = inp.getAttribute('data-metacat');
+          const v = parseBRL(inp.value);
+          if (v>0) m.porCat[cat] = v;
+        });
+        const ok = await persistMetas(m);
+        renderMetaCard();
+        alert(ok ? 'Metas salvas!' : 'Não foi possível salvar as metas.');
+      };
+    }
+  }
   // Start!
   loadAll();
 
@@ -1294,8 +1402,6 @@ function render() {
         navBtns.forEach(b=>b.classList.toggle('active', b===btn));
         panels.forEach(p=>p.classList.toggle('active', p.dataset.rtab===R.tab));
         renderReports();
-    renderMetaCard();
-    renderMetasConfig();
       };
     });
 
@@ -1485,98 +1591,5 @@ function render() {
     if (_origRender) _origRender();
     if (!initReportsUI._done){ initReportsUI(); initReportsUI._done = true; }
     renderReports();
-    renderMetaCard();
-    renderMetasConfig();
   };
-
-
-  // ========= METAS (localStorage) =========
-  function loadMetas(){
-    try{ return JSON.parse(localStorage.getItem('metas_fin')||'{}') || {}; }catch(e){ return {}; }
-  }
-  function saveMetas(m){ localStorage.setItem('metas_fin', JSON.stringify(m||{})); }
-
-  function parseBRL(str){
-    if (!str) return 0;
-    return Number(str.replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,''))||0;
-  }
-  function fmtBRL(v){ return (Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
-
-  function renderMetaCard(){
-    const metas = loadMetas();
-    const totalMeta = Number(metas.total)||0;
-    const kTotal = document.getElementById('metaTotalLabel');
-    const kGasto = document.getElementById('metaGastoMes');
-    const chip = document.getElementById('metaStatusChip');
-    const bar = document.getElementById('metaProgBar');
-    const obs = document.getElementById('metaObs');
-
-    // gastos do mês selecionado
-    const gastosMes = Array.isArray(S.tx) ? S.tx
-      .filter(x=> x.data && x.data.startsWith(S.month) && x.tipo==='Despesa')
-      .reduce((a,b)=> a + (Number(b.valor)||0), 0) : 0;
-
-    if (kTotal) kTotal.textContent = totalMeta ? fmtBRL(totalMeta) : '—';
-    if (kGasto) kGasto.textContent = fmtBRL(gastosMes);
-
-    if (!bar || !chip) return;
-
-    if (totalMeta > 0){
-      const pct = Math.min(100, Math.round((gastosMes/totalMeta)*100));
-      bar.style.width = pct + '%';
-      chip.textContent = gastosMes <= totalMeta ? pct + '% (dentro da meta)' : Math.round((gastosMes/totalMeta)*100) + '% (estourou)';
-      chip.classList.toggle('ok', gastosMes <= totalMeta);
-      chip.classList.toggle('warn', gastosMes > totalMeta);
-      if (obs) {
-        const restante = Math.max(0, totalMeta - gastosMes);
-        obs.textContent = gastosMes <= totalMeta ? `Faltam ${fmtBRL(restante)} para atingir a meta.` : `Ultrapassou a meta em ${fmtBRL(gastosMes - totalMeta)}.`;
-      }
-    } else {
-      bar.style.width = '0%';
-      chip.textContent = '—';
-      chip.classList.remove('ok','warn');
-      if (obs) obs.textContent = 'Defina uma meta para acompanhar o progresso.';
-    }
-
-    // botão ir para metas
-    const btnGo = document.getElementById('btnGoMetas');
-    if (btnGo){
-      btnGo.onclick = ()=>{
-        // abrir aba Config e rolar até Metas
-        const btnCfg = document.getElementById('btnConfig');
-        if (btnCfg){ btnCfg.click(); }
-        const metasCard = document.getElementById('tblMetasCat');
-        if (metasCard){ metasCard.scrollIntoView({behavior:'smooth', block:'start'}); }
-      };
-    }
-  }
-
-  function renderMetasConfig(){
-    const metas = loadMetas();
-    const inpTotal = document.getElementById('metaTotalInput');
-    if (inpTotal){ inpTotal.value = metas.total ? fmtBRL(metas.total) : ''; }
-
-    const tb = document.querySelector('#tblMetasCat tbody');
-    if (!tb) return;
-    const cats = Array.isArray(S.cats) ? S.cats.map(c=>c.nome) : [];
-    tb.innerHTML = cats.map(cn=>{
-      const val = metas.porCat && metas.porCat[cn] ? fmtBRL(metas.porCat[cn]) : '';
-      return `<tr><td>${cn}</td><td><input data-metacat="${cn}" placeholder="0,00" value="${val}"></td></tr>`;
-    }).join('');
-
-    const btnSalvar = document.getElementById('salvarMetas');
-    if (btnSalvar){
-      btnSalvar.onclick = ()=>{
-        const m = { total: parseBRL(inpTotal && inpTotal.value), porCat: {} };
-        tb.querySelectorAll('input[data-metacat]').forEach(inp=>{
-          const cat = inp.getAttribute('data-metacat');
-          const v = parseBRL(inp.value);
-          if (v>0) m.porCat[cat] = v;
-        });
-        saveMetas(m);
-        renderMetaCard();
-        alert('Metas salvas!');
-      };
-    }
-  }
 };
