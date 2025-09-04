@@ -995,3 +995,12 @@ body.modal-open #lancamentos .lanc-toolbar{ position: static; }
 @media(max-width: 900px){
   .metas-card .meta-summary{ grid-template-columns: 1fr; }
 }
+
+/* Fix metas card placement: occupy full row in dashboard grid */
+.metas-card.span-all { grid-column: 1 / -1; }
+.grid.cards { grid-auto-rows: minmax(min-content, auto); }
+/* Ensure no accidental overlay */
+.metas-card { position: static; z-index: auto; }
+@media(max-width:1100px){
+  .metas-card.span-all { grid-column: auto; }
+}
