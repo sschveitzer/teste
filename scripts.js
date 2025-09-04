@@ -63,21 +63,24 @@ window.onload = function () {
 
   
 
-  // Usa o ciclo de fatura (monthKeyFor) se existir; senão, mês natural (YYYY-MM)
-  function txBucketYM(x) {
+  
+
+  // Retorna "YYYY-MM" do mês anterior ao fornecido (também "YYYY-MM")
+  function prevYM(ym) {
     try {
-      if (typeof monthKeyFor === "function") {
-        return monthKeyFor(x);
-      }
-      return String((x && x.data) || "").slice(0, 7);
+      const [y, m] = String(ym).split("-").map(Number);
+      if (!y || !m) throw new Error("ym inválido");
+      const d = new Date(y, (m - 1) - 1, 1);
+      return d.toISOString().slice(0, 7);
     } catch (e) {
-      return String((x && x.data) || "").slice(0, 7);
+      const d = new Date();
+      d.setMonth(d.getMonth() - 1);
+      return d.toISOString().slice(0, 7);
     }
   }
 
-// Retorna a "chave de mês" (YYYY-MM) respeitando o ciclo de fatura do cartão.
-  // Se S.ccClosingDay estiver configurado (1..28), datas APÓS esse dia pertencem ao mês seguinte.
-  // Caso contrário, usa o mês natural da data (YYYY-MM).
+
+  // Retorna a "chave de mês" (YYYY-MM) respeitando o ciclo de fatura do cartão
   function monthKeyFor(tx) {
     try {
       const ymd = String((tx && tx.data) || '');
@@ -101,27 +104,51 @@ window.onload = function () {
     }
   }
 
-// Retorna "YYYY-MM" do mês anterior ao fornecido (também "YYYY-MM")
-function prevYM(ym) {
-  try {
-    const [y, m] = String(ym).split("-").map(Number);
-    if (!y || !m) throw new Error("ym inválido");
-    const d = new Date(y, (m - 1) - 1, 1);
-    return d.toISOString().slice(0, 7);
-  } catch (e) {
-    const d = new Date();
-    d.setMonth(d.getMonth() - 1);
-    return d.toISOString().slice(0, 7);
+
+  // Usa o ciclo de fatura (monthKeyFor) se existir; senão, mês natural (YYYY-MM)
+  function txBucketYM(x) {
+    try {
+      if (typeof monthKeyFor === "function") {
+        return monthKeyFor(x);
+      }
+      return String((x && x.data) || "").slice(0, 7);
+    } catch (e) {
+      return String((x && x.data) || "").slice(0, 7);
+    }
   }
-}
 
+// Usa o ciclo de fatura (monthKeyFor) se existir; senão, mês natural (YYYY-MM)return String((x && x.data) || "").slice(0, 7);
+    } catch (e) {
+      return String((x && x.data) || "").slice(0, 7);
+    }
+  }
 
-// Retorna "YYYY-MM" do mês anterior ao fornecido (também "YYYY-MM")
-catch (e) {
+// Retorna a "chave de mês" (YYYY-MM) respeitando o ciclo de fatura do cartão.
+  // Se S.ccClosingDay estiver configurado (1..28), datas APÓS esse dia pertencem ao mês seguinte.
+  // Caso contrário, usa o mês natural da data (YYYY-MM).const closing = Number(S && S.ccClosingDay);
+      if (!closing || closing < 1 || closing > 28) {
+        return ymd.slice(0, 7);
+      }
+      const [y, m, d] = ymd.split('-').map(Number);
+      if (d <= closing) {
+        return String(y) + '-' + String(m).padStart(2, '0');
+      } else {
+        let yy = y, mm = m + 1;
+        if (mm > 12) { mm = 1; yy += 1; }
+        return String(yy) + '-' + String(mm).padStart(2, '0');
+      }
+    } catch (e) {
+      return (String((tx && tx.data) || '').slice(0, 7) || '');
+    }
+  }
+
+// Retorna "YYYY-MM" do mês anterior ao fornecido (também "YYYY-MM")catch (e) {
       const d = new Date();
       d.setMonth(d.getMonth() - 1);
       return d.toISOString().slice(0, 7);
     }
+  }
+
   }
 
   // Retorna a "chave de mês" (YYYY-MM) respeitando o ciclo de fatura do cartão
