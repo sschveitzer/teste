@@ -1553,3 +1553,8 @@ try {
   // Start!
   loadAll();
 };
+
+// ===== Expor helpers no escopo global para uso no console =====
+try { if (typeof txBucketYM === 'function') window.txBucketYM = txBucketYM; } catch (e) {}
+try { if (typeof monthKeyFor === 'function') window.monthKeyFor = monthKeyFor; } catch (e) {}
+
