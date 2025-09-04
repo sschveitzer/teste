@@ -62,38 +62,38 @@ window.onload = function () {
       const d = new Date(y, (m - 1) - 1, 1);
       return d.toISOString().slice(0, 7);
     } 
-  // Retorna a "chave de mês" (YYYY-MM) respeitando o ciclo de fatura do cartão
+   // Retorna a "chave de mês" (YYYY-MM) respeitando o ciclo de fatura do cartão
   // Se S.ccClosingDay estiver configurado (1..28), datas APÓS esse dia pertencem ao mês seguinte.
   // Caso contrário, usa simplesmente o mês da data (YYYY-MM).
   function monthKeyFor(tx) {
     try {
-      const ymd = String(tx && tx.data || '');
+      const ymd = String((tx && tx.data) || '');
       if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
         return ymd.slice(0, 7) || '';
       }
+
       const closing = Number(S && S.ccClosingDay);
       if (!closing || closing < 1 || closing > 28) {
         return ymd.slice(0, 7);
       }
+
       const [y, m, d] = ymd.split('-').map(Number);
       if (d <= closing) {
         return String(y) + '-' + String(m).padStart(2, '0');
       } else {
-        let yy = y, mm = m + 1;
-        if (mm > 12) { mm = 1; yy += 1; }
+        let yy = y;
+        let mm = m + 1;
+        if (mm > 12) {
+          mm = 1;
+          yy += 1;
+        }
         return String(yy) + '-' + String(mm).padStart(2, '0');
       }
     } catch (e) {
-      return (String(tx && tx.data || '').slice(0, 7) || '');
+      return (String((tx && tx.data) || '').slice(0, 7) || '');
     }
   }
 
-catch (e) {
-      const d = new Date();
-      d.setMonth(d.getMonth() - 1);
-      return d.toISOString().slice(0, 7);
-    }
-  }
   function incMonthly(ymd, diaMes, ajusteFimMes = true) {
     const [y, m] = ymd.split("-").map(Number);
     let yy = y, mm = m + 1;
