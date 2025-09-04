@@ -43,7 +43,20 @@
         <div class="card">
           <div class="kpi earn">
             <i class="ph ph-trend-up icon"></i>
-            <div><div class="muted">Receitas (mês)</div><div id="kpiReceitas" class="value">R$ 0,00</div></div>
+            <div><div class="muted">Receitas (mês)</div>
+<div class="card metas-card">
+        <div class="head" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <h3><i class="ph ph-target"></i> Meta mensal de gastos</h3>
+          <button class="icon" id="btnGoMetas" title="Definir metas"><i class="ph ph-sliders"></i></button>
+        </div>
+        <div class="meta-summary">
+          <div class="meta-line"><span class="muted">Meta total:</span> <strong id="metaTotalLabel">—</strong></div>
+          <div class="meta-line"><span class="muted">Gasto no mês:</span> <strong id="metaGastoMes">—</strong></div>
+          <div class="meta-line"><span class="muted">Status:</span> <span id="metaStatusChip" class="chip">—</span></div>
+        </div>
+        <div class="progress"><div id="metaProgBar" class="bar" style="width:0%"></div></div>
+        <div class="meta-obs muted" id="metaObs" style="margin-top:6px">Defina uma meta para acompanhar o progresso.</div>
+      </div><div id="kpiReceitas" class="value">R$ 0,00</div></div>
             <span class="chip" id="kpiReceitasDelta" title="Variação vs mês anterior">—</span>
           </div>
         </div>
@@ -292,7 +305,28 @@
       <div class="card" style="margin-top:16px">
         <h3>Transações recorrentes</h3>
         <ul id="listaRecorrentes" class="list"></ul>
+      </div><div class="card" style="margin-top:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h3>Metas</h3>
+          <button class="btn" id="salvarMetas"><i class="ph ph-check"></i> Salvar metas</button>
+        </div>
+        <div class="form-grid" style="margin-top:8px">
+          <div class="field">
+            <label for="metaTotalInput">Meta mensal de gastos (total)</label>
+            <input id="metaTotalInput" placeholder="Ex.: 3.000,00" inputmode="numeric" autocomplete="off">
+            <div class="helper">Usa o padrão brasileiro. Ex.: 2500,00</div>
+          </div>
+          <div class="field span-2">
+            <label>Metas por categoria (opcional)</label>
+            <table id="tblMetasCat">
+              <thead><tr><th>Categoria</th><th>Meta mensal</th></tr></thead>
+              <tbody></tbody>
+            </table>
+            <div class="helper">Deixe em branco para não aplicar meta por categoria.</div>
+          </div>
+        </div>
       </div>
+
     </section>
   </div>
 
