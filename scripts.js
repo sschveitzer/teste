@@ -454,15 +454,121 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
   list.forEach(x => ul.append(itemTx(x, true)));
 }
 
-  function renderLancamentos() {
-    const ul = qs("#listaLanc");
-    if (!ul) return;
-    const list = [...S.tx].sort((a, b) => b.data.localeCompare(a.data));
-    ul.innerHTML = "";
-    list.forEach(x => ul.append(itemTx(x, false)));
+  function renderLancamentos(){
+  const qs = s => document.querySelector(s);
+  const S = window.S || {};
+
+  const selTipo   = qs('#lancTipo');
+  const selCat    = qs('#lancCat');
+  const inpBusca  = qs('#lancSearch');
+  const selSort   = qs('#lancSort');
+  const chkCompact= qs('#lancCompact');
+  const ul        = qs('#listaLanc');
+  const sumEl     = qs('#lancSummary');
+
+  // Modo compacto persiste em localStorage
+  const compactPref = localStorage.getItem('lancCompact') === '1';
+  if (chkCompact && chkCompact.checked != compactPref) chkCompact.checked = compactPref;
+  document.body.classList.toggle('compact', chkCompact?.checked);
+
+  // Filtros
+  const tipo  = (selTipo?.value || 'todos');
+  const cat   = (selCat?.value || 'todas');
+  const q     = (inpBusca?.value || '').trim().toLowerCase();
+  const sort  = (selSort?.value || 'data_desc');
+
+  let list = Array.isArray(S.tx) ? [...S.tx] : [];
+
+  // Aplica filtros
+  list = list.filter(x => {
+    if (tipo !== 'todos' && x.tipo !== tipo) return false;
+    if (cat  !== 'todas' && x.categoria !== cat) return false;
+    if (q) {
+      const hay = `${x.descricao||''} ${x.categoria||''} ${x.obs||''}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });// Ordenação
+  const by = {
+    data_desc: (a,b)=> b.data.localeCompare(a.data),
+    data_asc:  (a,b)=> a.data.localeCompare(b.data),
+    valor_desc:(a,b)=> (Number(b.valor)||0) - (Number(a.valor)||0),
+    valor_asc: (a,b)=> (Number(a.valor)||0) - (Number(b.valor)||0),
+  };
+  list.sort(by[sort]||by.data_desc);
+
+  // Resumo
+  const fmt = v=> (Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  const totDesp = list.filter(x=>x.tipo==='Despesa').reduce((a,b)=>a+Number(b.valor||0),0);
+  const totRec  = list.filter(x=>x.tipo==='Receita').reduce((a,b)=>a+Number(b.valor||0),0);
+  const saldo   = totRec - totDesp;
+  if (sumEl){
+    sumEl.innerHTML = '';
+    const pill = (txt, cls='')=>{ const s=document.createElement('span'); s.className=`pill ${cls}`; s.textContent=txt; return s; };
+    sumEl.append(
+      pill(`Itens: ${list.length}`),
+      pill(`Receitas: ${fmt(totRec)}`, 'ok'),
+      pill(`Despesas: ${fmt(totDesp)}`, 'warn'),
+      pill(`Saldo: ${fmt(saldo)}`)
+    );
   }
 
-  function openEdit(id) {
+  // Lista
+  if (!ul) return;
+  ul.innerHTML = '';
+
+  if (!list.length){
+    const div = document.createElement('div');
+    div.className = 'empty';
+    div.innerHTML = `<div class="title">Nenhum lançamento encontrado</div><div class="hint">Ajuste os filtros ou crie um novo lançamento.</div>`;
+    ul.append(div);
+    return;
+  }
+
+  list.forEach(x => {
+    const li = document.createElement('li');
+    li.className = 'item';
+    li.dataset.tipo = x.tipo;
+
+    const v = Number(x.valor)||0;
+    const valor = v.toLocaleString('pt-BR',{ style:'currency', currency:'BRL'});
+
+    li.innerHTML = `
+      <div class="left">
+        <div class="chip">${x.tipo||'-'}</div>
+        <div class="titulo"><strong>${x.descricao||'-'}</strong></div>
+        <div class="subinfo muted">${x.categoria||'-'} • ${x.data||'-'}</div>
+      </div>
+      <div class="right">
+        <div class="valor">${valor}</div>
+        <button class="icon edit" title="Editar"><i class="ph ph-pencil-simple"></i></button>
+        <button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button>
+      </div>`;
+
+    const btnEdit = li.querySelector('.edit');
+    const btnDel  = li.querySelector('.del');
+    btnEdit.onclick = ()=> window.openEdit && window.openEdit(x.id);
+    btnDel.onclick  = ()=> window.delTx && window.delTx(x.id);
+
+    ul.append(li);
+  });
+
+  // Listeners (uma vez)
+  if (!renderLancamentos._wired){
+    selTipo && (selTipo.onchange = renderLancamentos);
+    selCat && (selCat.onchange = renderLancamentos);
+    inpBusca && (inpBusca.oninput = renderLancamentos);
+    selSort && (selSort.onchange = renderLancamentos);
+    if (chkCompact){
+      chkCompact.onchange = ()=>{
+        localStorage.setItem('lancCompact', chkCompact.checked ? '1':'0');
+        document.body.classList.toggle('compact', chkCompact.checked);
+      };
+    }
+    renderLancamentos._wired = true;
+  }
+}
+function openEdit(id) {
     const x = S.tx.find(t => t.id === id);
     if (!x) return;
     S.editingId = id;
@@ -932,6 +1038,24 @@ mesesDisponiveis.forEach(m => {
     wrap.appendChild(legend);
   }
 
+  function buildLancCatFilter(){
+  const sel = document.querySelector('#lancCat');
+  const S = window.S || {};
+  if (!sel) return;
+  const current = sel.value || 'todas';
+  sel.innerHTML = '';
+  const optAll = document.createElement('option');
+  optAll.value = 'todas';
+  optAll.textContent = 'Todas as categorias';
+  sel.append(optAll);
+  (S.cats||[]).slice().sort((a,b)=> (a.nome||'').localeCompare(b.nome||'')).forEach(c=>{
+    const o = document.createElement('option');
+    o.value = c.nome; o.textContent = c.nome;
+    sel.append(o);
+  });
+  sel.value = current;
+}
+
   // ========= RENDER PRINCIPAL =========
   function render() {
     document.body.classList.toggle("dark", S.dark);
@@ -945,6 +1069,7 @@ mesesDisponiveis.forEach(m => {
     renderRecentes();
     renderLancamentos();
     renderCategorias();
+    buildLancCatFilter();
     buildMonthSelect();
     updateKpis();
     renderCharts();
