@@ -243,8 +243,22 @@ async function loadAll() {
     return await supabaseClient.from("categories").delete().eq("nome", nome);
   }
   async function savePrefs() {
-    await supabaseClient.from("preferences").upsert([
-      { id: 1, month: S.month, hide: S.hide, dark: S.dark }
+  const payload = {
+    id: 1,
+    month: S.month,
+    hide: S.hide,
+    dark: S.dark,
+    cc_due_day: S.cc_due_day || null,
+    cc_closing_day: S.cc_closing_day || null
+  };
+  const { data, error } = await supabaseClient.from("preferences").upsert([payload]).select().maybeSingle();
+  if (error) {
+    console.error("Erro ao salvar preferências:", error);
+    alert("Erro ao salvar fatura: " + (error.message || "ver console"));
+    return null;
+  }
+  return data || payload;
+}
     ]);
   }
 
