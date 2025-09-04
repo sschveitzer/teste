@@ -158,7 +158,7 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
   }
 
   const qs = s => document.querySelector(s);
-  const qsa = s => [document.querySelectorAll(s)];
+  const qsa = s => [...document.querySelectorAll(s)];
 
   // ========= LOAD DATA =========
   async function loadAll() {
@@ -327,7 +327,7 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
       }
 
       if (changed) {
-        await saveRec({ r, proxima_data: next });
+        await saveRec({ ...r, proxima_data: next });
       }
     }
 
@@ -409,134 +409,88 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
 
   // ========= TRANSAÇÕES =========
   async function addOrUpdate() {
-    const valor = parseMoneyMasked(qs("#mValorBig").value);
-    const t = {
-      id: S.editingId || gid(),
-      tipo: modalTipo,
-      categoria: qs("#mCategoria").value,
-      data: isIsoDate(qs("#mData").value) ? qs("#mData").value : nowYMD(),
-      descricao: (qs("#mDesc").value || "").trim(),
-      valor: isFinite(valor) ? valor : 0,
-      obs: (qs("#mObs").value || "").trim()
-    };
-    if (!t.categoria) return alert("Selecione categoria");
-    if (!t.descricao) return alert("Descrição obrigatória");
-    if (!(t.valor > 0)) return alert("Informe o valor");
+  const valor = parseMoneyMasked(qs("#mValorBig").value);
 
-    const chkRepetir = qs("#mRepetir");
-    if (S.editingId || !chkRepetir?.checked) {
-      await saveTx(t);
-      await loadAll();
-      return toggleModal(false);
-    }
+  const t = {
+    id: S.editingId || gid(),
+    tipo: modalTipo,
+    categoria: qs("#mCategoria").value,
+    data: isIsoDate(qs("#mData").value) ? qs("#mData").value : nowYMD(),
+    descricao: (qs("#mDesc").value || "").trim(),
+    valor: isFinite(valor) ? valor : 0,
+    obs: (qs("#mObs").value || "").trim()
+  };
 
-    // Criar recorrência
-    const selPer = qs("#mPeriodicidade");
-    const per = selPer.value;
-    const diaMes = Number(qs("#mDiaMes").value) || new Date().getDate();
-    const dow = Number(qs("#mDiaSemana").value || 1);
-    const mes = Number(qs("#mMes").value || (new Date().getMonth() + 1));
-    const inicio = isIsoDate(qs("#mInicio").value) ? qs("#mInicio").value : nowYMD();
-    const fim = isIsoDate(qs("#mFim").value) ? qs("#mFim").value : null;
-    const ajuste = !!qs("#mAjusteFimMes").checked;
+  if (!t.categoria) return alert("Selecione categoria");
+  if (!t.descricao) return alert("Descrição obrigatória");
+  if (!(t.valor > 0)) return alert("Informe o valor");
 
-    // define próxima data inicial baseada no "início"
-    let proxima = inicio;
-    if (per === "Mensal") {
-      const ld = lastDayOfMonth(Number(inicio.slice(0,4)), Number(inicio.slice(5,7));
-      const day = (ajuste ? Math.min(diaMes, ld) : diaMes);
-      const candidate = toYMD(new Date(Number(inicio.slice(0,4)), Number(inicio.slice(5,7)) - 1, day));
-      proxima = (candidate < inicio) ? incMonthly(candidate, diaMes, ajuste) : candidate;
-    } else if (per === "Semanal") {
-      proxima = incWeekly(inicio);
-    } else if (per === "Anual") {
-      const ld = lastDayOfMonth(Number(inicio.slice(0,4)), mes);
-      const day = (ajuste ? Math.min(diaMes, ld) : diaMes);
-      const candidate = toYMD(new Date(Number(inicio.slice(0,4)), mes - 1, day));
-      proxima = (candidate < inicio) ? incYearly(candidate, diaMes, mes, ajuste) : candidate;
-    }
-
-    const rec = {
-      tipo: t.tipo,
-      categoria: t.categoria,
-      descricao: t.descricao,
-      valor: t.valor,
-      obs: t.obs,
-      periodicidade: per,
-      proxima_data: proxima,
-      fim_em: fim,
-      ativo: true,
-      ajuste_fim_mes: ajuste,
-      dia_mes: diaMes,
-      dia_semana: dow,
-      mes: mes
-    };
-
-    const { data: saved, error } = await saveRec(rec);
-    if (error) {
-      console.error(error);
-      return alert("Erro ao salvar recorrência.");
-    }
-
-    // Se o lançamento original é para a mesma data da próxima ocorrência, já materializa a primeira
-    if (t.data === rec.proxima_data) {
-      await materializeOne(saved, rec.proxima_data);
-      if (per === "Mensal") rec.proxima_data = incMonthly(rec.proxima_data, diaMes, ajuste);
-      else if (per === "Semanal") rec.proxima_data = incWeekly(rec.proxima_data);
-      else if (per === "Anual") rec.proxima_data = incYearly(rec.proxima_data, diaMes, mes, ajuste);
-      await saveRec({ saved, proxima_data: rec.proxima_data });
-    }
-
+  const chkRepetir = qs("#mRepetir");
+  if (S.editingId || !chkRepetir?.checked) {
+    await saveTx(t);
     await loadAll();
-    toggleModal(false);
+    return toggleModal(false);
   }
 
-  async function delTx(id) {
-    if (confirm("Excluir lançamento?")) {
-      await deleteTx(id);
-      await loadAll();
-    }
+  // -------- Criar recorrência --------
+  const selPer = qs("#mPeriodicidade");
+  const per = selPer.value; // "Mensal" | "Semanal" | "Anual"
+
+  const diaMes = Number(qs("#mDiaMes").value) || new Date().getDate();
+  const dow = Number(qs("#mDiaSemana").value || 1);
+  const mes = Number(qs("#mMes").value || (new Date().getMonth() + 1));
+  const inicio = isIsoDate(qs("#mInicio").value) ? qs("#mInicio").value : nowYMD();
+  const fim = isIsoDate(qs("#mFim").value) ? qs("#mFim").value : null;
+  const ajuste = !!qs("#mAjusteFimMes").checked;
+
+  // define próxima data inicial baseada no "início"
+  let proxima = inicio;
+  if (per === "Mensal") {
+    const ld = lastDayOfMonth(Number(inicio.slice(0, 4)), Number(inicio.slice(5, 7)));
+    const day = ajuste ? Math.min(diaMes, ld) : diaMes;
+    const candidate = toYMD(new Date(Number(inicio.slice(0, 4)), Number(inicio.slice(5, 7)) - 1, day));
+    proxima = (candidate < inicio) ? incMonthly(candidate, diaMes, ajuste) : candidate;
+  } else if (per === "Semanal") {
+    proxima = incWeekly(inicio);
+  } else if (per === "Anual") {
+    const ld = lastDayOfMonth(Number(inicio.slice(0, 4)), mes);
+    const day = ajuste ? Math.min(diaMes, ld) : diaMes;
+    const candidate = toYMD(new Date(Number(inicio.slice(0, 4)), mes - 1, day));
+    proxima = (candidate < inicio) ? incYearly(candidate, diaMes, mes, ajuste) : candidate;
   }
 
-  function itemTx(x, readOnly = false) {
-    const li = document.createElement("li");
-    li.className = "item";
-    const v = isFinite(Number(x.valor)) ? Number(x.valor) : 0;
-    const actions = readOnly
-      ? ""
-      : `
-        <button class="icon edit" title="Editar"><i class="ph ph-pencil-simple"></i></button>
-        <button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button>`;
-    li.innerHTML = `
-      <div class="left">
-        <div class="tag">${x.tipo}</div>
-        <div>
-          <div><strong>${x.descricao || "-"}</strong></div>
-          <div class="muted" style="font-size:12px">${x.categoria} • ${x.data}</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:6px;align-items:center">
-        <div class="${S.hide ? "blurred" : ""}" style="font-weight:700">${fmtMoney(v)}</div>${actions}
-      </div>`;
-    if (!readOnly) {
-      const btnEdit = li.querySelector(".edit");
-      const btnDel  = li.querySelector(".del");
-      if (btnEdit) btnEdit.onclick = () => openEdit(x.id);
-      if (btnDel)  btnDel.onclick  = () => delTx(x.id);
-    }
-    return li;
+  const rec = {
+    tipo: t.tipo,
+    categoria: t.categoria,
+    descricao: t.descricao,
+    valor: t.valor,
+    obs: t.obs,
+    periodicidade: per,
+    proxima_data: proxima,
+    fim_em: fim,
+    ativo: true,
+    ajuste_fim_mes: ajuste,
+    dia_mes: diaMes,
+    dia_semana: dow,
+    mes: mes
+  };
+
+  const { data: saved, error } = await saveRec(rec);
+  if (error) {
+    console.error(error);
+    return alert("Erro ao salvar recorrência");
   }
 
-  function renderRecentes() {
-  const ul = qs("#listaRecentes");
-  if (!ul) return;
-  const list = [S.tx].filter(x => monthKeyFor(x) === S.month)
-    .filter(x => x.tipo === "Despesa")
-    .sort((a, b) => b.data.localeCompare(a.data))
-    .slice(0, 4);
-  ul.innerHTML = "";
-  if (!ul.classList.contains("lanc-grid")) ul.classList.add("lanc-grid");
-  list.forEach(x => ul.append(itemTx(x, true));
+  // se houver próxima, gera a seguinte conforme periodicidade
+  if (saved?.proxima_data) {
+    if (per === "Mensal")      rec.proxima_data = incMonthly(saved.proxima_data, diaMes, ajuste);
+    else if (per === "Semanal") rec.proxima_data = incWeekly(saved.proxima_data);
+    else if (per === "Anual")   rec.proxima_data = incYearly(saved.proxima_data, diaMes, mes, ajuste);
+    await saveRec({ ...saved, proxima_data: rec.proxima_data });
+  }
+
+  await loadAll();
+  toggleModal(false);
 }
 
   function renderLancamentos() {
@@ -681,7 +635,7 @@ const qs = s => document.querySelector(s);
     ul.classList.add("cats-grid");
     ul.innerHTML = "";
 
-    const list = Array.isArray(S.cats) ? [S.cats].sort((a,b)=> (a.nome||"").localeCompare(b.nome||"")) : [];
+    const list = Array.isArray(S.cats) ? [...S.cats].sort((a,b)=> (a.nome||"").localeCompare(b.nome||"")) : [];
     if (!list.length) {
       const li = document.createElement("li");
       li.className = "item";
@@ -901,7 +855,7 @@ const qs = s => document.querySelector(s);
     const sel = qs("#monthSelect");
     if (!sel) return;
     sel.innerHTML = "";
-    const mesesDisponiveis = [new Set(S.tx.filter(x=>x.data).map(x => monthKeyFor(x))];
+    const mesesDisponiveis = [...new Set(S.tx.filter(x=>x.data).map(x => monthKeyFor(x)))];
     mesesDisponiveis.sort((a, b) => b.localeCompare(a));
     
     /* ENSURE_CURRENT_MONTH_OPTION */ 
@@ -1081,7 +1035,7 @@ mesesDisponiveis.forEach(m => {
       gastosPorDia[d-1] += Number(x.valor)||0;
     });
 
-    const max = Math.max(gastosPorDia, 0);
+    const max = Math.max(...gastosPorDia, 0);
     wrap.innerHTML = '';
 
     // Cabeçalho com iniciais (S T Q Q S S D)
@@ -1197,7 +1151,7 @@ function render() {
   if (btnAddCat) btnAddCat.onclick = async () => {
     const nome = (qs("#newCatName").value || "").trim();
     if (!nome) return;
-    if (S.cats.some(c => (c.nome||"").toLowerCase() === nome.toLowerCase()) {
+    if (S.cats.some(c => (c.nome||"").toLowerCase() === nome.toLowerCase())) {
       alert("Essa categoria já existe.");
       return;
     }
@@ -1349,7 +1303,7 @@ function render() {
       // Trap de foco + Tab
       dialog.addEventListener('keydown', (e) => {
         if (e.key !== 'Tab') return;
-        const focusables = [dialog.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+        const focusables = [...dialog.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
           .filter(el => !el.hasAttribute('disabled') && !el.getAttribute('aria-hidden'));
         if (!focusables.length) return;
         const first = focusables[0];
@@ -1613,7 +1567,7 @@ function render() {
     {
       const byYearMonth = {};
       list.forEach(x=>{ const y = x.data.slice(0,4); const m = x.data.slice(5,7); const key = `${y}-${m}`; byYearMonth[key]=(byYearMonth[key]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
-      const years = [new Set(list.map(x=>x.data.slice(0,4))].sort().slice(-2);
+      const years = [...new Set(list.map(x=>x.data.slice(0,4)))].sort().slice(-2);
       const months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
       const labels = months.map(m=>m);
       const ds = years.map(y=>({ label:y, data: months.map(m=> byYearMonth[`${y}-${m}`]||0) }));
