@@ -103,6 +103,20 @@ window.onload = function () {
       return (String((tx && tx.data) || '').slice(0, 7) || '');
     }
   }
+
+
+  // Usa o ciclo de fatura (monthKeyFor) se existir; senão, mês natural (YYYY-MM)
+  function txBucketYM(x) {
+    try {
+      if (typeof monthKeyFor === "function") {
+        return monthKeyFor(x);
+      }
+      return String((x && x.data) || "").slice(0, 7);
+    } catch (e) {
+      return String((x && x.data) || "").slice(0, 7);
+    }
+  }
+
 // Retorna a "chave de mês" (YYYY-MM) respeitando o ciclo de fatura do cartão.
   // Se S.ccClosingDay estiver configurado (1..28), datas APÓS esse dia pertencem ao mês seguinte.
   // Caso contrário, usa o mês natural da data (YYYY-MM).const closing = Number(S && S.ccClosingDay);
@@ -117,16 +131,12 @@ window.onload = function () {
         if (mm > 12) { mm = 1; yy += 1; }
         return String(yy) + '-' + String(mm).padStart(2, '0');
       }
-   catch (e) {
+    } catch (e) {
       return (String((tx && tx.data) || '').slice(0, 7) || '');
-}
+    }
   }
 
-// Retorna "YYYY-MM" do mês anterior ao fornecido (também "YYYY-MM")catch (e) {
-      const d = new Date();
-      d.setMonth(d.getMonth() - 1);
-      return d.toISOString().slice(0, 7);
-    }
+// Retorna "YYYY-MM" do mês anterior ao fornecido (também "YYYY-MM")
   }
 
   }
@@ -150,9 +160,7 @@ const closing = Number(S && S.ccClosingDay);
   }
 
   // Usa o ciclo de fatura se existir; senão, mês natural (YYYY-MM)
-catch (e) {
-      return String(x && x.data || "").slice(0, 7);
-    }
+
   }
 
   // ===== Cartão de crédito: janela da fatura =====
@@ -211,11 +219,6 @@ catch (e) {
     }
   }
 
-catch (e) {
-      const d = new Date();
-      d.setMonth(d.getMonth() - 1);
-      return d.toISOString().slice(0, 7);
-    }
   }
   function incMonthly(ymd, diaMes, ajusteFimMes = true) {
     const [y, m] = ymd.split("-").map(Number);
