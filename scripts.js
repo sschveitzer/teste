@@ -58,8 +58,7 @@ window.onload = function () {
   // Retorna "YYYY-MM" do mês anterior ao fornecido (também "YYYY-MM")
   function prevYM(ym) {
     try {
-      const [y, m] = String(ym).split("-").map(Number);
-      if (!y || !m) throw new Error("ym inválido");
+      const [y, m] = ym.split("-").map(Number);
       const d = new Date(y, (m - 1) - 1, 1);
       return d.toISOString().slice(0, 7);
     } catch (e) {
@@ -69,23 +68,29 @@ window.onload = function () {
     }
   }
 
-  // Retorna a "chave de mês" (YYYY-MM) respeitando o ciclo de fatura do cartão
+
   function monthKeyFor(tx) {
     try {
       const ymd = String((tx && tx.data) || '');
       if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
         return ymd.slice(0, 7) || '';
       }
+
       const closing = Number(S && S.ccClosingDay);
       if (!closing || closing < 1 || closing > 28) {
         return ymd.slice(0, 7);
       }
+
       const [y, m, d] = ymd.split('-').map(Number);
       if (d <= closing) {
         return String(y) + '-' + String(m).padStart(2, '0');
       } else {
-        let yy = y, mm = m + 1;
-        if (mm > 12) { mm = 1; yy += 1; }
+        let yy = y;
+        let mm = m + 1;
+        if (mm > 12) {
+          mm = 1;
+          yy += 1;
+        }
         return String(yy) + '-' + String(mm).padStart(2, '0');
       }
     } catch (e) {
@@ -93,95 +98,24 @@ window.onload = function () {
     }
   }
 
-  // Usa o ciclo de fatura (monthKeyFor) se existir; senão, mês natural (YYYY-MM)
-  function txBucketYM(x) {
-    try {
-      if (typeof monthKeyFor === "function") {
-        return monthKeyFor(x);
-      }
-      return String((x && x.data) || "").slice(0, 7);
-    } catch (e) {
-      return String((x && x.data) || "").slice(0, 7);
-    }
+  function incMonthly(ymd, diaMes, ajusteFimMes = true) {
+    const [y, m] = ymd.split("-").map(Number);
+    let yy = y, mm = m + 1;
+    if (mm > 12) { mm = 1; yy += 1; }
+    const ld = lastDayOfMonth(yy, mm);
+    const day = ajusteFimMes ? Math.min(diaMes, ld) : diaMes;
+    return toYMD(new Date(yy, mm - 1, day));
+  }
+  function incWeekly(ymd) { return addDays(ymd, 7); }
+  function incYearly(ymd, diaMes, mes, ajusteFimMes = true) {
+    const [y] = ymd.split("-").map(Number);
+    const yy = y + 1;
+    const ld = lastDayOfMonth(yy, mes);
+    const day = ajusteFimMes ? Math.min(diaMes, ld) : diaMes;
+    return toYMD(new Date(yy, mes - 1, day));
   }
 
-// Retorna "YYYY-MM" do mês anterior ao fornecido (também "YYYY-MM")
-
-  }
-
-  // Retorna a "chave de mês" (YYYY-MM) respeitando o ciclo de fatura do cartão
--\d{2}-\d{2}$/.test(ymd)) {
-        return ymd.slice(0, 7) || '';
-      }
-      const closing = Number(S && S.ccClosingDay);
-      if (!closing || closing < 1 || closing > 28) {
-        return ymd.slice(0, 7);
-      }
-      const [y, m, d] = ymd.split('-').map(Number);
-      if (d <= closing) {
-        return String(y) + '-' + String(m).padStart(2, '0');
-      } else {
-        let yy = y, mm = m + 1;
-        if (mm > 12) { mm = 1; yy += 1; }
-        return String(yy) + '-' + String(mm).padStart(2, '0');
-      }
-    } catch (e) {
-      return (String((tx && tx.data) || '').slice(0, 7) || '');
-    }
-  }
-
-  // Usa o ciclo de fatura (monthKeyFor) se existir; senão, mês natural (YYYY-MM)
-return String((x && x.data) || "").slice(0, 7);
-    } catch (e) {
-      return String((x && x.data) || "").slice(0, 7);
-    }
-  }
-
-// Retorna a "chave de mês" (YYYY-MM) respeitando o ciclo de fatura do cartão.
-  // Se S.ccClosingDay estiver configurado (1..28), datas APÓS esse dia pertencem ao mês seguinte.
-  // Caso contrário, usa o mês natural da data (YYYY-MM).const closing = Number(S && S.ccClosingDay);
-      if (!closing || closing < 1 || closing > 28) {
-        return ymd.slice(0, 7);
-      }
-      const [y, m, d] = ymd.split('-').map(Number);
-      if (d <= closing) {
-        return String(y) + '-' + String(m).padStart(2, '0');
-      } else {
-        let yy = y, mm = m + 1;
-        if (mm > 12) { mm = 1; yy += 1; }
-        return String(yy) + '-' + String(mm).padStart(2, '0');
-      }
-    } catch (e) {
-      return (String((tx && tx.data) || '').slice(0, 7) || '');
-    }
-  }
-
-// Retorna "YYYY-MM" do mês anterior ao fornecido (também "YYYY-MM")
-  }
-
-  }
-
-  // Retorna a "chave de mês" (YYYY-MM) respeitando o ciclo de fatura do cartão
-const closing = Number(S && S.ccClosingDay);
-      if (!closing || closing < 1 || closing > 28) {
-        return ymd.slice(0, 7);
-      }
-      const [y, m, d] = ymd.split('-').map(Number);
-      if (d <= closing) {
-        return String(y) + '-' + String(m).padStart(2, '0');
-      } else {
-        let yy = y, mm = m + 1;
-        if (mm > 12) { mm = 1; yy += 1; }
-        return String(yy) + '-' + String(mm).padStart(2, '0');
-      }
-    } catch (e) {
-      return (String((tx && tx.data) || '').slice(0, 7) || '');
-    }
-  }
-
-  // Usa o ciclo de fatura se existir; senão, mês natural (YYYY-MM)
-
-  }
+  
 
   // ===== Cartão de crédito: janela da fatura =====
   function inferClosingDayFromDue(dueDay) {
@@ -230,34 +164,7 @@ const closing = Number(S && S.ccClosingDay);
     return { start, end, dueDate, closingDay, dueDay };
   }
 
-// Retorna "YYYY-MM" do mês anterior ao fornecido (também "YYYY-MM")
-// Usa o ciclo de fatura (monthKeyFor) se existir; senão, mês natural (YYYY-MM)
-  
-      return String(x && x.data || "").slice(0, 7);
-    } catch (e) {
-      return String(x && x.data || "").slice(0, 7);
-    }
-  }
-
-  }
-  function incMonthly(ymd, diaMes, ajusteFimMes = true) {
-    const [y, m] = ymd.split("-").map(Number);
-    let yy = y, mm = m + 1;
-    if (mm > 12) { mm = 1; yy += 1; }
-    const ld = lastDayOfMonth(yy, mm);
-    const day = ajusteFimMes ? Math.min(diaMes, ld) : diaMes;
-    return toYMD(new Date(yy, mm - 1, day));
-  }
-  function incWeekly(ymd) { return addDays(ymd, 7); }
-  function incYearly(ymd, diaMes, mes, ajusteFimMes = true) {
-    const [y] = ymd.split("-").map(Number);
-    const yy = y + 1;
-    const ld = lastDayOfMonth(yy, mes);
-    const day = ajusteFimMes ? Math.min(diaMes, ld) : diaMes;
-    return toYMD(new Date(yy, mes - 1, day));
-  }
-
-  const qs  = (s) => document.querySelector(s);
+const qs  = (s) => document.querySelector(s);
   const qsa = (s) => Array.from(document.querySelectorAll(s));
 
   // ========= LOAD DATA =========
@@ -903,7 +810,7 @@ const closing = Number(S && S.ccClosingDay);
         data: { labels: last12, datasets: [{ label: "Saldo", data: saldoData }] }
       });
     }
-// Pizza por categoria (mês atual)
+    // Pizza por categoria (mês atual)
     if (chartPie) chartPie.destroy();
     const ctxPie = qs("#chartPie");
     if (ctxPie && window.Chart) {
@@ -937,43 +844,21 @@ const closing = Number(S && S.ccClosingDay);
   }
 
   // ========= SELECTOR DE MESES =========
-  
   function buildMonthSelect() {
     const sel = qs("#monthSelect");
     if (!sel) return;
     sel.innerHTML = "";
+    const mesesDisponiveis = Array.from(new Set((S.tx || []).filter(x => x.data).map(x => txBucketYM(x)))).sort((a,b)=> b.localeCompare(a));
 
-    const mesesDisponiveis = Array.from(
-      new Set((S.tx || []).filter(x => x.data).map(x => txBucketYM(x)))
-    ).sort((a,b) => b.localeCompare(a));
-
+    // Garante mês atual no seletor
     (function(){
-      const today = nowYMD();
-      const curBucket = txBucketYM({ data: today });
-      if (curBucket && !mesesDisponiveis.includes(curBucket)) {
-        mesesDisponiveis.unshift(curBucket);
-      }
+      const dNow = new Date();
+      const cur = new Date(dNow.getTime() - dNow.getTimezoneOffset() * 60000).toISOString().slice(0,7);
+      if (!mesesDisponiveis.includes(cur)) mesesDisponiveis.unshift(cur);
+      // Remove duplicatas mantendo ordem
       const seen = new Set();
       for (let i = 0; i < mesesDisponiveis.length; i++) {
-        if (seen.has(mesesDisponiveis[i])) { mesesDisponiveis.splice(i,1); i--; }
-        else { seen.add(mesesDisponiveis[i]); }
-      }
-    })();
-
-    mesesDisponiveis.forEach(m => {
-      const opt = document.createElement("option");
-      opt.value = m;
-      opt.textContent = m;
-      if (m === S.month) opt.selected = true;
-      sel.append(opt);
-    });
-    sel.onchange = () => {
-      S.month = sel.value;
-      savePrefs();
-      render();
-    };
-  }
-else { seen.add(mesesDisponiveis[i]); }
+        if (seen.has(mesesDisponiveis[i])) { mesesDisponiveis.splice(i,1); i--; } else { seen.add(mesesDisponiveis[i]); }
       }
     })();
 
@@ -1194,7 +1079,18 @@ else { seen.add(mesesDisponiveis[i]); }
     sel.value = current;
   }
 
+  // --- Cartão de crédito: sincroniza inputs com o estado ---
+  function syncCardPrefsUI() {
+    const dueEl = qs("#ccDueDay");
+    const closeEl = qs("#ccClosingDay");
+    if (dueEl)   dueEl.value   = (S.ccDueDay ?? "");
+    if (closeEl) closeEl.value = (S.ccClosingDay ?? "");
+  }
+
+
+
   function render() {
+    syncCardPrefsUI();
     document.body.classList.toggle("dark", S.dark);
 
     // sincroniza estado dos toggles (suporta ids antigos e novos)
@@ -1275,6 +1171,23 @@ else { seen.add(mesesDisponiveis[i]); }
     render();
     await savePrefs();
   };
+
+  // Cartão de crédito (fatura) - salvar preferências
+  (function wireCardPrefs(){
+    const btnSaveCard = qs("#saveCardPrefs");
+    if (!btnSaveCard || btnSaveCard.__wired) return;
+    btnSaveCard.__wired = true;
+    btnSaveCard.addEventListener("click", async () => {
+      const due   = Number(qs("#ccDueDay")?.value) || null;
+      const close = Number(qs("#ccClosingDay")?.value) || null;
+      S.ccDueDay = due;
+      S.ccClosingDay = close;
+      await savePrefs();
+      alert("Fatura salva com sucesso!");
+    });
+  })();
+
+
 
   // Ícone de Config na topbar (abre a aba Config)
   function wireBtnConfig(){
@@ -1589,7 +1502,7 @@ else { seen.add(mesesDisponiveis[i]); }
     // ==== Fluxo por mês (bar)
     {
       const byYM = {};
-      list.forEach(x=>{ const ym = String(x.data).slice(0,7); byYM[ym] = (byYM[ym]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
+      list.forEach(x=>{ const ym = txBucketYM(x); byYM[ym] = (byYM[ym]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
       const labels = Object.keys(byYM).sort();
       ensureChart('chartFluxo2', {
         type:'bar',
@@ -1614,7 +1527,7 @@ else { seen.add(mesesDisponiveis[i]); }
     // ==== Previsão simples (média móvel) & média por categoria
     {
       const byYM = {};
-      list.forEach(x=>{ const ym=String(x.data).slice(0,7); byYM[ym] = (byYM[ym]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
+      list.forEach(x=>{ const ym = txBucketYM(x); byYM[ym] = (byYM[ym]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
       const labels = Object.keys(byYM).sort();
       const vals = labels.map(l=>byYM[l]);
       const ma = vals.map((_,i)=>{ const a=vals[Math.max(0,i-2)]||0, b=vals[Math.max(0,i-1)]||0, c=vals[i]||0; const n = i<2? (i+1):3; return (a+b+c)/n; });
@@ -1627,7 +1540,7 @@ else { seen.add(mesesDisponiveis[i]); }
 
       // média por categoria (despesa)
       const byCat = {};
-      list.filter(x=>x.tipo==='Despesa').forEach(x=>{ const ym=String(x.data).slice(0,7); byCat[x.categoria] = byCat[x.categoria]||{}; byCat[x.categoria][ym]=(byCat[x.categoria][ym]||0)+Number(x.valor||0); });
+      list.filter(x=>x.tipo==='Despesa').forEach(x=>{ const ym = txBucketYM(x); byCat[x.categoria] = byCat[x.categoria]||{}; byCat[x.categoria][ym]=(byCat[x.categoria][ym]||0)+Number(x.valor||0); });
       const tb = document.querySelector('#tblMediaCats2 tbody'); if (tb){
         const cats = Object.keys(byCat);
         const lines = cats.map(c=>{
@@ -1653,7 +1566,7 @@ else { seen.add(mesesDisponiveis[i]); }
     // ==== Receitas x Despesas (stacked)
     {
       const byYM = {};
-      list.forEach(x=>{ const ym = String(x.data).slice(0,7); byYM[ym] = byYM[ym] || { R:0, D:0 }; if (x.tipo==='Receita') byYM[ym].R += Number(x.valor||0); if (x.tipo==='Despesa') byYM[ym].D += Number(x.valor||0); });
+      list.forEach(x=>{ const ym = txBucketYM(x); byYM[ym] = byYM[ym] || { R:0, D:0 }; if (x.tipo==='Receita') byYM[ym].R += Number(x.valor||0); if (x.tipo==='Despesa') byYM[ym].D += Number(x.valor||0); });
       const labels = Object.keys(byYM).sort();
       const rec = labels.map(l=> byYM[l].R);
       const des = labels.map(l=> -byYM[l].D);
@@ -1729,4 +1642,18 @@ else { seen.add(mesesDisponiveis[i]); }
 
   // Start!
   loadAll();
-};
+}
+
+  // Usa o ciclo de fatura (monthKeyFor) se existir; senão, mês natural (YYYY-MM)
+  function txBucketYM(x) {
+    try {
+      if (typeof monthKeyFor === "function") {
+        return monthKeyFor(x);
+      }
+      return String((x && x.data) || "").slice(0, 7);
+    } catch (e) {
+      return String((x && x.data) || "").slice(0, 7);
+    }
+  }
+
+;
