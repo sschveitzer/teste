@@ -251,6 +251,18 @@ async function loadAll() {
     cc_due_day: S.cc_due_day || null,
     cc_closing_day: S.cc_closing_day || null
   };
+  const { data, error } = await supabaseClient
+    .from("preferences")
+    .upsert([payload])
+    .select()
+    .maybeSingle();
+  if (error) {
+    console.error("Erro ao salvar preferências:", error);
+    alert("Erro ao salvar fatura: " + (error.message || "ver console"));
+    return null;
+  }
+  return data || payload;
+};
   const { data, error } = await supabaseClient.from("preferences").upsert([payload]).select().maybeSingle();
   if (error) {
     console.error("Erro ao salvar preferências:", error);
@@ -1651,7 +1663,7 @@ function render() {
     const dest = document.getElementById('chartFsCanvas');
     fs.hidden = false;
     if (R.charts._fs) { R.charts._fs.destroy(); }
-    const cfg = R.charts[map[id]]?.config? JSON.parse(JSON.stringify(R.charts[map[id]].config)) : null;
+    const cfg = R.charts[map[id]?.config? JSON.parse(JSON.stringify(R.charts[map[id].config)) : null;
     if (cfg){ R.charts._fs = new Chart(dest, cfg); }
   }
   function closeChartFullscreen(){
