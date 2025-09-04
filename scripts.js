@@ -261,6 +261,7 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
   function toggleModal(show, titleOverride) {
     const m = qs("#modalLanc");
     m.style.display = show ? "flex" : "none";
+    document.body.classList.toggle("modal-open", !!show);
     if (show) {
       qs("#mData").value = nowYMD();
       rebuildCatSelect();
