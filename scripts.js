@@ -852,7 +852,7 @@ const qs  = (s) => document.querySelector(s);
     const sel = qs("#monthSelect");
     if (!sel) return;
     sel.innerHTML = "";
-    const mesesDisponiveis = Array.from(new Set((S.tx || []).filter(x => x.data).map(x => String(x.data).slice(0, 7)))).sort((a,b)=> b.localeCompare(a));
+    const mesesDisponiveis = Array.from(new Set((S.tx || []).filter(x => x.data).map(x => (typeof txBucketYM==='function'? txBucketYM(x) : String(x.data).slice(0,7))))).sort((a,b)=> b.localeCompare(a));
 
     // Garante mês atual no seletor
     (function(){
@@ -1236,6 +1236,15 @@ syncCardPrefsUI();
       await savePrefs();
       alert("Fatura salva com sucesso!");
     });
+    // Após salvar, recalcula o bucket atual e re-renderiza para refletir o novo ciclo
+    try {
+      const today = nowYMD();
+      if (typeof txBucketYM === 'function') {
+        const curBucket = txBucketYM({ data: today });
+        if (curBucket) S.month = curBucket;
+      }
+    } catch(e) {}
+    try { render(); } catch(e) {}
   })();
 
 
