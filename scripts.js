@@ -259,9 +259,14 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
   }
   async function savePrefs() {
   await supabaseClient.from("preferences").upsert([{
-    id: 1, month: S.month, hide: S.hide, dark: S.dark,
-    cc_due_day: S.cc_due_day || null, cc_closing_day: S.cc_closing_day || null
+    id: 1,
+    month: S.month,
+    hide: S.hide,
+    dark: S.dark,
+    cc_due_day: S.cc_due_day || null,
+    cc_closing_day: S.cc_closing_day || null
   }]);
+}]);
 }
     ]);
   }
@@ -1655,7 +1660,7 @@ function render() {
     const dest = document.getElementById('chartFsCanvas');
     fs.hidden = false;
     if (R.charts._fs) { R.charts._fs.destroy(); }
-    const cfg = R.charts[map[id]]?.config? JSON.parse(JSON.stringify(R.charts[map[id]].config)) : null;
+    const cfg = R.charts[map[id]?.config? JSON.parse(JSON.stringify(R.charts[map[id].config)) : null;
     if (cfg){ R.charts._fs = new Chart(dest, cfg); }
   }
   function closeChartFullscreen(){
