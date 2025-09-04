@@ -803,22 +803,24 @@ window.onload = function () {
       savePrefs();
       render();
     };
-  }
+  
     // Garante que S.month pertença à lista; se não, define para bucket atual
-    (function ensureMonthInList(){
-      const has = mesesDisponiveis.includes(S.month);
-      if (!has) {
-        const today = nowYMD();
-        const curBucket = (typeof txBucketYM === 'function') ? txBucketYM({ data: today }) : today.slice(0,7);
-        if (curBucket) {
-          S.month = curBucket;
-          try { savePrefs(); } catch(e) {}
-          // Não chama render() aqui para evitar loop; o caller de buildMonthSelect() chamará render() em seguida.
+    (function() {
+      try {
+        const has = mesesDisponiveis.includes(S.month);
+        if (!has) {
+          const today = nowYMD();
+          const curBucket = (typeof txBucketYM === 'function') ? txBucketYM({ data: today }) : today.slice(0,7);
+          if (curBucket) {
+            S.month = curBucket;
+            try { savePrefs(); } catch(e) {}
+            // Não chama render() aqui; quem chamar buildMonthSelect() chama render() depois.
+          }
         }
-      }
+      } catch (e) { /* noop */ }
     })();
-
-  // ========= NOVOS INSIGHTS / ANÁLISES =========
+}
+// ========= NOVOS INSIGHTS / ANÁLISES =========
   // Helpers de série temporal
   function monthsBack(n) {
     const out = [];
