@@ -1556,9 +1556,8 @@ try {
       });
     }
   }
-  document.addEventListener("DOMContentLoaded", wireBillingConfig);
-
-  // Start!
+  wireBillingConfig();
+// Start!
   loadAll();
 }
 
