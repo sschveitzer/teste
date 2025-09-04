@@ -283,6 +283,8 @@ button.icon {
   align-items: center;
   justify-content: center;
   padding: 20px;
+
+  z-index: 1000;
 }
 
 .modal .content {
@@ -292,6 +294,8 @@ button.icon {
   box-shadow: var(--shadow);
   width: min(720px, 96%);
   padding: 18px;
+
+  z-index: 1001;
 }
 
 .modal .title {
@@ -391,6 +395,8 @@ td {
 body.dark .modal .content {
   background: #1f2937;
   color: #f3f4f6;
+
+  z-index: 1001;
 }
 
 body.dark .modal .amount {
@@ -524,14 +530,18 @@ body.dark .typetabs button.active {
     height: auto;
     margin: 0;
     border-radius: 0;
-  }
+  
+  z-index: 1001;
+}
 }
 
 
 /* === Modal UX upgrades === */
 .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
 
-.modal .content { position:relative; max-height:90vh; overflow:auto; }
+.modal .content { position:relative; max-height:90vh; overflow:auto; 
+  z-index: 1001;
+}
 .modal .title { position:sticky; top:0; background:var(--card); padding-bottom:8px; z-index:1; }
 
 .amount-wrap { display:grid; gap:8px; margin-bottom:12px; }
@@ -686,7 +696,7 @@ body.dark .error { background:#3b1f20; border-color:#ef4444; color:#fecaca; }
 }
 
 /* se os botões forem links/ícones sem classe, dá tamanho de toque */
-#listaLanc li.item .right > *,#listaRecentes li.item .right > *{
+#listaLanc li.item .right > button,#listaRecentes li.item .right > button{
   width: 36px;
   height: 36px;
   border-radius: 10px;
@@ -784,7 +794,9 @@ body.dark .error { background:#3b1f20; border-color:#ef4444; color:#fecaca; }
 
 
 /* === Modal aesthetic polish === */
-.modal .content{ border-radius: 20px; }
+.modal .content { border-radius: 20px; 
+  z-index: 1001;
+}
 .modal .title h3{ font-size:18px; font-weight:800; }
 .modal .amount{
   font-size: 36px;
@@ -926,3 +938,16 @@ body.compact #listaLanc.lanc-grid > li.item { padding: 12px; }
 body.compact #listaLanc .titulo { font-size: 14px; }
 
 section.active{overflow:visible;}
+
+body.modal-open #lancamentos .lanc-toolbar{ position: static; }
+
+#listaLanc li.item .right{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  justify-content:flex-end;
+  flex-wrap:nowrap;
+}
+#listaLanc li.item .right .valor{
+  font-weight:900;
+}
