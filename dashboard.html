@@ -120,39 +120,147 @@
       </div>
     </section>
 <!-- Relatórios -->
-    <section id="relatorios">
-      <div class="grid two">
-        <div class="card"><h3>Fluxo por mês</h3><canvas id="chartFluxo"></canvas></div>
-        <div class="card"><h3>Top categorias (12 meses)</h3>
-          <table id="tblTop"><thead><tr><th>Categoria</th><th>Total</th></tr></thead><tbody></tbody></table>
+<section id="relatorios">
+  <div class="reports">
+    <aside class="reports-nav" aria-label="Submenu de relatórios">
+      <button class="rtab active" data-rtab="fluxo"><i class="ph ph-chart-bar"></i> Fluxo mensal</button>
+      <button class="rtab" data-rtab="categorias"><i class="ph ph-circles-three"></i> Top categorias</button>
+      <button class="rtab" data-rtab="previsao"><i class="ph ph-trend-up"></i> Tendência & Previsão</button>
+      <button class="rtab" data-rtab="heatmap"><i class="ph ph-fire"></i> Heatmap</button>
+      <div class="sep"></div>
+      <button class="rtab" data-rtab="yoy"><i class="ph ph-calendar"></i> Comparativo YoY</button>
+      <button class="rtab" data-rtab="rxv"><i class="ph ph-chart-line-up"></i> Receitas x Despesas</button>
+    </aside>
+
+    <div class="reports-main">
+      <div class="reports-toolbar" role="region" aria-label="Filtros dos relatórios">
+        <select id="rPeriodo" title="Período">
+          <option value="3m">Últimos 3 meses</option>
+          <option value="6m" selected>Últimos 6 meses</option>
+          <option value="12m">Últimos 12 meses</option>
+          <option value="ytd">Ano atual (YTD)</option>
+          <option value="all">Tudo</option>
+        </select>
+        <select id="rTipo" title="Tipo">
+          <option value="todos" selected>Todos</option>
+          <option value="Receita">Receitas</option>
+          <option value="Despesa">Despesas</option>
+        </select>
+        <select id="rCategoria" title="Categoria (opcional)">
+          <option value="todas" selected>Todas</option>
+        </select>
+        <div class="spacer"></div>
+        <button class="icon" id="rExport" title="Exportar relatórios"><i class="ph ph-share"></i></button>
+      </div>
+
+      <!-- Fluxo mensal -->
+      <div class="rpanel active" data-rtab="fluxo">
+        <div class="card header-actions">
+          <div class="head">
+            <h3><i class="ph ph-chart-bar"></i> Fluxo por mês</h3>
+            <div class="actions">
+              <button class="icon" data-fs="fluxo" title="Tela cheia"><i class="ph ph-corners-out"></i></button>
+              <button class="icon" data-export="fluxo" title="Exportar PNG"><i class="ph ph-download-simple"></i></button>
+            </div>
+          </div>
+          <canvas id="chartFluxo2" height="160"></canvas>
         </div>
       </div>
 
-      <div class="grid two" style="margin-top:16px">
-  <div class="card">
-    <h3>Tendência & Previsão</h3>
-    <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
-      <span class="tag">Projeção do saldo no fim do mês</span>
-      <strong id="kpiForecastFinal" style="font-size:16px">–</strong>
+      <!-- Top categorias -->
+      <div class="rpanel" data-rtab="categorias">
+        <div class="grid two">
+          <div class="card header-actions">
+            <div class="head">
+              <h3><i class="ph ph-circles-three"></i> Despesas por categoria</h3>
+              <div class="actions">
+                <button class="icon" data-fs="pie" title="Tela cheia"><i class="ph ph-corners-out"></i></button>
+                <button class="icon" data-export="pie" title="Exportar PNG"><i class="ph ph-download-simple"></i></button>
+              </div>
+            </div>
+            <canvas id="chartPie2" height="160"></canvas>
+          </div>
+          <div class="card">
+            <h3>Top categorias (período)</h3>
+            <table id="tblTop2"><thead><tr><th>Categoria</th><th>Total</th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Previsão -->
+      <div class="rpanel" data-rtab="previsao">
+        <div class="grid two">
+          <div class="card header-actions">
+            <div class="head">
+              <h3><i class="ph ph-trend-up"></i> Tendência & Previsão</h3>
+              <div class="actions">
+                <button class="icon" data-fs="forecast" title="Tela cheia"><i class="ph ph-corners-out"></i></button>
+                <button class="icon" data-export="forecast" title="Exportar PNG"><i class="ph ph-download-simple"></i></button>
+              </div>
+            </div>
+            <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
+              <span class="tag">Projeção do saldo no fim do período</span>
+              <strong id="kpiForecastFinal2" style="font-size:16px">–</strong>
+            </div>
+            <canvas id="chartForecast2" height="160"></canvas>
+          </div>
+          <div class="card">
+            <h3>Média de gastos por categoria</h3>
+            <table id="tblMediaCats2">
+              <thead><tr><th>Categoria</th><th>Média mensal</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Heatmap -->
+      <div class="rpanel" data-rtab="heatmap">
+        <div class="card">
+          <h3><i class="ph ph-fire"></i> Heatmap de despesas (mês atual)</h3>
+          <div id="heatmap2" class="heatmap"></div>
+        </div>
+      </div>
+
+      <!-- YoY -->
+      <div class="rpanel" data-rtab="yoy">
+        <div class="card header-actions">
+          <div class="head">
+            <h3><i class="ph ph-calendar"></i> Comparativo Ano vs Ano</h3>
+            <div class="actions">
+              <button class="icon" data-fs="yoy" title="Tela cheia"><i class="ph ph-corners-out"></i></button>
+              <button class="icon" data-export="yoy" title="Exportar PNG"><i class="ph ph-download-simple"></i></button>
+            </div>
+          </div>
+          <canvas id="chartYoY" height="180"></canvas>
+        </div>
+      </div>
+
+      <!-- Receitas x Despesas -->
+      <div class="rpanel" data-rtab="rxv">
+        <div class="card header-actions">
+          <div class="head">
+            <h3><i class="ph ph-chart-line-up"></i> Receitas x Despesas (stacked)</h3>
+            <div class="actions">
+              <button class="icon" data-fs="rxv" title="Tela cheia"><i class="ph ph-corners-out"></i></button>
+              <button class="icon" data-export="rxv" title="Exportar PNG"><i class="ph ph-download-simple"></i></button>
+            </div>
+          </div>
+          <canvas id="chartRxV" height="180"></canvas>
+        </div>
+      </div>
+
     </div>
-    <canvas id="chartForecast" height="160"></canvas>
   </div>
 
-  <div class="card">
-    <h3>Média de gastos por categoria (6 meses)</h3>
-    <table id="tblMediaCats">
-      <thead><tr><th>Categoria</th><th>Média mensal</th></tr></thead>
-      <tbody></tbody>
-    </table>
+  <!-- Contêiner para tela cheia de gráficos -->
+  <div class="chart-fs" id="chartFs" hidden>
+    <div class="inner">
+      <button class="icon close" id="fsClose" aria-label="Fechar"><i class="ph ph-x"></i></button>
+      <canvas id="chartFsCanvas"></canvas>
+    </div>
   </div>
-</div>
-
-<div class="card" style="margin-top:16px">
-  <h3>Heatmap de despesas (mês atual)</h3>
-  <div id="heatmap" class="heatmap"></div>
-</div>
-      
-    </section>
+</section>
 
     <!-- Config -->
     <section id="config">
