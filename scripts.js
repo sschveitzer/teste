@@ -17,6 +17,20 @@ window.onload = function () {
     editingId: null
   };
 
+// Expor S e um setter global para alternar o modo de ciclo nos relatórios/metas
+try {
+  window.S = S;
+  if (typeof window.setUseCycleForReports !== 'function') {
+    window.setUseCycleForReports = function(v){
+      S.useCycleForReports = !!v;
+      try { savePrefs(); } catch(e) {}
+      try { render(); } catch(e) {}
+    };
+  }
+} catch (e) {}
+
+
+
   // ========= HELPERS GERAIS =========
   function gid() {
     return (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2);
