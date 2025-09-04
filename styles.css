@@ -1,82 +1,90 @@
 /* =========================================================
-   Sistema de Gestão Financeira — CSS completo (versão aprimorada)
-   Foco: estética, consistência, dark mode, microinterações e responsividade
-   ========================================================= */
+Sistema de Gestão Financeira — CSS completo (versão corrigida)
+========================================================= */
+
 
 /* ---------------------------
-   Design tokens (light theme)
-   --------------------------- */
+Design tokens (light theme)
+--------------------------- */
 :root {
-  /* Cores base */
-  --bg: #0b1020; /* fundo app em leve degrade sob topbar */
-  --bg-soft: #f6f7fb;
-  --text: #0f172a;
-  --muted: #667085;
-  --brand: #7c3aed;
-  --brand-2: #5b21b6;
-  --ok: #16a34a;
-  --warn: #dc2626;
-  --info: #0284c7;
+/* Cores base (modo claro) */
+--bg: #ffffff; /* fundo claro no padrão */
+--bg-soft: #f6f7fb;
+--text: #0f172a;
+--muted: #667085;
+--brand: #7c3aed;
+--brand-2: #5b21b6;
+--ok: #16a34a;
+--warn: #dc2626;
+--info: #0284c7;
 
-  /* Superfícies */
-  --card: #ffffff;
-  --chip: #eef2ff;
-  --border: #e5e7eb;
 
-  /* Efeitos */
-  --shadow: 0 10px 30px rgba(2, 6, 23, .06);
-  --shadow-2: 0 14px 44px rgba(2, 6, 23, .10);
-  --radius: 16px;
+/* Superfícies */
+--card: #ffffff;
+--chip: #eef2ff;
+--border: #e5e7eb;
 
-  /* Tipografia */
-  --font-sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-  --fs-12: 12px;
-  --fs-14: 14px;
-  --fs-16: 16px;
-  --fs-18: 18px;
-  --fs-20: 20px;
-  --fs-24: 24px;
-  --fs-28: 28px;
+
+/* Efeitos */
+--shadow: 0 10px 30px rgba(2, 6, 23, .06);
+--shadow-2: 0 14px 44px rgba(2, 6, 23, .10);
+--radius: 16px;
+
+
+/* Tipografia */
+--font-sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+--fs-12: 12px;
+--fs-14: 14px;
+--fs-16: 16px;
+--fs-18: 18px;
+--fs-20: 20px;
+--fs-24: 24px;
+--fs-28: 28px;
 }
 
+
 /* ---------------------------
-   Dark theme tokens
-   --------------------------- */
+Dark theme tokens
+--------------------------- */
 .dark {
-  --bg: #0b1020;
-  --bg-soft: #0e142a;
-  --text: #e5e7eb;
-  --muted: #9ca3af;
-  --brand: #8b5cf6;
-  --brand-2: #7c3aed;
-  --ok: #22c55e;
-  --warn: #f87171;
-  --info: #38bdf8;
+--bg: #0b1020; /* fundo escuro só no dark mode */
+--bg-soft: #0e142a;
+--text: #e5e7eb;
+--muted: #9ca3af;
+--brand: #8b5cf6;
+--brand-2: #7c3aed;
+--ok: #22c55e;
+--warn: #f87171;
+--info: #38bdf8;
 
-  --card: #0f152b;
-  --chip: #181e37;
-  --border: #1f2a44;
 
-  --shadow: 0 10px 40px rgba(0, 0, 0, .45);
-  --shadow-2: 0 16px 50px rgba(0, 0, 0, .55);
+--card: #0f152b;
+--chip: #181e37;
+--border: #1f2a44;
+
+
+--shadow: 0 10px 40px rgba(0, 0, 0, .45);
+--shadow-2: 0 16px 50px rgba(0, 0, 0, .55);
 }
 
+
 /* ---------------------------
-   Reset básico e corpo
-   --------------------------- */
+Reset básico e corpo
+--------------------------- */
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 
+
 body {
-  margin: 0;
-  font-family: var(--font-sans);
-  background:
-    radial-gradient(1200px 400px at 20% -10%, rgba(124,58,237,.10), transparent 50%),
-    radial-gradient(900px 300px at 100% 0%, rgba(56,189,248,.10), transparent 50%),
-    var(--bg);
-  color: var(--text);
-  font-size: var(--fs-14);
-  line-height: 1.4;
+margin: 0;
+font-family: var(--font-sans);
+background:
+radial-gradient(1200px 400px at 20% -10%, rgba(124,58,237,.10), transparent 50%),
+radial-gradient(900px 300px at 100% 0%, rgba(56,189,248,.08), transparent 50%),
+var(--bg);
+color: var(--text);
+font-size: var(--fs-14);
+line-height: 1.4;
 }
 
 /* Suaviza transições em tema/hover */
