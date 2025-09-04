@@ -11,6 +11,7 @@ window.onload = function () {
     month: null,
     hide: false,
     dark: false,
+    useCycleForReports: true,
     // Preferências de fatura
     ccDueDay: null,
     ccClosingDay: null,
@@ -124,7 +125,8 @@ try {
       // Lê valores em snake_case do banco
       S.ccDueDay     = Number(prefs.cc_due_day)     || null;
       S.ccClosingDay = Number(prefs.cc_closing_day) || null;
-    }
+            if (prefs.use_cycle_for_reports !== undefined && prefs.use_cycle_for_reports !== null) { S.useCycleForReports = !!prefs.use_cycle_for_reports; }
+          
 
     // Garante mês atual se não houver salvo
     if (!S.month) {
