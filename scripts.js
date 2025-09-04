@@ -209,15 +209,7 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
         const m = String(today.getMonth() + 1).padStart(2, "0");
         S.month = `${y}-${m}`;
       }
-// ENSURE_S_MONTH: garante mês atual como default se não houver salvo
-    if (!S.month) {
-      const today = new Date();
-      const y = today.getFullYear();
-      const mm = String(today.getMonth() + 1).padStart(2, "0");
-      S.month = `${y}-${mm}`;
-    }
-}
-        try {
+try {
       const dNow = new Date();
       const cur = new Date(dNow.getTime() - dNow.getTimezoneOffset() * 60000).toISOString().slice(0,7);
       S.month = cur;
@@ -258,14 +250,17 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
     return await supabaseClient.from("categories").delete().eq("nome", nome);
   }
   async function savePrefs() {
-  await supabaseClient.from("preferences").upsert([{
-    id: 1,
-    month: S.month,
-    hide: S.hide,
-    dark: S.dark,
-    cc_due_day: S.cc_due_day || null,
-    cc_closing_day: S.cc_closing_day || null
-  }]);
+  await supabaseClient.from("preferences").upsert([
+    {
+      id: 1,
+      month: S.month,
+      hide: S.hide,
+      dark: S.dark,
+      cc_due_day: S.cc_due_day || null,
+      cc_closing_day: S.cc_closing_day || null
+    }
+  
+]);
   }
   // Atualiza categoria nas transações (rename)
   async function updateTxCategory(oldName, newName) {
@@ -324,8 +319,6 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
         } else {
           break;
         }
-      }
-
       if (changed) {
         await saveRec({ ...r, proxima_data: next });
       }
