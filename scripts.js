@@ -39,7 +39,7 @@ window.onload = function () {
     const n = Number(v);
     return isFinite(n)
       ? n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-      : "R$ 0,00";
+      : "R$\u00a00,00";
   }
   function parseMoneyMasked(str) {
     if (!str) return 0;
@@ -107,8 +107,9 @@ window.onload = function () {
       S.month = prefs.month ?? S.month;
       S.hide  = !!prefs.hide;
       S.dark  = !!prefs.dark;
-      S.ccDueDay     = prefs.ccDueDay ?? null;
-      S.ccClosingDay = prefs.ccClosingDay ?? null;
+      // Lê valores em snake_case do banco
+      S.ccDueDay     = Number(prefs.cc_due_day)     || null;
+      S.ccClosingDay = Number(prefs.cc_closing_day) || null;
     }
 
     // Garante mês atual se não houver salvo
@@ -138,14 +139,20 @@ window.onload = function () {
   async function saveCat(c)   { return await supabaseClient.from("categories").upsert([c]); }
   async function deleteCat(nome){ return await supabaseClient.from("categories").delete().eq("nome", nome); }
   async function savePrefs() {
-    await supabaseClient.from("preferences").upsert([{
+    // Envia em snake_case para bater com o schema
+    const payload = {
       id: 1,
       month: S.month,
-      hide: S.hide,
-      dark: S.dark,
-      ccDueDay: S.ccDueDay,
-      ccClosingDay: S.ccClosingDay
-    }]);
+      hide: !!S.hide,
+      dark: !!S.dark,
+      cc_due_day: (Number(S.ccDueDay) || null),
+      cc_closing_day: (Number(S.ccClosingDay) || null)
+    };
+    const { error } = await supabaseClient.from("preferences").upsert([payload]);
+    if (error) {
+      console.error("Erro ao salvar preferências:", error);
+      alert("Não foi possível salvar as preferências: " + (error.message || "Erro desconhecido"));
+    }
   }
 
   // Atualiza categoria nas transações (rename)
@@ -1505,7 +1512,7 @@ window.onload = function () {
     renderReports();
   };
 
-  // ========= Billing config (mover para dentro do onload para ter acesso ao S e qs) =========
+  // ========= Billing config =========
   function wireBillingConfig() {
     const inpDue = qs("#ccDueDay");
     const inpClose = qs("#ccClosingDay");
@@ -1516,8 +1523,12 @@ window.onload = function () {
     if (btn && !btn._wired) {
       btn._wired = true;
       btn.addEventListener("click", async () => {
-        S.ccDueDay     = Number((qs("#ccDueDay")?.value || "").trim()) || null;
-        S.ccClosingDay = Number((qs("#ccClosingDay")?.value || "").trim()) || null;
+        const rawDue = (qs("#ccDueDay")?.value || "").trim();
+        const rawClose = (qs("#ccClosingDay")?.value || "").trim();
+        const d = Number(rawDue);
+        const c = Number(rawClose);
+        S.ccDueDay     = Number.isFinite(d) && d>0 ? d : null;
+        S.ccClosingDay = Number.isFinite(c) && c>0 ? c : null;
         await savePrefs();
         alert("Fatura salva com sucesso!");
       });
