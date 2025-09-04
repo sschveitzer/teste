@@ -16,6 +16,34 @@ window.onload = function () {
   };
 
   // ========= HELPERS GERAIS =========
+  // ======== FATURA (cartão de crédito) ========
+  // Se não houver fechamento definido, inferimos ~8 dias antes do vencimento
+  function inferClosingDay(dueDay) {
+    if (!dueDay) return 28;
+    const d = Number(dueDay) - 8;
+    return d > 0 ? d : 28; // valor conservador se dueDay <= 8
+  }
+
+  // Mapeia data (YYYY-MM-DD) -> mês de fatura (YYYY-MM), dado um dia de fechamento
+  function getBillingMonth(dateStr, closingDay) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return null;
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const cut = Number(closingDay || 28);
+    let yy = y, mm = m;
+    if (d > cut) {
+      mm++;
+      if (mm > 12) { mm = 1; yy++; }
+    }
+    return `${yy}-${String(mm).padStart(2, "0")}`;
+  }
+
+  // Retorna a chave de mês para relatórios (mês de fatura, não mês-calendário)
+  function monthKeyFor(x) {
+    if (!x || !x.data) return null;
+    const closing = S.cc_closing_day || inferClosingDay(S.cc_due_day);
+    return getBillingMonth(x.data, closing);
+  }
+
   function gid() {
     return crypto.randomUUID();
   }
@@ -90,8 +118,31 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
 
   // ========= LOAD DATA =========
   async function loadAll() {
+
     // Transações
-    const { data: tx, error: txError } = await supabaseClient
+    const { data: tx, error: txError 
+    // === Wiring Config inputs for credit card billing (if present) ===
+    try {
+      const inpDue = document.querySelector("#ccDueDay");
+      const inpClose = document.querySelector("#ccClosingDay");
+      if (inpDue) inpDue.value = S.cc_due_day || "";
+      if (inpClose) inpClose.value = S.cc_closing_day || "";
+      const btnSaveCard = document.querySelector("#saveCardPrefs");
+      if (btnSaveCard && !btnSaveCard._wired) {
+        btnSaveCard._wired = true;
+        btnSaveCard.onclick = async () => {
+          const due = Number((document.querySelector("#ccDueDay")?.value || "").trim()) || null;
+          const closing = Number((document.querySelector("#ccClosingDay")?.value || "").trim()) || null;
+          S.cc_due_day = due;
+          S.cc_closing_day = closing;
+          await savePrefs();
+          render();
+          alert("Preferências de fatura salvas!");
+        };
+      }
+    } catch(e) { console.warn("Billing config wiring skipped:", e); }
+
+} = await supabaseClient
       .from("transactions")
       .select("*");
     if (txError) {
@@ -125,6 +176,10 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
       S.month = prefs.month ?? S.month;
       S.hide = !!prefs.hide;
       S.dark = !!prefs.dark;
+      // Preferências de fatura
+      S.cc_due_day = Number(prefs.cc_due_day || 0) || null;
+      S.cc_closing_day = Number(prefs.cc_closing_day || 0) || null;
+
     
     
       // ENSURE_S_MONTH: garante mês atual como default se não houver salvo
@@ -183,7 +238,7 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
   }
   async function savePrefs() {
     await supabaseClient.from("preferences").upsert([
-      { id: 1, month: S.month, hide: S.hide, dark: S.dark }
+      { id: 1, month: S.month, hide: S.hide, dark: S.dark, cc_due_day: S.cc_due_day || null, cc_closing_day: S.cc_closing_day || null }
     ]);
   }
 
@@ -450,7 +505,7 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
   function renderRecentes() {
   const ul = qs("#listaRecentes");
   if (!ul) return;
-  const list = [...S.tx]
+  const list = [...S.tx].filter(x => monthKeyFor(x) === S.month)
     .filter(x => x.tipo === "Despesa")
     .sort((a, b) => b.data.localeCompare(a.data))
     .slice(0, 4);
@@ -686,7 +741,7 @@ const qs = s => document.querySelector(s);
   // ========= RELATÓRIOS / KPIs / GRÁFICOS EXISTENTES =========
   function updateKpis() {
     // Transações do mês selecionado
-    const txMonth = S.tx.filter(x => x.data && x.data.startsWith(S.month));
+    const txMonth = S.tx.filter(x => x.data && monthKeyFor(x) === S.month);
     const receitas = txMonth.filter(x => x.tipo === "Receita").reduce((a, b) => a + Number(b.valor), 0);
     const despesas = txMonth.filter(x => x.tipo === "Despesa").reduce((a, b) => a + Number(b.valor), 0);
     const saldo = receitas - despesas;
@@ -707,7 +762,7 @@ const qs = s => document.querySelector(s);
 
     // --- Variação vs mês anterior (em %) ---
     const ymPrev = prevYM(S.month);
-    const txPrev = S.tx.filter(x => x.data && x.data.startsWith(ymPrev));
+    const txPrev = S.tx.filter(x => x.data && monthKeyFor(x) === ymPrev);
     const receitasPrev = txPrev.filter(x => x.tipo === "Receita").reduce((a, b) => a + Number(b.valor), 0);
     const despesasPrev = txPrev.filter(x => x.tipo === "Despesa").reduce((a, b) => a + Number(b.valor), 0);
     const saldoPrev = receitasPrev - despesasPrev;
@@ -780,7 +835,7 @@ const qs = s => document.querySelector(s);
     if (chartPie) chartPie.destroy();
     const ctxPie = qs("#chartPie");
     if (ctxPie && window.Chart) {
-      const txMonth = S.tx.filter(x => x.data && x.data.startsWith(S.month));
+      const txMonth = S.tx.filter(x => x.data && monthKeyFor(x) === S.month);
       const porCat = {};
       txMonth
         .filter(x => x.tipo === "Despesa")
@@ -800,8 +855,8 @@ const qs = s => document.querySelector(s);
       const porMes = {};
       S.tx.forEach(x => {
         if (!x.data) return;
-        const ym = x.data.slice(0, 7);
-        porMes[ym] =
+        const ym = monthKeyFor(x);
+        if(!ym) return; porMes[ym] =
           (porMes[ym] || 0) +
           Number(x.valor) * (x.tipo === "Despesa" ? -1 : 1);
       });
@@ -1476,7 +1531,7 @@ function render() {
     // ==== Fluxo por mês (bar)
     {
       const byYM = {};
-      list.forEach(x=>{ const ym = x.data.slice(0,7); byYM[ym] = (byYM[ym]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
+      list.forEach(x=>{ const ym = monthKeyFor(x); byYM[ym] = (byYM[ym]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
       const labels = Object.keys(byYM).sort();
       ensureChart('chartFluxo2', {
         type:'bar',
@@ -1503,7 +1558,7 @@ function render() {
     // ==== Previsão simples (média móvel) & média por categoria
     {
       const byYM = {};
-      list.forEach(x=>{ const ym=x.data.slice(0,7); byYM[ym] = (byYM[ym]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
+      list.forEach(x=>{ const ym = monthKeyFor(x); byYM[ym] = (byYM[ym]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
       const labels = Object.keys(byYM).sort();
       const vals = labels.map(l=>byYM[l]);
       // média móvel 3p
@@ -1517,7 +1572,7 @@ function render() {
 
       // média por categoria (despesa)
       const byCat = {};
-      list.filter(x=>x.tipo==='Despesa').forEach(x=>{ const ym=x.data.slice(0,7); byCat[x.categoria] = byCat[x.categoria]||{}; byCat[x.categoria][ym]=(byCat[x.categoria][ym]||0)+Number(x.valor||0); });
+      list.filter(x=>x.tipo==='Despesa').forEach(x=>{ const ym = monthKeyFor(x); byCat[x.categoria] = byCat[x.categoria]||{}; byCat[x.categoria][ym]=(byCat[x.categoria][ym]||0)+Number(x.valor||0); });
       const tb = document.querySelector('#tblMediaCats2 tbody'); if (tb){
         const cats = Object.keys(byCat);
         const lines = cats.map(c=>{
@@ -1543,7 +1598,7 @@ function render() {
     // ==== Receitas x Despesas (stacked)
     {
       const byYM = {};
-      list.forEach(x=>{ const ym = x.data.slice(0,7); byYM[ym] = byYM[ym] || { R:0, D:0 }; if (x.tipo==='Receita') byYM[ym].R += Number(x.valor||0); if (x.tipo==='Despesa') byYM[ym].D += Number(x.valor||0); });
+      list.forEach(x=>{ const ym = monthKeyFor(x); byYM[ym] = byYM[ym] || { R:0, D:0 }; if (x.tipo==='Receita') byYM[ym].R += Number(x.valor||0); if (x.tipo==='Despesa') byYM[ym].D += Number(x.valor||0); });
       const labels = Object.keys(byYM).sort();
       const rec = labels.map(l=> byYM[l].R);
       const des = labels.map(l=> -byYM[l].D);
