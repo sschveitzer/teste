@@ -3,18 +3,16 @@ window.onload = function () {
   const supabaseClient = window.supabaseClient || supabase;
 
   // ========= ESTADO GLOBAL =========
-  let S = {
-    month: nowYMD().slice(0, 7),
-    hide: false,
-    dark: false,
-    editingId: null,
-    tx: [],
-    cats: [],
-    recs: [] // recorrências
-  ,
-    metas: { total: 0, porCat: {} }
-  }
-  ,
+let S = {
+  tx: [],
+  cats: [],
+  recs: [], // recorrências
+  metas: { total: 0, porCat: {} },
+
+  // Preferências de fatura
+  ccDueDay: null,
+  ccClosingDay: null
+};
   // Preferências de fatura
   ccDueDay: null,
   ccClosingDay: null
