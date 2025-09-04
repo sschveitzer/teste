@@ -1648,3 +1648,34 @@ function render() {
     renderReports();
   };
 };
+
+// === Wiring Config inputs for credit card billing (executed after DOM is ready) ===
+function wireBillingConfig() {
+  try {
+    const inpDue = document.querySelector("#ccDueDay");
+    const inpClose = document.querySelector("#ccClosingDay");
+    if (typeof S !== "undefined") {
+      if (inpDue) inpDue.value = S.cc_due_day || "";
+      if (inpClose) inpClose.value = S.cc_closing_day || "";
+    }
+    const btnSaveCard = document.querySelector("#saveCardPrefs");
+    if (btnSaveCard && !btnSaveCard._wired) {
+      btnSaveCard._wired = true;
+      btnSaveCard.onclick = async () => {
+        const due = Number((document.querySelector("#ccDueDay")?.value || "").trim()) || null;
+        const closing = Number((document.querySelector("#ccClosingDay")?.value || "").trim()) || null;
+        if (typeof S !== "undefined") {
+          S.cc_due_day = due;
+          S.cc_closing_day = closing;
+        }
+        if (typeof savePrefs === "function") await savePrefs();
+        if (typeof render === "function") render();
+        alert("Preferências de fatura salvas!");
+      };
+    }
+  } catch(e) { console.warn("wireBillingConfig error:", e); }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  try { wireBillingConfig(); } catch(e) { console.warn(e); }
+});
