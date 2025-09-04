@@ -266,7 +266,8 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
     cc_due_day: S.cc_due_day || null,
     cc_closing_day: S.cc_closing_day || null
   }]);
-}]);
+  }
+  ]);
 }
     ]);
   }
