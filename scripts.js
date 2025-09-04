@@ -10,8 +10,7 @@ window.onload = function () {
     editingId: null,
     tx: [],
     cats: [],
-    recs: [] // recorrências
-  ,
+    recs: [], // recorrências
     metas: { total: 0, porCat: {} }
   };
 
@@ -158,7 +157,7 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
   }
 
   const qs = s => document.querySelector(s);
-  const qsa = s => [document.querySelectorAll(s)];
+  const qsa = s => Array.from(document.querySelectorAll(s));
 
   // ========= LOAD DATA =========
   async function loadAll() {
@@ -327,7 +326,7 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
       }
 
       if (changed) {
-        await saveRec({ r, proxima_data: next });
+        await saveRec({ ...r, proxima_data: next });
       }
     }
 
@@ -484,7 +483,7 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
       if (per === "Mensal") rec.proxima_data = incMonthly(rec.proxima_data, diaMes, ajuste);
       else if (per === "Semanal") rec.proxima_data = incWeekly(rec.proxima_data);
       else if (per === "Anual") rec.proxima_data = incYearly(rec.proxima_data, diaMes, mes, ajuste);
-      await saveRec({ saved, proxima_data: rec.proxima_data });
+      await saveRec({ ...saved, proxima_data: rec.proxima_data });
     }
 
     await loadAll();
@@ -530,7 +529,7 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
   function renderRecentes() {
   const ul = qs("#listaRecentes");
   if (!ul) return;
-  const list = [S.tx].filter(x => monthKeyFor(x) === S.month)
+  const list = [...S.tx].filter(x => monthKeyFor(x) === S.month)
     .filter(x => x.tipo === "Despesa")
     .sort((a, b) => b.data.localeCompare(a.data))
     .slice(0, 4);
@@ -681,7 +680,7 @@ const qs = s => document.querySelector(s);
     ul.classList.add("cats-grid");
     ul.innerHTML = "";
 
-    const list = Array.isArray(S.cats) ? [S.cats].sort((a,b)=> (a.nome||"").localeCompare(b.nome||"")) : [];
+    const list = (S.cats||[]).slice().sort((a,b)=> (a.nome||"").localeCompare(b.nome||"")) : [];
     if (!list.length) {
       const li = document.createElement("li");
       li.className = "item";
@@ -901,7 +900,7 @@ const qs = s => document.querySelector(s);
     const sel = qs("#monthSelect");
     if (!sel) return;
     sel.innerHTML = "";
-    const mesesDisponiveis = [new Set(S.tx.filter(x=>x.data).map(x => monthKeyFor(x)))];
+    const mesesDisponiveis = Array.from(new Set(S.tx.filter(x=>x.data).map(x => monthKeyFor(x))));
     mesesDisponiveis.sort((a, b) => b.localeCompare(a));
     
     /* ENSURE_CURRENT_MONTH_OPTION */ 
@@ -1081,7 +1080,7 @@ mesesDisponiveis.forEach(m => {
       gastosPorDia[d-1] += Number(x.valor)||0;
     });
 
-    const max = Math.max(gastosPorDia, 0);
+    const max = Math.max(...gastosPorDia, 0);
     wrap.innerHTML = '';
 
     // Cabeçalho com iniciais (S T Q Q S S D)
@@ -1546,6 +1545,7 @@ function render() {
   }
 
   
+
 function renderReports(){
   const { list } = getReportFilters();
   const theme = chartTheme();
@@ -1646,149 +1646,6 @@ function renderReports(){
   if (hm && hmOld) hm.innerHTML = hmOld.innerHTML;
 }
 
-    // ==== Fluxo por mês (bar)
-    {
-      const byYM = {};
-      list.forEach(x=>{ const ym = x.data.slice(0,7); byYM[ym] = (byYM[ym]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
-      const labels = Object.keys(byYM).sort();
-      ensureChart('chartFluxo2', {
-        type:'bar',
-        data:{ labels, datasets:[{ label:'Fluxo', data: labels.map(l=>byYM[l]) }] },
-        options:{ scales:{ x:{ grid:{ color: theme.grid } }, y:{ grid:{ color: theme.grid } } } }
-      });
-    }
 
-    // ==== Pie categorias (despesas)
-    {
-      const byCat = {};
-      list.filter(x=>x.tipo==='Despesa').forEach(x=>{ byCat[x.categoria] = (byCat[x.categoria]||0)+Number(x.valor||0); });
-      const labels = Object.keys(byCat);
-      const data = labels.map(l=>byCat[l]);
-      ensureChart('chartPie2', { type:'pie', data:{ labels, datasets:[{ data }] } });
-      // tabela top
-      const tb = document.querySelector('#tblTop2 tbody'); if (tb){
-        tb.innerHTML = labels
-          .map((l,i)=>`<tr><td>${l||'-'}</td><td>${(Number(data[i])||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</td></tr>`)
-          .join('');
-      }
-    }
-
-    // ==== Previsão simples (média móvel) & média por categoria
-    {
-      const byYM = {};
-      list.forEach(x=>{ const ym=x.data.slice(0,7); byYM[ym] = (byYM[ym]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
-      const labels = Object.keys(byYM).sort();
-      const vals = labels.map(l=>byYM[l]);
-      // média móvel 3p
-      const ma = vals.map((_,i)=>{ const a=vals[Math.max(0,i-2)]||0, b=vals[Math.max(0,i-1)]||0, c=vals[i]||0; const n = i<2? (i+1):3; return (a+b+c)/n; });
-      ensureChart('chartForecast2', { type:'line', data:{ labels, datasets:[
-        { label:'Fluxo', data: vals }, { label:'Tendência (MM3)', data: ma }
-      ] }, options:{ scales:{ x:{ grid:{ color: theme.grid } }, y:{ grid:{ color: theme.grid } } } } });
-      const kpi = document.getElementById('kpiForecastFinal2'); if (kpi){
-        const last = vals.at(-1)||0; kpi.textContent = last.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-      }
-
-      // média por categoria (despesa)
-      const byCat = {};
-      list.filter(x=>x.tipo==='Despesa').forEach(x=>{ const ym=x.data.slice(0,7); byCat[x.categoria] = byCat[x.categoria]||{}; byCat[x.categoria][ym]=(byCat[x.categoria][ym]||0)+Number(x.valor||0); });
-      const tb = document.querySelector('#tblMediaCats2 tbody'); if (tb){
-        const cats = Object.keys(byCat);
-        const lines = cats.map(c=>{
-          const vals = Object.values(byCat[c]);
-          const m = vals.length? (vals.reduce((a,b)=>a+b,0)/vals.length):0;
-          return `<tr><td>${c}</td><td>${m.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</td></tr>`;
-        }).join('');
-        tb.innerHTML = lines;
-      }
-    }
-
-    // ==== YoY (barras lado a lado)
-    {
-      const byYearMonth = {};
-      list.forEach(x=>{ const y = x.data.slice(0,4); const m = x.data.slice(5,7); const key = `${y}-${m}`; byYearMonth[key]=(byYearMonth[key]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
-      const years = [new Set(list.map(x=>x.data.slice(0,4)))].sort().slice(-2);
-      const months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
-      const labels = months.map(m=>m);
-      const ds = years.map(y=>({ label:y, data: months.map(m=> byYearMonth[`${y}-${m}`]||0) }));
-      ensureChart('chartYoY', { type:'bar', data:{ labels, datasets: ds }, options:{ scales:{ x:{ stacked:false, grid:{ color: theme.grid } }, y:{ grid:{ color: theme.grid } } } } });
-    }
-
-    // ==== Receitas x Despesas (stacked)
-    {
-      const byYM = {};
-      list.forEach(x=>{ const ym = x.data.slice(0,7); byYM[ym] = byYM[ym] || { R:0, D:0 }; if (x.tipo==='Receita') byYM[ym].R += Number(x.valor||0); if (x.tipo==='Despesa') byYM[ym].D += Number(x.valor||0); });
-      const labels = Object.keys(byYM).sort();
-      const rec = labels.map(l=> byYM[l].R);
-      const des = labels.map(l=> -byYM[l].D);
-      ensureChart('chartRxV', { type:'bar', data:{ labels, datasets:[ {label:'Receitas', data:rec}, {label:'Despesas', data:des} ] }, options:{ scales:{ x:{ stacked:true, grid:{ color: theme.grid } }, y:{ stacked:true, grid:{ color: theme.grid } } } } });
-    }
-
-    // ==== Heatmap reaproveitado
-    const hm = document.getElementById('heatmap2');
-    const hmOld = document.getElementById('heatmap');
-    if (hm){ hm.innerHTML = hmOld ? hmOld.innerHTML : '<div class="muted">Sem dados</div>'; }
-  }
-
-  // ===== Exportar gráfico para PNG =====
-  function exportChartPNG(id){
-    const map = { 'fluxo':'chartFluxo2','pie':'chartPie2','forecast':'chartForecast2','yoy':'chartYoY','rxv':'chartRxV' };
-    const c = document.getElementById(map[id]);
-    if (!c) return;
-    const link = document.createElement('a');
-    link.download = `${id}.png`;
-    link.href = c.toDataURL('image/png');
-    link.click();
-  }
-
-  // ===== Tela cheia =====
-  function openChartFullscreen(id){
-    const map = { 'fluxo':'chartFluxo2','pie':'chartPie2','forecast':'chartForecast2','yoy':'chartYoY','rxv':'chartRxV' };
-    const srcCanvas = document.getElementById(map[id]);
-    if (!srcCanvas) return;
-    const fs = document.getElementById('chartFs');
-    const dest = document.getElementById('chartFsCanvas');
-    fs.hidden = false;
-    if (R.charts._fs) { R.charts._fs.destroy(); }
-    const cfg = R.charts[map[id]?.config? JSON.parse(JSON.stringify(R.charts[map[id].config)) : null;
-    if (cfg){ R.charts._fs = new Chart(dest, cfg); }
-  }
-  function closeChartFullscreen(){
-    const fs = document.getElementById('chartFs');
-    fs.hidden = true;
-    if (R.charts._fs){ R.charts._fs.destroy(); R.charts._fs = null; }
-  }
-
-  // ===== Hook no render existente =====
-  const _origRender = typeof render === 'function' ? render : null;
-  render = function(){
-    if (_origRender) _origRender();
-    if (!initReportsUI._done){ initReportsUI(); initReportsUI._done = true; }
-    renderReports();
-  };
-};
-
-// === Wiring Config inputs for credit card billing ===
-function wireBillingConfig() {
-  const inpDue = document.querySelector("#ccDueDay");
-  const inpClose = document.querySelector("#ccClosingDay");
-  if (typeof S !== "undefined") {
-    if (inpDue) inpDue.value = S.cc_due_day || "";
-    if (inpClose) inpClose.value = S.cc_closing_day || "";
-  }
-  const btnSaveCard = document.querySelector("#saveCardPrefs");
-  if (btnSaveCard && !btnSaveCard._wired) {
-    btnSaveCard._wired = true;
-    btnSaveCard.onclick = async () => {
-      const due = Number((document.querySelector("#ccDueDay")?.value || "").trim()) || null;
-      const closing = Number((document.querySelector("#ccClosingDay")?.value || "").trim()) || null;
-      if (typeof S !== "undefined") {
-        S.cc_due_day = due;
-        S.cc_closing_day = closing;
-      }
-      if (typeof savePrefs === "function") await savePrefs();
-      if (typeof render === "function") render();
-      alert("Fatura salva!");
-    };
-  }
-}
-document.addEventListener("DOMContentLoaded", wireBillingConfig);
+// build marker
+console.log('scripts.reports.fixed.js - patched build');
