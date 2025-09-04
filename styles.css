@@ -1160,3 +1160,31 @@ body.dark textarea:focus {
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--brand) 25%, transparent);
 }
 
+
+/* ========== NEW CATEGORY INPUT (Config > Categorias) ========== */
+#newCatName {
+  border-radius: 999px;
+  padding: 10px 12px 10px 36px;
+  background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12 5v14M5 12h14' stroke='%239ca3af' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 12px center;
+  background-size: 16px 16px;
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+
+#newCatName:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--brand) 20%, transparent);
+}
+
+#newCatName.invalid {
+  border-color: var(--warn);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, .12);
+}
+
+#addCat:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+  filter: grayscale(.2);
+}
+
