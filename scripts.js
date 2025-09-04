@@ -454,9 +454,9 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
   list.forEach(x => ul.append(itemTx(x, true)));
 }
 
-  function renderLancamentos(){
-  const qs = s => document.querySelector(s);
-  const S = window.S || {};
+  function renderLancamentos() {
+const qs = s => document.querySelector(s);
+  const Sref = S;
 
   const selTipo   = qs('#lancTipo');
   const selCat    = qs('#lancCat');
@@ -466,20 +466,19 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
   const ul        = qs('#listaLanc');
   const sumEl     = qs('#lancSummary');
 
-  // Modo compacto persiste em localStorage
-  const compactPref = localStorage.getItem('lancCompact') === '1';
-  if (chkCompact && chkCompact.checked != compactPref) chkCompact.checked = compactPref;
-  document.body.classList.toggle('compact', chkCompact?.checked);
+  if (chkCompact) {
+    const compactPref = localStorage.getItem('lancCompact') === '1';
+    if (chkCompact.checked !== compactPref) chkCompact.checked = compactPref;
+    document.body.classList.toggle('compact', chkCompact.checked);
+  }
 
-  // Filtros
-  const tipo  = (selTipo?.value || 'todos');
-  const cat   = (selCat?.value || 'todas');
-  const q     = (inpBusca?.value || '').trim().toLowerCase();
-  const sort  = (selSort?.value || 'data_desc');
+  const tipo  = (selTipo && selTipo.value) || 'todos';
+  const cat   = (selCat && selCat.value) || 'todas';
+  const q     = ((inpBusca && inpBusca.value) || '').trim().toLowerCase();
+  const sort  = (selSort && selSort.value) || 'data_desc';
 
-  let list = Array.isArray(S.tx) ? [...S.tx] : [];
+  let list = Array.isArray(Sref.tx) ? Sref.tx.slice() : [];
 
-  // Aplica filtros
   list = list.filter(x => {
     if (tipo !== 'todos' && x.tipo !== tipo) return false;
     if (cat  !== 'todas' && x.categoria !== cat) return false;
@@ -488,20 +487,21 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
       if (!hay.includes(q)) return false;
     }
     return true;
-  });// Ordenação
+  });
+
   const by = {
-    data_desc: (a,b)=> b.data.localeCompare(a.data),
-    data_asc:  (a,b)=> a.data.localeCompare(b.data),
+    data_desc: (a,b)=> String(b.data||'').localeCompare(String(a.data||'')),
+    data_asc:  (a,b)=> String(a.data||'').localeCompare(String(b.data||'')),
     valor_desc:(a,b)=> (Number(b.valor)||0) - (Number(a.valor)||0),
     valor_asc: (a,b)=> (Number(a.valor)||0) - (Number(b.valor)||0),
   };
-  list.sort(by[sort]||by.data_desc);
+  list.sort(by[sort] || by.data_desc);
 
-  // Resumo
   const fmt = v=> (Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-  const totDesp = list.filter(x=>x.tipo==='Despesa').reduce((a,b)=>a+Number(b.valor||0),0);
-  const totRec  = list.filter(x=>x.tipo==='Receita').reduce((a,b)=>a+Number(b.valor||0),0);
+  const totDesp = list.filter(x=>x.tipo==='Despesa').reduce((a,b)=>a+(Number(b.valor)||0),0);
+  const totRec  = list.filter(x=>x.tipo==='Receita').reduce((a,b)=>a+(Number(b.valor)||0),0);
   const saldo   = totRec - totDesp;
+
   if (sumEl){
     sumEl.innerHTML = '';
     const pill = (txt, cls='')=>{ const s=document.createElement('span'); s.className=`pill ${cls}`; s.textContent=txt; return s; };
@@ -513,15 +513,14 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
     );
   }
 
-  // Lista
   if (!ul) return;
   ul.innerHTML = '';
 
   if (!list.length){
-    const div = document.createElement('div');
-    div.className = 'empty';
-    div.innerHTML = `<div class="title">Nenhum lançamento encontrado</div><div class="hint">Ajuste os filtros ou crie um novo lançamento.</div>`;
-    ul.append(div);
+    const li = document.createElement('li');
+    li.className = 'item';
+    li.innerHTML = '<div class=\"empty\"><div class=\"title\">Nenhum lançamento encontrado</div><div class=\"hint\">Ajuste os filtros ou crie um novo lançamento.</div></div>';
+    ul.append(li);
     return;
   }
 
@@ -529,36 +528,31 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
     const li = document.createElement('li');
     li.className = 'item';
     li.dataset.tipo = x.tipo;
-
     const v = Number(x.valor)||0;
-    const valor = v.toLocaleString('pt-BR',{ style:'currency', currency:'BRL'});
-
+    const valor = fmt(v);
     li.innerHTML = `
-      <div class="left">
-        <div class="chip">${x.tipo||'-'}</div>
-        <div class="titulo"><strong>${x.descricao||'-'}</strong></div>
-        <div class="subinfo muted">${x.categoria||'-'} • ${x.data||'-'}</div>
+      <div class=\"left\">
+        <div class=\"chip\">${x.tipo||'-'}</div>
+        <div class=\"titulo\"><strong>${x.descricao||'-'}</strong></div>
+        <div class=\"subinfo muted\">${x.categoria||'-'} • ${x.data||'-'}</div>
       </div>
-      <div class="right">
-        <div class="valor">${valor}</div>
-        <button class="icon edit" title="Editar"><i class="ph ph-pencil-simple"></i></button>
-        <button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button>
+      <div class=\"right\">
+        <div class=\"valor\">${valor}</div>
+        <button class=\"icon edit\" title=\"Editar\"><i class=\"ph ph-pencil-simple\"></i></button>
+        <button class=\"icon del\" title=\"Excluir\"><i class=\"ph ph-trash\"></i></button>
       </div>`;
-
     const btnEdit = li.querySelector('.edit');
     const btnDel  = li.querySelector('.del');
-    btnEdit.onclick = ()=> window.openEdit && window.openEdit(x.id);
-    btnDel.onclick  = ()=> window.delTx && window.delTx(x.id);
-
+    if (btnEdit) btnEdit.onclick = ()=> openEdit && openEdit(x.id);
+    if (btnDel)  btnDel.onclick  = ()=> delTx && delTx(x.id);
     ul.append(li);
   });
 
-  // Listeners (uma vez)
   if (!renderLancamentos._wired){
-    selTipo && (selTipo.onchange = renderLancamentos);
-    selCat && (selCat.onchange = renderLancamentos);
-    inpBusca && (inpBusca.oninput = renderLancamentos);
-    selSort && (selSort.onchange = renderLancamentos);
+    if (selTipo) selTipo.onchange = renderLancamentos;
+    if (selCat) selCat.onchange = renderLancamentos;
+    if (inpBusca) inpBusca.oninput = renderLancamentos;
+    if (selSort) selSort.onchange = renderLancamentos;
     if (chkCompact){
       chkCompact.onchange = ()=>{
         localStorage.setItem('lancCompact', chkCompact.checked ? '1':'0');
@@ -568,7 +562,9 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
     renderLancamentos._wired = true;
   }
 }
-function openEdit(id) {
+
+
+  function openEdit(id) {
     const x = S.tx.find(t => t.id === id);
     if (!x) return;
     S.editingId = id;
@@ -702,7 +698,7 @@ function openEdit(id) {
     if (kpiDespesas) kpiDespesas.textContent = fmtMoney(despesas);
     if (kpiSaldo) kpiSaldo.textContent = fmtMoney(saldo);
     if (kpiSplit) kpiSplit.textContent = fmtMoney(despesas / 2);
-    if (kpiSplitHint) kpiSplitHint.textContent = "50%";
+    if (kpiSplitHint) kpiSplitHint.textContent = "½ de despesas";
 
     // --- Variação vs mês anterior (em %) ---
     const ymPrev = prevYM(S.month);
@@ -1038,9 +1034,10 @@ mesesDisponiveis.forEach(m => {
     wrap.appendChild(legend);
   }
 
-  function buildLancCatFilter(){
+  // ========= RENDER PRINCIPAL =========
+  
+function buildLancCatFilter(){
   const sel = document.querySelector('#lancCat');
-  const S = window.S || {};
   if (!sel) return;
   const current = sel.value || 'todas';
   sel.innerHTML = '';
@@ -1056,8 +1053,7 @@ mesesDisponiveis.forEach(m => {
   sel.value = current;
 }
 
-  // ========= RENDER PRINCIPAL =========
-  function render() {
+function render() {
     document.body.classList.toggle("dark", S.dark);
 
     // sincroniza estado dos toggles (suporta ids antigos e novos)
