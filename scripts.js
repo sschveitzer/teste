@@ -117,9 +117,9 @@ window.onload = function () {
         if (mm > 12) { mm = 1; yy += 1; }
         return String(yy) + '-' + String(mm).padStart(2, '0');
       }
-    } catch (e) {
+   catch (e) {
       return (String((tx && tx.data) || '').slice(0, 7) || '');
-    }
+}
   }
 
 // Retorna "YYYY-MM" do mês anterior ao fornecido (também "YYYY-MM")catch (e) {
