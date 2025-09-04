@@ -61,10 +61,14 @@ window.onload = function () {
       const [y, m] = ym.split("-").map(Number);
       const d = new Date(y, (m - 1) - 1, 1);
       return d.toISOString().slice(0, 7);
-    } 
-   // Retorna a "chave de mês" (YYYY-MM) respeitando o ciclo de fatura do cartão
-  // Se S.ccClosingDay estiver configurado (1..28), datas APÓS esse dia pertencem ao mês seguinte.
-  // Caso contrário, usa simplesmente o mês da data (YYYY-MM).
+    } catch (e) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - 1);
+      return d.toISOString().slice(0, 7);
+    }
+  }
+
+
   function monthKeyFor(tx) {
     try {
       const ymd = String((tx && tx.data) || '');
@@ -111,7 +115,56 @@ window.onload = function () {
     return toYMD(new Date(yy, mes - 1, day));
   }
 
-  const qs  = (s) => document.querySelector(s);
+  
+
+  // ===== Cartão de crédito: janela da fatura =====
+  function inferClosingDayFromDue(dueDay) {
+    if (!Number.isFinite(dueDay) || dueDay < 1 || dueDay > 31) return null;
+    const d = dueDay - 8;
+    return d >= 1 ? d : 1;
+  }
+
+  function getCardCycle(refYMD = nowYMD()) {
+    const dueDay = Number(S.ccDueDay) || null;
+    const explicitClosing = Number(S.ccClosingDay) || null;
+    if (!dueDay) return null;
+
+    const closingDay = explicitClosing ?? inferClosingDayFromDue(dueDay);
+    if (!closingDay) return null;
+
+    const Y = Number(refYMD.slice(0,4));
+    const M = Number(refYMD.slice(5,7));
+    const clamp = (y, m, d) => toYMD(new Date(y, m - 1, Math.min(d, lastDayOfMonth(y, m))));
+
+    const thisMonthClose = clamp(Y, M, closingDay);
+    let end = (refYMD <= thisMonthClose)
+      ? thisMonthClose
+      : (function () {
+          let y = Y, m = M + 1; if (m > 12) { m = 1; y += 1; }
+          return clamp(y, m, closingDay);
+        })();
+
+    const prevEnd = (function () {
+      const ymd = end;
+      let y = Number(ymd.slice(0,4));
+      let m = Number(ymd.slice(5,7)) - 1;
+      if (m < 1) { m = 12; y -= 1; }
+      return clamp(y, m, closingDay);
+    })();
+
+    const start = addDays(prevEnd, 1);
+
+    let dueY = Number(end.slice(0,4));
+    let dueM = Number(end.slice(5,7));
+    if (dueDay <= closingDay) {
+      dueM += 1; if (dueM > 12) { dueM = 1; dueY += 1; }
+    }
+    const dueDate = clamp(dueY, dueM, dueDay);
+
+    return { start, end, dueDate, closingDay, dueDay };
+  }
+
+const qs  = (s) => document.querySelector(s);
   const qsa = (s) => Array.from(document.querySelectorAll(s));
 
   // ========= LOAD DATA =========
@@ -1030,7 +1083,18 @@ window.onload = function () {
     sel.value = current;
   }
 
+  // --- Cartão de crédito: sincroniza inputs com o estado ---
+  function syncCardPrefsUI() {
+    const dueEl = qs("#ccDueDay");
+    const closeEl = qs("#ccClosingDay");
+    if (dueEl)   dueEl.value   = (S.ccDueDay ?? "");
+    if (closeEl) closeEl.value = (S.ccClosingDay ?? "");
+  }
+
+
+
   function render() {
+    syncCardPrefsUI();
     document.body.classList.toggle("dark", S.dark);
 
     // sincroniza estado dos toggles (suporta ids antigos e novos)
@@ -1111,6 +1175,23 @@ window.onload = function () {
     render();
     await savePrefs();
   };
+
+  // Cartão de crédito (fatura) - salvar preferências
+  (function wireCardPrefs(){
+    const btnSaveCard = qs("#saveCardPrefs");
+    if (!btnSaveCard || btnSaveCard.__wired) return;
+    btnSaveCard.__wired = true;
+    btnSaveCard.addEventListener("click", async () => {
+      const due   = Number(qs("#ccDueDay")?.value) || null;
+      const close = Number(qs("#ccClosingDay")?.value) || null;
+      S.ccDueDay = due;
+      S.ccClosingDay = close;
+      await savePrefs();
+      alert("Fatura salva com sucesso!");
+    });
+  })();
+
+
 
   // Ícone de Config na topbar (abre a aba Config)
   function wireBtnConfig(){
