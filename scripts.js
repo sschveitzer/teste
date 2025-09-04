@@ -11,24 +11,11 @@ window.onload = function () {
     month: null,
     hide: false,
     dark: false,
-    useCycleForReports: false,
     // Preferências de fatura
     ccDueDay: null,
     ccClosingDay: null,
     editingId: null
   };
-
-// Expor S e setter no escopo global (para console e depuração)
-try {
-  window.S = S;
-  window.setUseCycleForReports = function(v){
-    S.useCycleForReports = !!v;
-    try { savePrefs(); } catch(e) {}
-    try { render(); } catch(e) {}
-  };
-} catch (e) {}
-
-
 
   // ========= HELPERS GERAIS =========
   function gid() {
@@ -80,37 +67,6 @@ try {
       return d.toISOString().slice(0, 7);
     }
   }
-
-
-  function monthKeyFor(tx) {
-    try {
-      const ymd = String((tx && tx.data) || '');
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
-        return ymd.slice(0, 7) || '';
-      }
-
-      const closing = Number(S && S.ccClosingDay);
-      if (!closing || closing < 1 || closing > 28) {
-        return ymd.slice(0, 7);
-      }
-
-      const [y, m, d] = ymd.split('-').map(Number);
-      if (d <= closing) {
-        return String(y) + '-' + String(m).padStart(2, '0');
-      } else {
-        let yy = y;
-        let mm = m + 1;
-        if (mm > 12) {
-          mm = 1;
-          yy += 1;
-        }
-        return String(yy) + '-' + String(mm).padStart(2, '0');
-      }
-    } catch (e) {
-      return (String((tx && tx.data) || '').slice(0, 7) || '');
-    }
-  }
-
   function incMonthly(ymd, diaMes, ajusteFimMes = true) {
     const [y, m] = ymd.split("-").map(Number);
     let yy = y, mm = m + 1;
@@ -128,56 +84,7 @@ try {
     return toYMD(new Date(yy, mes - 1, day));
   }
 
-  
-
-  // ===== Cartão de crédito: janela da fatura =====
-  function inferClosingDayFromDue(dueDay) {
-    if (!Number.isFinite(dueDay) || dueDay < 1 || dueDay > 31) return null;
-    const d = dueDay - 8;
-    return d >= 1 ? d : 1;
-  }
-
-  function getCardCycle(refYMD = nowYMD()) {
-    const dueDay = Number(S.ccDueDay) || null;
-    const explicitClosing = Number(S.ccClosingDay) || null;
-    if (!dueDay) return null;
-
-    const closingDay = explicitClosing ?? inferClosingDayFromDue(dueDay);
-    if (!closingDay) return null;
-
-    const Y = Number(refYMD.slice(0,4));
-    const M = Number(refYMD.slice(5,7));
-    const clamp = (y, m, d) => toYMD(new Date(y, m - 1, Math.min(d, lastDayOfMonth(y, m))));
-
-    const thisMonthClose = clamp(Y, M, closingDay);
-    let end = (refYMD <= thisMonthClose)
-      ? thisMonthClose
-      : (function () {
-          let y = Y, m = M + 1; if (m > 12) { m = 1; y += 1; }
-          return clamp(y, m, closingDay);
-        })();
-
-    const prevEnd = (function () {
-      const ymd = end;
-      let y = Number(ymd.slice(0,4));
-      let m = Number(ymd.slice(5,7)) - 1;
-      if (m < 1) { m = 12; y -= 1; }
-      return clamp(y, m, closingDay);
-    })();
-
-    const start = addDays(prevEnd, 1);
-
-    let dueY = Number(end.slice(0,4));
-    let dueM = Number(end.slice(5,7));
-    if (dueDay <= closingDay) {
-      dueM += 1; if (dueM > 12) { dueM = 1; dueY += 1; }
-    }
-    const dueDate = clamp(dueY, dueM, dueDay);
-
-    return { start, end, dueDate, closingDay, dueDay };
-  }
-
-const qs  = (s) => document.querySelector(s);
+  const qs  = (s) => document.querySelector(s);
   const qsa = (s) => Array.from(document.querySelectorAll(s));
 
   // ========= LOAD DATA =========
@@ -203,7 +110,6 @@ const qs  = (s) => document.querySelector(s);
       // Lê valores em snake_case do banco
       S.ccDueDay     = Number(prefs.cc_due_day)     || null;
       S.ccClosingDay = Number(prefs.cc_closing_day) || null;
-      S.useCycleForReports = !!prefs.use_cycle_for_reports;
     }
 
     // Garante mês atual se não houver salvo
@@ -742,7 +648,7 @@ const qs  = (s) => document.querySelector(s);
   // ========= RELATÓRIOS / KPIs / GRÁFICOS EXISTENTES =========
   function updateKpis() {
     // Transações do mês selecionado
-    const txMonth = (S.tx || []).filter(x => x.data && inSelectedMonth(x));
+    const txMonth = (S.tx || []).filter(x => x.data && inSelectedMonth(x)));
     const receitas = txMonth.filter(x => x.tipo === "Receita").reduce((a, b) => a + Number(b.valor), 0);
     const despesas = txMonth.filter(x => x.tipo === "Despesa").reduce((a, b) => a + Number(b.valor), 0);
     const saldo = receitas - despesas;
@@ -832,7 +738,7 @@ const qs  = (s) => document.querySelector(s);
     if (chartPie) chartPie.destroy();
     const ctxPie = qs("#chartPie");
     if (ctxPie && window.Chart) {
-      const txMonth = (S.tx || []).filter(x => x.data && (typeof monthKeyFor==='function' ? monthKeyFor(x)===S.month : String(x.data).startsWith(S.month)));
+      const txMonth = (S.tx || []).filter(x => x.data && inSelectedMonth(x));
       const porCat = {};
       txMonth.filter(x => x.tipo === "Despesa").forEach(x => {
         porCat[x.categoria] = (porCat[x.categoria] || 0) + Number(x.valor);
@@ -1097,18 +1003,7 @@ const qs  = (s) => document.querySelector(s);
     sel.value = current;
   }
 
-  // --- Cartão de crédito: sincroniza inputs com o estado ---
-  function syncCardPrefsUI() {
-    const dueEl = qs("#ccDueDay");
-    const closeEl = qs("#ccClosingDay");
-    if (dueEl)   dueEl.value   = (S.ccDueDay ?? "");
-    if (closeEl) closeEl.value = (S.ccClosingDay ?? "");
-  }
-
-
-
   function render() {
-    syncCardPrefsUI();
     document.body.classList.toggle("dark", S.dark);
 
     // sincroniza estado dos toggles (suporta ids antigos e novos)
@@ -1189,23 +1084,6 @@ const qs  = (s) => document.querySelector(s);
     render();
     await savePrefs();
   };
-
-  // Cartão de crédito (fatura) - salvar preferências
-  (function wireCardPrefs(){
-    const btnSaveCard = qs("#saveCardPrefs");
-    if (!btnSaveCard || btnSaveCard.__wired) return;
-    btnSaveCard.__wired = true;
-    btnSaveCard.addEventListener("click", async () => {
-      const due   = Number(qs("#ccDueDay")?.value) || null;
-      const close = Number(qs("#ccClosingDay")?.value) || null;
-      S.ccDueDay = due;
-      S.ccClosingDay = close;
-      await savePrefs();
-      alert("Fatura salva com sucesso!");
-    });
-  })();
-
-
 
   // Ícone de Config na topbar (abre a aba Config)
   function wireBtnConfig(){
@@ -1372,7 +1250,9 @@ const qs  = (s) => document.querySelector(s);
     const bar = document.getElementById('metaProgBar');
     const obs = document.getElementById('metaObs');
 
-    const gastosMes = Array.isArray(S.tx) ? S.tx.filter(x => x.data && x.tipo==='Despesa' && inSelectedMonth(x)).reduce((a,b)=> a + (Number(b.valor)||0), 0) : 0;
+    const gastosMes = Array.isArray(S.tx) ? S.tx
+      .filter(x=> x.data && (typeof monthKeyFor==='function' ? monthKeyFor(x)===S.month : String(x.data).startsWith(S.month)) && x.tipo==='Despesa')
+      .reduce((a,b)=> a + (Number(b.valor)||0), 0) : 0;
 
     if (kTotal) kTotal.textContent = totalMeta ? fmtBRL(totalMeta) : '—';
     if (kGasto) kGasto.textContent = fmtBRL(gastosMes);
@@ -1660,50 +1540,43 @@ const qs  = (s) => document.querySelector(s);
   loadAll();
 }
 
-// ---- Helpers de ciclo de fatura / bucket ----
-function txBucketYM(x) {
-  try {
-    // SS: referência segura ao estado
-    const SS = (typeof S !== 'undefined' ? S : (typeof window !== 'undefined' ? window.S : null)) || {};
-    const ymd = String((x && x.data) || '');
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
-      return ymd.slice(0, 7) || '';
-    }
-    let closing = Number(SS.ccClosingDay);
-    closing = (Number.isFinite(closing) && closing >= 1 && closing <= 31) ? closing : null;
-    if (!closing) {
-      const due = Number(SS.ccDueDay);
-      if (Number.isFinite(due) && due >= 1 && due <= 31) {
-        closing = Math.max(1, due - 8);
+  // === Helpers de ciclo da fatura ===
+  // txBucketYM: com S.ccClosingDay (1..31), d <= closing => fica no mês da data; d > closing => vai para mês seguinte.
+  // Se não houver fechamento, usa mês-calendário (YYYY-MM).
+  function txBucketYM(x) {
+    try {
+      const SS = (typeof S !== 'undefined' ? S : (typeof window !== 'undefined' ? window.S : null)) || {};
+      const ymd = String((x && x.data) || '');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
+        return ymd.slice(0, 7) || '';
       }
+      let closing = Number(SS.ccClosingDay);
+      closing = (Number.isFinite(closing) && closing >= 1 && closing <= 31) ? closing : null;
+      if (!closing) return ymd.slice(0, 7);
+      const [y, m, d] = ymd.split('-').map(Number);
+      if (d <= closing) {
+        return String(y) + '-' + String(m).padStart(2, '0');
+      } else {
+        let yy = y, mm = m + 1;
+        if (mm > 12) { mm = 1; yy += 1; }
+        return String(yy) + '-' + String(mm).padStart(2, '0');
+      }
+    } catch (e) {
+      return (String((x && x.data) || '').slice(0, 7) || '');
     }
-    if (!closing) {
-      return ymd.slice(0, 7);
-    }
-    const [y, m, d] = ymd.split('-').map(Number);
-    if (d <= closing) {
-      return String(y) + '-' + String(m).padStart(2, '0');
-    } else {
-      let yy = y, mm = m + 1;
-      if (mm > 12) { mm = 1; yy += 1; }
-      return String(yy) + '-' + String(mm).padStart(2, '0');
-    }
-  } catch (e) {
-    return (String((x && x.data) || '').slice(0, 7) || '');
   }
-}
 
-// Por padrão usa mês-calendário; se S.useCycleForReports=true, usa ciclo (txBucketYM)
-function inSelectedMonth(x) {
-  const SS = (typeof S !== 'undefined' ? S : (typeof window !== 'undefined' ? window.S : null)) || {};
-  const ymCal = String((x && x.data) || '').slice(0,7);
-  if (SS.useCycleForReports) {
-    return txBucketYM(x) === SS.month;
+  // inSelectedMonth: calendário por padrão; se S.useCycleForReports=true, usa ciclo (txBucketYM)
+  function inSelectedMonth(x) {
+    const SS = (typeof S !== 'undefined' ? S : (typeof window !== 'undefined' ? window.S : null)) || {};
+    const ymCal = String((x && x.data) || '').slice(0,7);
+    if (SS.useCycleForReports && typeof txBucketYM === 'function') {
+      return txBucketYM(x) === SS.month;
+    }
+    return ymCal === SS.month;
   }
-  return ymCal === SS.month;
-}
 
-// Expor helpers no console
-try { window.txBucketYM = txBucketYM; window.inSelectedMonth = inSelectedMonth; } catch (e) {}
+  // Expor helpers no console
+  try { window.txBucketYM = txBucketYM; window.inSelectedMonth = inSelectedMonth; } catch (e) {}
 
 ;
