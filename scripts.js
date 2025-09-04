@@ -648,7 +648,7 @@ window.onload = function () {
   // ========= RELATÓRIOS / KPIs / GRÁFICOS EXISTENTES =========
   function updateKpis() {
     // Transações do mês selecionado
-    const txMonth = (S.tx || []).filter(x => x.data && inSelectedMonth(x)));
+    const txMonth = (S.tx || []).filter(x => x.data && inSelectedMonth(x));
     const receitas = txMonth.filter(x => x.tipo === "Receita").reduce((a, b) => a + Number(b.valor), 0);
     const despesas = txMonth.filter(x => x.tipo === "Despesa").reduce((a, b) => a + Number(b.valor), 0);
     const saldo = receitas - despesas;
