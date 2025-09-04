@@ -1110,6 +1110,17 @@ try {
     await savePrefs();
   };
 
+  // Toggle do ciclo na topbar (ao lado de Esconder valores)
+  const toggleCycle = qs('#toggleCycle') || qs('#useCycleForReports');
+  if (toggleCycle) toggleCycle.onchange = async e => {
+    try {
+      setUseCycleForReports(!!e.target.checked); // já salva e re-renderiza
+    } catch (err) {
+      console.error('Falha ao alternar ciclo:', err);
+    }
+  };
+
+
   // Ícone de Config na topbar (abre a aba Config)
   function wireBtnConfig(){
     const btn = document.getElementById('btnConfig');
