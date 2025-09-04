@@ -122,26 +122,6 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
     // Transações
     const { data: tx, error: txError 
     // === Wiring Config inputs for credit card billing (if present) ===
-    try {
-      const inpDue = document.querySelector("#ccDueDay");
-      const inpClose = document.querySelector("#ccClosingDay");
-      if (inpDue) inpDue.value = S.cc_due_day || "";
-      if (inpClose) inpClose.value = S.cc_closing_day || "";
-      const btnSaveCard = document.querySelector("#saveCardPrefs");
-      if (btnSaveCard && !btnSaveCard._wired) {
-        btnSaveCard._wired = true;
-        btnSaveCard.onclick = async () => {
-          const due = Number((document.querySelector("#ccDueDay")?.value || "").trim()) || null;
-          const closing = Number((document.querySelector("#ccClosingDay")?.value || "").trim()) || null;
-          S.cc_due_day = due;
-          S.cc_closing_day = closing;
-          await savePrefs();
-          render();
-          alert("Preferências de fatura salvas!");
-        };
-      }
-    } catch(e) { console.warn("Billing config wiring skipped:", e); }
-
 } = await supabaseClient
       .from("transactions")
       .select("*");
@@ -197,14 +177,7 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
       S.month = `${y}-${mm}`;
     }
 }
-        try {
-      const dNow = new Date();
-      const cur = new Date(dNow.getTime() - dNow.getTimezoneOffset() * 60000).toISOString().slice(0,7);
-      S.month = cur;
-    } catch(e){}
-
-
-    // Recorrências
+// Recorrências
     const { data: recs, error: recErr } = await supabaseClient
       .from("recurrences")
       .select("*");
@@ -1679,3 +1652,4 @@ function wireBillingConfig() {
 document.addEventListener("DOMContentLoaded", () => {
   try { wireBillingConfig(); } catch(e) { console.warn(e); }
 });
+
