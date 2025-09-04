@@ -139,8 +139,8 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
     if (!S.month) {
       const today = new Date();
       const y = today.getFullYear();
-      const mm = String(today.getMonth() + 1).padStart(2, "0");
-      S.month = `${y}-${mm}`;
+      const m = String(today.getMonth() + 1).padStart(2, "0");
+      S.month = `${y}-${m}`;
     }
 }
         try {
