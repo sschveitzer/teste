@@ -103,26 +103,6 @@ window.onload = function () {
       return (String((tx && tx.data) || '').slice(0, 7) || '');
     }
   }
-
-
-  // Usa o ciclo de fatura (monthKeyFor) se existir; senão, mês natural (YYYY-MM)
-  function txBucketYM(x) {
-    try {
-      if (typeof monthKeyFor === "function") {
-        return monthKeyFor(x);
-      }
-      return String((x && x.data) || "").slice(0, 7);
-    } catch (e) {
-      return String((x && x.data) || "").slice(0, 7);
-    }
-  }
-
-// Usa o ciclo de fatura (monthKeyFor) se existir; senão, mês natural (YYYY-MM)return String((x && x.data) || "").slice(0, 7);
-    } catch (e) {
-      return String((x && x.data) || "").slice(0, 7);
-    }
-  }
-
 // Retorna a "chave de mês" (YYYY-MM) respeitando o ciclo de fatura do cartão.
   // Se S.ccClosingDay estiver configurado (1..28), datas APÓS esse dia pertencem ao mês seguinte.
   // Caso contrário, usa o mês natural da data (YYYY-MM).const closing = Number(S && S.ccClosingDay);
