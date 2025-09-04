@@ -951,3 +951,34 @@ body.modal-open #lancamentos .lanc-toolbar{ position: static; }
 #listaLanc li.item .right .valor{
   font-weight:900;
 }
+
+/* ===== Relatórios: layout e subtabs ===== */
+.reports{ display:grid; grid-template-columns: 220px 1fr; gap:16px; }
+.reports-nav{ border:1px solid var(--border); background:var(--card); border-radius:var(--radius); padding:10px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:8px; }
+.reports-nav .rtab{ display:flex; align-items:center; gap:8px; padding:10px 12px; border:1px solid var(--border); background:var(--card); border-radius:12px; cursor:pointer; color:var(--muted); text-align:left; }
+.reports-nav .rtab.active{ background:var(--chip); color:var(--text); font-weight:600; border-color:transparent; }
+.reports-nav .sep{ height:1px; background:var(--border); margin:6px 4px; }
+
+.reports-main{ display:flex; flex-direction:column; gap:16px; }
+.reports-toolbar{ display:flex; gap:8px; align-items:center; border:1px solid var(--border); background:var(--card); border-radius:var(--radius); padding:10px; box-shadow:var(--shadow); }
+.reports-toolbar .spacer{ flex:1; }
+
+.rpanel{ display:none; }
+.rpanel.active{ display:block; }
+
+/* Header com ações nos cards */
+.header-actions .head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.header-actions .actions{ display:flex; gap:6px; }
+.header-actions .actions .icon{ width:36px; height:36px; display:grid; place-items:center; }
+
+/* Tela cheia para gráficos */
+.chart-fs{ position:fixed; inset:0; background:rgba(3,6,23,.6); backdrop-filter: blur(6px); display:grid; place-items:center; z-index:1200; }
+.chart-fs .inner{ background:var(--card); border:1px solid var(--border); border-radius:18px; padding:12px; width:min(1100px, 96%); height:min(85vh, 900px); display:grid; grid-template-rows:auto 1fr; gap:8px; box-shadow:var(--shadow); }
+.chart-fs .close{ justify-self:end; }
+.chart-fs[hidden]{ display:none; }
+
+/* Responsividade */
+@media (max-width: 1100px){
+  .reports{ grid-template-columns: 1fr; }
+  .reports-nav{ flex-direction:row; flex-wrap:wrap; }
+}
