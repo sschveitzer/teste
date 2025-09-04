@@ -982,3 +982,16 @@ body.modal-open #lancamentos .lanc-toolbar{ position: static; }
   .reports{ grid-template-columns: 1fr; }
   .reports-nav{ flex-direction:row; flex-wrap:wrap; }
 }
+
+/* ===== Metas (Dashboard & Config) ===== */
+.metas-card .meta-summary{ display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-bottom:8px; }
+.metas-card .meta-line strong{ font-weight:800; }
+.progress{ width:100%; height:10px; border-radius:999px; background: var(--bg-soft); overflow:hidden; border:1px solid var(--border); }
+.progress .bar{ height:100%; background: linear-gradient(90deg, var(--brand), var(--brand-2)); width:0%; transition: width .3s ease; }
+#metaStatusChip.chip.ok{ background: rgba(22,163,74,.12); color: var(--ok); }
+#metaStatusChip.chip.warn{ background: rgba(220,38,38,.12); color: var(--warn); }
+
+#tblMetasCat input{ width: 160px; }
+@media(max-width: 900px){
+  .metas-card .meta-summary{ grid-template-columns: 1fr; }
+}
