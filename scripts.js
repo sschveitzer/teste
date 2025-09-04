@@ -267,11 +267,6 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
     cc_closing_day: S.cc_closing_day || null
   }]);
   }
-  ]);
-}
-    ]);
-  }
-
   // Atualiza categoria nas transações (rename)
   async function updateTxCategory(oldName, newName) {
     if (!oldName || !newName || oldName === newName) return;
