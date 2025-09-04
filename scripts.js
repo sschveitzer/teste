@@ -13,7 +13,12 @@ window.onload = function () {
     recs: [] // recorrências
   ,
     metas: { total: 0, porCat: {} }
-  };
+  }
+  ,
+  // Preferências de fatura
+  ccDueDay: null,
+  ccClosingDay: null
+};
 
   // ========= HELPERS GERAIS =========
   function gid() {
@@ -86,7 +91,7 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
   }
 
   const qs = s => document.querySelector(s);
-  const qsa = s => [document.querySelectorAll(s)];
+  const qsa = s => Array.from(document.querySelectorAll(s));
 
   // ========= LOAD DATA =========
   async function loadAll() {
@@ -132,7 +137,10 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
         const today = new Date();
         const y = today.getFullYear();
         const m = String(today.getMonth() + 1).padStart(2, "0");
-        S.month = `${y}-${m}`;
+        S.month = `${y
+  S.ccDueDay     = prefs.ccDueDay ?? null;
+  S.ccClosingDay = prefs.ccClosingDay ?? null;
+}-${m}`;
       }
 // ENSURE_S_MONTH: garante mês atual como default se não houver salvo
     if (!S.month) {
@@ -182,9 +190,16 @@ function incMonthly(ymd, diaMes, ajusteFimMes = true) {
     return await supabaseClient.from("categories").delete().eq("nome", nome);
   }
   async function savePrefs() {
-    await supabaseClient.from("preferences").upsert([
-      { id: 1, month: S.month, hide: S.hide, dark: S.dark }
-    ]);
+  await supabaseClient.from("preferences").upsert([{
+    id: 1,
+    month: S.month,
+    hide: S.hide,
+    dark: S.dark,
+    ccDueDay: S.ccDueDay,
+    ccClosingDay: S.ccClosingDay
+  }]);
+}
+]);
   }
 
   // Atualiza categoria nas transações (rename)
@@ -1593,3 +1608,24 @@ function render() {
     renderReports();
   };
 };
+
+
+function wireBillingConfig() {
+  const inpDue = qs("#ccDueDay");
+  const inpClose = qs("#ccClosingDay");
+  if (inpDue)  inpDue.value  = S.ccDueDay ?? "";
+  if (inpClose) inpClose.value = S.ccClosingDay ?? "";
+
+  const btn = qs("#saveCardPrefs");
+  if (btn && !btn._wired) {
+    btn._wired = true;
+    btn.addEventListener("click", async () => {
+      S.ccDueDay     = Number((qs("#ccDueDay")?.value || "").trim()) || null;
+      S.ccClosingDay = Number((qs("#ccClosingDay")?.value || "").trim()) || null;
+      await savePrefs();
+      alert("Fatura salva com sucesso!");
+    });
+  }
+}
+document.addEventListener("DOMContentLoaded", wireBillingConfig);
+
