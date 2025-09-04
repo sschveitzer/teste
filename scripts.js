@@ -102,18 +102,19 @@ window.onload = function () {
   }
 
 // Retorna "YYYY-MM" do mês anterior ao fornecido (também "YYYY-MM")
-  function prevYM(ym) {
-    try {
-      const [y, m] = String(ym).split("-").map(Number);
-      if (!y || !m) throw new Error("ym inválido");
-      const d = new Date(y, (m - 1) - 1, 1);
-      return d.toISOString().slice(0, 7);
-    } catch (e) {
-      const d = new Date();
-      d.setMonth(d.getMonth() - 1);
-      return d.toISOString().slice(0, 7);
-    }
+function prevYM(ym) {
+  try {
+    const [y, m] = String(ym).split("-").map(Number);
+    if (!y || !m) throw new Error("ym inválido");
+    const d = new Date(y, (m - 1) - 1, 1);
+    return d.toISOString().slice(0, 7);
+  } catch (e) {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return d.toISOString().slice(0, 7);
   }
+}
+
 
 // Retorna "YYYY-MM" do mês anterior ao fornecido (também "YYYY-MM")
 catch (e) {
