@@ -123,7 +123,6 @@ window.onload = function () {
         S.month = today.slice(0,7);
       }
     }
-    }
 
     // Recorrências
     const { data: recs, error: recErr } = await supabaseClient.from("recurrences").select("*");
