@@ -68,9 +68,13 @@ window.onload = function () {
   function monthKeyFor(tx) {
     try {
       const ymd = String(tx && tx.data || '');
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return ymd.slice(0, 7) || '';
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
+        return ymd.slice(0, 7) || '';
+      }
       const closing = Number(S && S.ccClosingDay);
-      if (!closing || closing < 1 || closing > 28) return ymd.slice(0, 7);
+      if (!closing || closing < 1 || closing > 28) {
+        return ymd.slice(0, 7);
+      }
       const [y, m, d] = ymd.split('-').map(Number);
       if (d <= closing) {
         return String(y) + '-' + String(m).padStart(2, '0');
@@ -83,6 +87,7 @@ window.onload = function () {
       return (String(tx && tx.data || '').slice(0, 7) || '');
     }
   }
+
 catch (e) {
       const d = new Date();
       d.setMonth(d.getMonth() - 1);
