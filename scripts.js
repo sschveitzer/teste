@@ -55,7 +55,102 @@ window.onload = function () {
     return new Date(y, m, 0).getDate(); // m = 1..12
   }
 
+  
+
   // Retorna "YYYY-MM" do mês anterior ao fornecido (também "YYYY-MM")
+  function prevYM(ym) {
+    try {
+      const [y, m] = ym.split("-").map(Number);
+      const d = new Date(y, (m - 1) - 1, 1);
+      return d.toISOString().slice(0, 7);
+    } catch (e) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - 1);
+      return d.toISOString().slice(0, 7);
+    }
+  }
+
+  // Retorna a "chave de mês" (YYYY-MM) respeitando o ciclo de fatura do cartão
+  function monthKeyFor(tx) {
+    try {
+      const ymd = String((tx && tx.data) || '');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
+        return ymd.slice(0, 7) || '';
+      }
+      const closing = Number(S && S.ccClosingDay);
+      if (!closing || closing < 1 || closing > 28) {
+        return ymd.slice(0, 7);
+      }
+      const [y, m, d] = ymd.split('-').map(Number);
+      if (d <= closing) {
+        return String(y) + '-' + String(m).padStart(2, '0');
+      } else {
+        let yy = y, mm = m + 1;
+        if (mm > 12) { mm = 1; yy += 1; }
+        return String(yy) + '-' + String(mm).padStart(2, '0');
+      }
+    } catch (e) {
+      return (String((tx && tx.data) || '').slice(0, 7) || '');
+    }
+  }
+
+  // Usa o ciclo de fatura se existir; senão, mês natural (YYYY-MM)
+  function txBucketYM(x) {
+    try {
+      return monthKeyFor(x);
+    } catch (e) {
+      return String(x && x.data || "").slice(0, 7);
+    }
+  }
+
+  // ===== Cartão de crédito: janela da fatura =====
+  function inferClosingDayFromDue(dueDay) {
+    if (!Number.isFinite(dueDay) || dueDay < 1 || dueDay > 31) return null;
+    const d = dueDay - 8;
+    return d >= 1 ? d : 1;
+  }
+
+  function getCardCycle(refYMD = nowYMD()) {
+    const dueDay = Number(S.ccDueDay) || null;
+    const explicitClosing = Number(S.ccClosingDay) || null;
+    if (!dueDay) return null;
+
+    const closingDay = explicitClosing ?? inferClosingDayFromDue(dueDay);
+    if (!closingDay) return null;
+
+    const Y = Number(refYMD.slice(0,4));
+    const M = Number(refYMD.slice(5,7));
+    const clamp = (y, m, d) => toYMD(new Date(y, m - 1, Math.min(d, lastDayOfMonth(y, m))));
+
+    const thisMonthClose = clamp(Y, M, closingDay);
+    let end = (refYMD <= thisMonthClose)
+      ? thisMonthClose
+      : (function () {
+          let y = Y, m = M + 1; if (m > 12) { m = 1; y += 1; }
+          return clamp(y, m, closingDay);
+        })();
+
+    const prevEnd = (function () {
+      const ymd = end;
+      let y = Number(ymd.slice(0,4));
+      let m = Number(ymd.slice(5,7)) - 1;
+      if (m < 1) { m = 12; y -= 1; }
+      return clamp(y, m, closingDay);
+    })();
+
+    const start = addDays(prevEnd, 1);
+
+    let dueY = Number(end.slice(0,4));
+    let dueM = Number(end.slice(5,7));
+    if (dueDay <= closingDay) {
+      dueM += 1; if (dueM > 12) { dueM = 1; dueY += 1; }
+    }
+    const dueDate = clamp(dueY, dueM, dueDay);
+
+    return { start, end, dueDate, closingDay, dueDay };
+  }
+
+// Retorna "YYYY-MM" do mês anterior ao fornecido (também "YYYY-MM")
   function prevYM(ym) {
     try {
       const [y, m] = ym.split("-").map(Number);
@@ -64,11 +159,7 @@ window.onload = function () {
     } 
 
   // Usa o ciclo de fatura (monthKeyFor) se existir; senão, mês natural (YYYY-MM)
-  function txBucketYM(x) {
-    try {
-      if (typeof monthKeyFor === "function") {
-        return monthKeyFor(x);
-      }
+  
       return String(x && x.data || "").slice(0, 7);
     } catch (e) {
       return String(x && x.data || "").slice(0, 7);
