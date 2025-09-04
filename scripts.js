@@ -105,7 +105,9 @@ try {
   // ========= LOAD DATA =========
   async function loadAll() {
     // Transações
-    const { data: tx, error: txError } = await supabaseClient.from("transactions").select("*");
+    const { data: tx, error: txError 
+  render();
+} = await supabaseClient.from("transactions").select("*");
     if (txError) { console.error("Erro ao carregar transações:", txError); S.tx = []; }
     else { S.tx = tx || []; }
 
