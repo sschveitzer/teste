@@ -450,7 +450,7 @@ body.dark .error { background:#3b1f20; border-color:#ef4444; color:#fecaca; }
 
 #listaLanc.lanc-grid,#listaRecentes.lanc-grid{
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* 4 no desktop, 2 no tablet, 1 no celular */
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); /* 4 no desktop, 2 no tablet, 1 no celular */
   gap: 16px;
   list-style: none;
   margin: 0; padding: 0;
@@ -1320,3 +1320,25 @@ body.dark textarea:focus {
   color: var(--brand);
 }
 
+
+
+/* Botões no topo dos cards */
+#listaLanc .top-actions,
+#listaRecentes .top-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+#listaLanc .top-actions button,
+#listaRecentes .top-actions button {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  background: var(--card);
+  cursor: pointer;
+}
