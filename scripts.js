@@ -420,124 +420,16 @@ try {
         <button class="icon edit" title="Editar"><i class="ph ph-pencil-simple"></i></button>
         <button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button>`;
     li.innerHTML = `
-      <div class="left">
-        <div class="tag">${x.tipo}</div>
-        <div>
-          <div><strong>${x.descricao || "-"}</strong></div>
-          <div class="muted" style="font-size:12px">${x.categoria} • ${x.data}</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:6px;align-items:center">
-        <div class="${S.hide ? "blurred" : ""}" style="font-weight:700">${fmtMoney(v)}</div>${actions}
-      </div>`;
-    if (!readOnly) {
-      const btnEdit = li.querySelector(".edit");
-      const btnDel  = li.querySelector(".del");
-      if (btnEdit) btnEdit.onclick = () => openEdit(x.id);
-      if (btnDel)  btnDel.onclick  = () => delTx(x.id);
-    }
-    return li;
-  }
-
-  function renderRecentes() {
-    const ul = qs("#listaRecentes");
-    if (!ul) return;
-    const list = (S.tx || [])
-      .filter(x => x.tipo === "Despesa")
-      .sort((a, b) => String(b.data||"").localeCompare(String(a.data||"")))
-      .slice(0, 4);
-    ul.innerHTML = "";
-    if (!ul.classList.contains("lanc-grid")) ul.classList.add("lanc-grid");
-    list.forEach(x => ul.append(itemTx(x, true)));
-  }
-
-  function renderLancamentos() {
-    const _qs = s => document.querySelector(s);
-    const Sref = S;
-
-    const selTipo    = _qs('#lancTipo');
-    const selCat     = _qs('#lancCat');
-    const inpBusca   = _qs('#lancSearch');
-    const selSort    = _qs('#lancSort');
-    const chkCompact = _qs('#lancCompact');
-    const ul         = _qs('#listaLanc');
-    const sumEl      = _qs('#lancSummary');
-
-    if (chkCompact) {
-      const compactPref = localStorage.getItem('lancCompact') === '1';
-      if (chkCompact.checked !== compactPref) chkCompact.checked = compactPref;
-      document.body.classList.toggle('compact', chkCompact.checked);
-    }
-
-    const tipo  = (selTipo && selTipo.value) || 'todos';
-    const cat   = (selCat && selCat.value) || 'todas';
-    const q     = ((inpBusca && inpBusca.value) || '').trim().toLowerCase();
-    const sort  = (selSort && selSort.value) || 'data_desc';
-
-    let list = Array.isArray(Sref.tx) ? Sref.tx.slice() : [];
-
-    list = list.filter(x => {
-      if (tipo !== 'todos' && x.tipo !== tipo) return false;
-      if (cat  !== 'todas' && x.categoria !== cat) return false;
-      if (q) {
-        const hay = `${x.descricao||''} ${x.categoria||''} ${x.obs||''}`.toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      return true;
-    });
-
-    const by = {
-      data_desc: (a,b)=> String(b.data||'').localeCompare(String(a.data||'')),
-      data_asc:  (a,b)=> String(a.data||'').localeCompare(String(b.data||'')),
-      valor_desc:(a,b)=> (Number(b.valor)||0) - (Number(a.valor)||0),
-      valor_asc: (a,b)=> (Number(a.valor)||0) - (Number(b.valor)||0),
-    };
-    list.sort(by[sort] || by.data_desc);
-
-    const fmt = v=> (Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-    const totDesp = list.filter(x=>x.tipo==='Despesa').reduce((a,b)=>a+(Number(b.valor)||0),0);
-    const totRec  = list.filter(x=>x.tipo==='Receita').reduce((a,b)=>a+(Number(b.valor)||0),0);
-    const saldo   = totRec - totDesp;
-
-    if (sumEl){
-      sumEl.innerHTML = '';
-      const pill = (txt, cls='')=>{ const s=document.createElement('span'); s.className=`pill ${cls}`; s.textContent=txt; return s; };
-      sumEl.append(
-        pill(`Itens: ${list.length}`),
-        pill(`Receitas: ${fmt(totRec)}`, 'ok'),
-        pill(`Despesas: ${fmt(totDesp)}`, 'warn'),
-        pill(`Saldo: ${fmt(saldo)}`)
-      );
-    }
-
-    if (!ul) return;
-    ul.innerHTML = '';
-
-    if (!list.length){
-      const li = document.createElement('li');
-      li.className = 'item';
-      li.innerHTML = '<div class="empty"><div class="title">Nenhum lançamento encontrado</div><div class="hint">Ajuste os filtros ou crie um novo lançamento.</div></div>';
-      ul.append(li);
-      return;
-    }
-
-    list.forEach(x => {
-      const li = document.createElement('li');
-      li.className = 'item';
-      li.dataset.tipo = x.tipo;
-      const v = Number(x.valor)||0;
-      const valor = fmt(v);
-      li.innerHTML = `
-  <div class="top-actions">
-    <button class="icon edit" title="Editar"><i class="ph ph-pencil-simple"></i></button>
-    <button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button>
+  <div class=\"header-line\">
+    <div class=\"chip\">${x.tipo||'-'}</div>
+    <div class=\"actions\">
+      <button class=\"icon edit\" title=\"Editar\"><i class=\"ph ph-pencil-simple\"></i></button>
+      <button class=\"icon del\" title=\"Excluir\"><i class=\"ph ph-trash\"></i></button>
+    </div>
   </div>
-  <div class="left">
-    <div class="chip">${x.tipo||'-'}</div>
-    <div class="titulo"><strong>${x.descricao||'-'}</strong></div>
-    <div class="subinfo muted">${x.categoria||'-'} • ${x.data||'-'}</div>
-  </div>
-  <div class="valor">${valor}</div>
+  <div class=\"titulo\"><strong>${x.descricao||'-'}</strong></div>
+  <div class=\"subinfo muted\">${x.categoria||'-'} • ${x.data||'-'}</div>
+  <div class=\"valor\">${valor}</div>
 `;
       const btnEdit = li.querySelector('.edit');
       const btnDel  = li.querySelector('.del');
@@ -1671,4 +1563,3 @@ try {
     updateState();
   } catch(e){ console.warn('enhanceNewCategory error:', e); }
 })();
-
