@@ -129,6 +129,8 @@ try {
       S.ccClosingDay = Number(prefs.cc_closing_day) || null;
       if (prefs.use_cycle_for_reports !== undefined && prefs.use_cycle_for_reports !== null) {
         S.useCycleForReports = !!prefs.use_cycle_for_reports;
+      } else {
+        S.useCycleForReports = true;
       }
     }
 
@@ -158,22 +160,24 @@ try {
   async function deleteTx(id) { return await supabaseClient.from("transactions").delete().eq("id", id); }
   async function saveCat(c)   { return await supabaseClient.from("categories").upsert([c]); }
   async function deleteCat(nome){ return await supabaseClient.from("categories").delete().eq("nome", nome); }
-  async function savePrefs() {
-    // Envia em snake_case para bater com o schema
-    const payload = {
-      id: 1,
-      month: S.month,
-      hide: !!S.hide,
-      dark: !!S.dark,
-      cc_due_day: (Number(S.ccDueDay) || null),
-      cc_closing_day: (Number(S.ccClosingDay) || null)
-    };
-    const { error } = await supabaseClient.from("preferences").upsert([payload]);
-    if (error) {
-      console.error("Erro ao salvar preferências:", error);
-      alert("Não foi possível salvar as preferências: " + (error.message || "Erro desconhecido"));
-    }
+  async function savePrefs(){
+// Envia em snake_case para bater com o schema
+  const payload = {
+    id: 1,
+    month: S.month,
+    hide: !!S.hide,
+    dark: !!S.dark,
+    cc_due_day: (Number(S.ccDueDay) || null),
+    cc_closing_day: (Number(S.ccClosingDay) || null),
+    // ✅ novo: persiste o uso do ciclo da fatura
+    use_cycle_for_reports: !!S.useCycleForReports
+  };
+  const { error } = await supabaseClient.from("preferences").upsert([payload]);
+  if (error) {
+    console.error("Erro ao salvar preferências:", error);
+    alert("Não foi possível salvar as preferências: " + (error.message || "Erro desconhecido"));
   }
+}
 
   // Atualiza categoria nas transações (rename)
   async function updateTxCategory(oldName, newName) {
