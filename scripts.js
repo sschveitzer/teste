@@ -153,6 +153,19 @@ try {
     await fetchMetas();
 
     render();
+
+  // === Re-render de Lançamentos ao trocar o mês no topo ===
+  const monthSel = document.getElementById('monthSelect');
+  if (monthSel && !monthSel._wiredLanc) {
+    monthSel.addEventListener('change', (e) => {
+      S.month = e.target.value;
+      try { savePrefs(); } catch (e) {}
+      try { render(); } catch (e) {}
+      try { renderLancamentos(); } catch (e) {}
+    });
+    monthSel._wiredLanc = true;
+  }
+
   }
 
   // ========= SAVE =========
@@ -455,6 +468,19 @@ try {
   }
 
   function renderLancamentos() {
+
+    // Atualiza o título com o mês selecionado (ex.: "Lançamentos — Setembro/2025")
+    (function(){
+      if (!S || !S.month) return;
+      const h3 = document.querySelector('.lanc-header h3');
+      if (!h3) return;
+      const [y, m] = S.month.split('-').map(Number);
+      if (!y || !m) return;
+      const nomes = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+      const nome = nomes[m-1] || '';
+      const label = (nome ? nome.charAt(0).toUpperCase()+nome.slice(1) : S.month) + '/' + y;
+      h3.textContent = 'Lançamentos — ' + label;
+    })();
     const _qs = s => document.querySelector(s);
     const Sref = S;
 
@@ -478,6 +504,13 @@ try {
     const sort  = (selSort && selSort.value) || 'data_desc';
 
     let list = Array.isArray(Sref.tx) ? Sref.tx.slice() : [];
+
+    // === Filtro por mês selecionado no topbar ===
+    // Exibe apenas lançamentos cujo campo data (YYYY-MM-DD) começa com Sref.month (YYYY-MM).
+    if (Sref && Sref.month && Sref.month !== 'all') {
+      list = list.filter(x => x && x.data && String(x.data).startsWith(Sref.month));
+    }
+
 
     list = list.filter(x => {
       if (tipo !== 'todos' && x.tipo !== tipo) return false;
