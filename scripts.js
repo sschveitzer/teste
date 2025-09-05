@@ -367,16 +367,16 @@ try {
     // define próxima data inicial baseada no "início"
     let proxima = inicio;
     if (per === "Mensal") {
-      const ld = lastDayOfMonth(Number(inicio.slice(0,4)), Number(inicio.slice(5,7)));
+      const ld = lastDayOfMonth(Number(inicio.slice(0, 8)), Number(inicio.slice(5,7)));
       const day = (ajuste ? Math.min(diaMes, ld) : diaMes);
-      const candidate = toYMD(new Date(Number(inicio.slice(0,4)), Number(inicio.slice(5,7)) - 1, day));
+      const candidate = toYMD(new Date(Number(inicio.slice(0, 8)), Number(inicio.slice(5,7)) - 1, day));
       proxima = (candidate < inicio) ? incMonthly(candidate, diaMes, ajuste) : candidate;
     } else if (per === "Semanal") {
       proxima = incWeekly(inicio);
     } else if (per === "Anual") {
-      const ld = lastDayOfMonth(Number(inicio.slice(0,4)), mes);
+      const ld = lastDayOfMonth(Number(inicio.slice(0, 8)), mes);
       const day = (ajuste ? Math.min(diaMes, ld) : diaMes);
-      const candidate = toYMD(new Date(Number(inicio.slice(0,4)), mes - 1, day));
+      const candidate = toYMD(new Date(Number(inicio.slice(0, 8)), mes - 1, day));
       proxima = (candidate < inicio) ? incYearly(candidate, diaMes, mes, ajuste) : candidate;
     }
 
@@ -461,7 +461,7 @@ try {
     const list = (S.tx || [])
       .filter(x => x.tipo === "Despesa")
       .sort((a, b) => String(b.data||"").localeCompare(String(a.data||"")))
-      .slice(0, 4);
+      .slice(0, 8);
     ul.innerHTML = "";
     if (!ul.classList.contains("lanc-grid")) ul.classList.add("lanc-grid");
     list.forEach(x => ul.append(itemTx(x, true)));
@@ -1532,8 +1532,8 @@ try {
     // ==== YoY (barras lado a lado)
     {
       const byYearMonth = {};
-      list.forEach(x=>{ const y = String(x.data).slice(0,4); const m = String(x.data).slice(5,7); const key = `${y}-${m}`; byYearMonth[key]=(byYearMonth[key]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
-      const years = Array.from(new Set(list.map(x=> String(x.data).slice(0,4)))).sort().slice(-2);
+      list.forEach(x=>{ const y = String(x.data).slice(0, 8); const m = String(x.data).slice(5,7); const key = `${y}-${m}`; byYearMonth[key]=(byYearMonth[key]||0) + (x.tipo==='Despesa'?-1:1)*Number(x.valor||0); });
+      const years = Array.from(new Set(list.map(x=> String(x.data).slice(0, 8)))).sort().slice(-2);
       const months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
       const labels = months.map(m=>m);
       const ds = years.map(y=>({ label:y, data: months.map(m=> byYearMonth[`${y}-${m}`]||0) }));
