@@ -1351,3 +1351,48 @@ body.dark textarea:focus {
   background: var(--card);
   cursor: pointer;
 }
+
+
+/* ====== Tablet (<= 1024px) ====== */
+@media (max-width: 1024px) {
+  .grid.cards { grid-template-columns: repeat(2, 1fr); }      /* KPIs: 2x2 */
+  .grid.two   { grid-template-columns: 1fr; }                  /* Gráficos: empilha */
+  .container  { padding: 0 16px; }
+  .card       { padding: 16px; }
+  .kpi .value { font-size: 22px; }
+  button.icon { min-width: 44px; min-height: 44px; }           /* alvo de toque Apple HIG */
+}
+
+/* ====== iPad 11" retrato (<= 834px) ====== */
+@media (max-width: 834px) {
+  .tabs { gap: 6px; }
+  .nav .wrap { padding: 12px 14px; }
+  .grid.cards { grid-template-columns: 1fr; }                  /* KPIs: 1 por linha */
+  #listaLanc.lanc-grid, #listaRecentes.lanc-grid {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+  .kpi .value { font-size: 20px; }
+}
+
+/* ====== Segurança/gesto (safe area + FAB) ====== */
+:root { --safe-bottom: env(safe-area-inset-bottom, 0px); }
+.fab { bottom: calc(26px + var(--safe-bottom)); }
+
+/* ====== Canvas responsivo ====== */
+.card canvas { width: 100% !important; height: auto !important; }
+.card.header-actions canvas { aspect-ratio: 16 / 9; height: auto !important; }
+
+/* ====== Polimentos ====== */
+.kpi .icon { font-size: 18px; }
+.kpi { gap: 10px; }
+
+@media (max-width: 834px) {
+  #listaRecentes .titulo { font-size: 15px; }
+  #listaRecentes .valor  { font-size: 17px; }
+}
+
+/* Desativa hover em dispositivos touch */
+@media (hover: none) {
+  #listaLanc.lanc-grid > li.item:hover,
+  #listaRecentes.lanc-grid > li.item:hover { transform: none; }
+}
