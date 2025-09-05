@@ -528,16 +528,17 @@ try {
       const v = Number(x.valor)||0;
       const valor = fmt(v);
       li.innerHTML = `
-        <div class="left">
-          <div class="chip">${x.tipo||'-'}</div>
-          <div class="titulo"><strong>${x.descricao||'-'}</strong></div>
-          <div class="subinfo muted">${x.categoria||'-'} • ${x.data||'-'}</div>
-        </div>
-        <div class="right">
-          <div class="valor">${valor}</div>
-          <button class="icon edit" title="Editar"><i class="ph ph-pencil-simple"></i></button>
-          <button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button>
-        </div>`;
+  <div class="top-actions">
+    <button class="icon edit" title="Editar"><i class="ph ph-pencil-simple"></i></button>
+    <button class="icon del" title="Excluir"><i class="ph ph-trash"></i></button>
+  </div>
+  <div class="left">
+    <div class="chip">${x.tipo||'-'}</div>
+    <div class="titulo"><strong>${x.descricao||'-'}</strong></div>
+    <div class="subinfo muted">${x.categoria||'-'} • ${x.data||'-'}</div>
+  </div>
+  <div class="valor">${valor}</div>
+`;
       const btnEdit = li.querySelector('.edit');
       const btnDel  = li.querySelector('.del');
       if (btnEdit) btnEdit.onclick = ()=> openEdit && openEdit(x.id);
