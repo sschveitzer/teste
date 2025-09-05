@@ -1,557 +1,99 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sistema de Gestão Financeira - S.Schveitzer</title>
-  <link rel="icon" type="image/png" href="img/logo.png">
-  <!-- Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.0.0/dist/umd/supabase.min.js"></script>
+  <meta charset="UTF-8" />
+  <title>Gestão Financeira - S.Schveitzer</title>
 
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>  
+  <!-- Ícone -->
+  <link rel="icon" type="image/png" href="img/logo.png" />
+  <link rel="apple-touch-icon" href="img/logo.png">
 
-  <!-- Ícones Phosphor -->
-  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <!-- Preconnect para melhorar o carregamento do SDK -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
 
-  <!-- CSS -->
-  <link rel="stylesheet" href="styles.css">
+  <!-- Viewport e tema -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+
+  <!-- CSP básica (ajuste domínios se necessário) -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self';
+                 img-src 'self' data:;
+                 style-src 'self' 'unsafe-inline';
+                 script-src 'self' https://cdn.jsdelivr.net;
+                 connect-src 'self' https://*.supabase.co;
+                 font-src 'self' data:;
+                 frame-ancestors 'none';">
+
+  <!-- Estilos globais existentes -->
+  <link rel="stylesheet" href="login.css" />
+
+  <!-- SDK Supabase (único) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 </head>
-<body>
-  <div class="nav">
-    <div class="wrap">
-      <div class="badge">
-        <img src="img/logo.png" alt="S.Schveitzer" class="logo">
-        <span style="opacity:.9;font-weight:600">Gestão Financeira</span>
-      </div>
-      <div class="tabs">
-        <button class="tab active" data-tab="dashboard"><i class="ph ph-gauge"></i> Dashboard</button>
-        <button class="tab" data-tab="lancamentos"><i class="ph ph-list-bullets"></i> Lançamentos</button>
-        <button class="tab" data-tab="relatorios"><i class="ph ph-chart-line-up"></i> Relatórios</button>
-      </div>
-      <div class="right">
-        <select id="monthSelect" title="Mês"></select>
-        <!-- Ícone de Config substitui os controles rápidos na topbar -->
-        <button class="icon" id="btnConfig" title="Configurações"><i class="ph ph-gear"></i></button>
-        <button class="icon" id="logoutBtn" title="Sair"><i class="ph ph-sign-out"></i></button>
-      </div>
+<body class="auth-page">
+  <noscript>
+    <div class="card auth-card" style="margin:24px auto;max-width:360px">
+      Ative o JavaScript para usar o FinanceAPP.
     </div>
-  </div>
+  </noscript>
 
-  <div class="container">
-    <!-- Dashboard -->
-    <section id="dashboard" class="active">
-      <div class="grid cards">
-        <div class="card">
-          <div class="kpi earn">
-            <i class="ph ph-trend-up icon"></i>
-            <div><div class="muted">Receitas (mês)</div><div id="kpiReceitas" class="value">R$ 0,00</div></div>
-            <span class="chip" id="kpiReceitasDelta" title="Variação vs mês anterior">—</span>
-          </div>
-        </div>
-        <div class="card">
-          <div class="kpi exp">
-            <i class="ph ph-trend-down icon"></i>
-            <div><div class="muted">Despesas (mês)</div><div id="kpiDespesas" class="value">R$ 0,00</div></div>
-            <span class="chip" id="kpiDespesasPct" title="Despesas / Receitas">—</span>
-          </div>
-        </div>
-        <div class="card">
-          <div class="kpi balance">
-            <i class="ph ph-wallet icon"></i>
-            <div><div class="muted">Saldo (mês)</div><div id="kpiSaldo" class="value">R$ 0,00</div></div>
-            <span class="chip" id="kpiSaldoDelta" title="Variação vs mês anterior">—</span>
-          </div>
-        </div>
-        <div class="card">
-          <div class="kpi balance">
-            <i class="ph ph-users-three icon"></i>
-            <div><div class="muted">Divisão de Despesas</div><div id="kpiSplit" class="value">R$ 0,00</div></div>
-            <span class="chip" id="kpiSplitHint">50%</span>
-          </div>
-        </div>
+  <main class="card auth-card" role="main" aria-labelledby="auth-title">
+    <img src="img/logo.png" alt="FinanceAPP" class="logo" width="64" height="64" />
+
+    <h1 id="auth-title">Acessar sua conta</h1>
+    <p class="helper">Entre com seu email e senha para continuar</p>
+
+    <form id="login-form" class="auth-form" autocomplete="on" novalidate>
+      <div class="field">
+        <label for="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          inputmode="email"
+          autocomplete="username"
+          placeholder="voce@exemplo.com"
+          required
+          aria-required="true"
+          spellcheck="false" />
       </div>
 
-      <!-- METAS: card abaixo dos 4 KPIs -->
-      <div class="card metas-card" style="margin-top:16px">
-        <div class="head" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <h3><i class="ph ph-target"></i> Meta mensal de gastos</h3>
-          <button class="icon" id="btnGoMetas" title="Definir metas"><i class="ph ph-sliders"></i></button>
-        </div>
-        <div class="meta-summary" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px">
-          <div class="meta-line"><span class="muted">Meta total:</span> <strong id="metaTotalLabel">—</strong></div>
-          <div class="meta-line"><span class="muted">Gasto no mês:</span> <strong id="metaGastoMes">—</strong></div>
-          <div class="meta-line"><span class="muted">Status:</span> <span id="metaStatusChip" class="chip">—</span></div>
-        </div>
-        <div class="progress" style="width:100%;height:10px;border-radius:999px;background:var(--bg-soft);overflow:hidden;border:1px solid var(--border)">
-          <div id="metaProgBar" class="bar" style="height:100%;width:0%;transition:width .3s ease"></div>
-        </div>
-        <div class="meta-obs muted" id="metaObs" style="margin-top:6px">Defina uma meta para acompanhar o progresso.</div>
-      </div>
-
-      <div class="grid two" style="margin-top:16px">
-        <div class="card"><h3>Saldo acumulado (12 meses)</h3><canvas id="chartSaldo"></canvas></div>
-        <div class="card"><h3>Despesas por categoria</h3><canvas id="chartPie"></canvas></div>
-      </div>
-
-      <div class="card" style="margin-top:16px">
-        <h3>Últimos lançamentos</h3>
-        <div style="display:flex;gap:10px;margin-bottom:10px">
-          <select id="filterTipo">
-            <option value="todos">Todos</option>
-            <option value="Receita">Receitas</option>
-            <option value="Despesa">Despesas</option>
-            <option value="Transferência">Transferências</option>
-          </select>
-          <input type="text" id="searchLanc" placeholder="Buscar...">
-        </div>
-        <ul id="listaRecentes" class="lanc-grid"></ul>
-      </div>
-    </section>
-
-    <!-- Lançamentos -->
-    <section id="lancamentos">
-      <div class="card">
-        <div class="lanc-header">
-          <h3>Lançamentos</h3>
-          <div class="lanc-actions"><button class="btn" id="btnNovo"><i class="ph ph-plus"></i> Novo</button></div>
-        </div>
-        <div class="lanc-toolbar" role="region" aria-label="Filtros de lançamentos">
-          <select id="lancTipo" title="Tipo">
-            <option value="todos">Todos</option>
-            <option value="Receita">Receitas</option>
-            <option value="Despesa">Despesas</option>
-            <option value="Transferência">Transferências</option>
-          </select>
-          <select id="lancCat" title="Categoria">
-            <option value="todas">Todas as categorias</option>
-          </select>
-          <input id="lancSearch" type="text" placeholder="Buscar descrição..." title="Buscar" />
-          <select id="lancSort" title="Ordenar por">
-            <option value="data_desc">Mais recentes</option>
-            <option value="data_asc">Mais antigos</option>
-            <option value="valor_desc">Maior valor</option>
-            <option value="valor_asc">Menor valor</option>
-          </select>
-          <label class="switch sm" title="Modo compacto"><input type="checkbox" id="lancCompact"> compacto</label>
-        </div>
-        <div class="lanc-summary" id="lancSummary"></div>
-        <ul id="listaLanc" class="list lanc-grid" style="margin-top:12px"></ul>
-      </div>
-    </section>
-
-    <!-- Relatórios -->
-    <section id="relatorios">
-      <div class="reports">
-        <aside class="reports-nav" aria-label="Submenu de relatórios">
-          <button class="rtab active" data-rtab="fluxo"><i class="ph ph-chart-bar"></i> Fluxo mensal</button>
-          <button class="rtab" data-rtab="categorias"><i class="ph ph-circles-three"></i> Top categorias</button>
-          <button class="rtab" data-rtab="previsao"><i class="ph ph-trend-up"></i> Tendência & Previsão</button>
-          <button class="rtab" data-rtab="heatmap"><i class="ph ph-fire"></i> Heatmap</button>
-          <div class="sep"></div>
-          <button class="rtab" data-rtab="yoy"><i class="ph ph-calendar"></i> Comparativo YoY</button>
-          <button class="rtab" data-rtab="rxv"><i class="ph ph-chart-line-up"></i> Receitas x Despesas</button>
-        </aside>
-
-        <div class="reports-main">
-          <div class="reports-toolbar" role="region" aria-label="Filtros dos relatórios">
-            <select id="rPeriodo" title="Período">
-              <option value="3m">Últimos 3 meses</option>
-              <option value="6m" selected>Últimos 6 meses</option>
-              <option value="12m">Últimos 12 meses</option>
-              <option value="ytd">Ano atual (YTD)</option>
-              <option value="all">Tudo</option>
-            </select>
-            <select id="rTipo" title="Tipo">
-              <option value="todos" selected>Todos</option>
-              <option value="Receita">Receitas</option>
-              <option value="Despesa">Despesas</option>
-            </select>
-            <select id="rCategoria" title="Categoria (opcional)">
-              <option value="todas" selected>Todas</option>
-            </select>
-            <div class="spacer"></div>
-            <button class="icon" id="rExport" title="Exportar relatórios"><i class="ph ph-share"></i></button>
-          </div>
-
-          <!-- Fluxo mensal -->
-          <div class="rpanel active" data-rtab="fluxo">
-            <div class="card header-actions">
-              <div class="head">
-                <h3><i class="ph ph-chart-bar"></i> Fluxo por mês</h3>
-                <div class="actions">
-                  <button class="icon" data-fs="fluxo" title="Tela cheia"><i class="ph ph-corners-out"></i></button>
-                  <button class="icon" data-export="fluxo" title="Exportar PNG"><i class="ph ph-download-simple"></i></button>
-                </div>
-              </div>
-              <canvas id="chartFluxo2" height="160"></canvas>
-            </div>
-          </div>
-
-          <!-- Top categorias -->
-          <div class="rpanel" data-rtab="categorias">
-            <div class="grid two">
-              <div class="card header-actions">
-                <div class="head">
-                  <h3><i class="ph ph-circles-three"></i> Despesas por categoria</h3>
-                  <div class="actions">
-                    <button class="icon" data-fs="pie" title="Tela cheia"><i class="ph ph-corners-out"></i></button>
-                    <button class="icon" data-export="pie" title="Exportar PNG"><i class="ph ph-download-simple"></i></button>
-                  </div>
-                </div>
-                <canvas id="chartPie2" height="160"></canvas>
-              </div>
-              <div class="card">
-                <h3>Top categorias (período)</h3>
-                <table id="tblTop2"><thead><tr><th>Categoria</th><th>Total</th></tr></thead><tbody></tbody></table>
-              </div>
-            </div>
-          </div>
-
-          <!-- Previsão -->
-          <div class="rpanel" data-rtab="previsao">
-            <div class="grid two">
-              <div class="card header-actions">
-                <div class="head">
-                  <h3><i class="ph ph-trend-up"></i> Tendência & Previsão</h3>
-                  <div class="actions">
-                    <button class="icon" data-fs="forecast" title="Tela cheia"><i class="ph ph-corners-out"></i></button>
-                    <button class="icon" data-export="forecast" title="Exportar PNG"><i class="ph ph-download-simple"></i></button>
-                  </div>
-                </div>
-                <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
-                  <span class="tag">Projeção do saldo no fim do período</span>
-                  <strong id="kpiForecastFinal2" style="font-size:16px">–</strong>
-                </div>
-                <canvas id="chartForecast2" height="160"></canvas>
-              </div>
-              <div class="card">
-                <h3>Média de gastos por categoria</h3>
-                <table id="tblMediaCats2">
-                  <thead><tr><th>Categoria</th><th>Média mensal</th></tr></thead>
-                  <tbody></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <!-- Heatmap -->
-          <div class="rpanel" data-rtab="heatmap">
-            <div class="card">
-              <h3><i class="ph ph-fire"></i> Heatmap de despesas (mês atual)</h3>
-              <div id="heatmap2" class="heatmap"></div>
-            </div>
-          </div>
-
-          <!-- YoY -->
-          <div class="rpanel" data-rtab="yoy">
-            <div class="card header-actions">
-              <div class="head">
-                <h3><i class="ph ph-calendar"></i> Comparativo Ano vs Ano</h3>
-                <div class="actions">
-                  <button class="icon" data-fs="yoy" title="Tela cheia"><i class="ph ph-corners-out"></i></button>
-                  <button class="icon" data-export="yoy" title="Exportar PNG"><i class="ph ph-download-simple"></i></button>
-                </div>
-              </div>
-              <canvas id="chartYoY" height="180"></canvas>
-            </div>
-          </div>
-
-          <!-- Receitas x Despesas -->
-          <div class="rpanel" data-rtab="rxv">
-            <div class="card header-actions">
-              <div class="head">
-                <h3><i class="ph ph-chart-line-up"></i> Receitas x Despesas (stacked)</h3>
-                <div class="actions">
-                  <button class="icon" data-fs="rxv" title="Tela cheia"><i class="ph ph-corners-out"></i></button>
-                  <button class="icon" data-export="rxv" title="Exportar PNG"><i class="ph ph-download-simple"></i></button>
-                </div>
-              </div>
-              <canvas id="chartRxV" height="180"></canvas>
-            </div>
-          </div>
-
+      <div class="field">
+        <label for="password">Senha</label>
+        <div class="input-group">
+          <input
+            type="password"
+            id="password"
+            autocomplete="current-password"
+            placeholder="Sua senha"
+            required
+            aria-required="true" />
+          <button
+            type="button"
+            id="togglePass"
+            class="icon ghost"
+            aria-label="Mostrar senha"
+            title="Mostrar senha">
+            👁️
+          </button>
         </div>
       </div>
-
-      <!-- Contêiner para tela cheia de gráficos -->
-      <div class="chart-fs" id="chartFs" hidden>
-        <div class="inner">
-          <button class="icon close" id="fsClose" aria-label="Fechar"><i class="ph ph-x"></i></button>
-          <canvas id="chartFsCanvas"></canvas>
-        </div>
-      </div>
-    </section>
-
-    <!-- Config -->
-    <section id="config">
-      <!-- Preferências de aparência movidas para dentro de Config -->
-      <div class="card">
-        <h3>Aparência</h3>
-        <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center">
-          <label class="switch" title="Ativa o modo escuro">
-            <input type="checkbox" id="toggleDark"> Modo escuro
-          </label>
-          <label class="switch" title="Oculta valores monetários nos cards e listas">
-            <input type="checkbox" id="toggleHide"> Esconder valores
-          </label>
-          <label class="switch" title="Usa o ciclo de fechamento/vencimento do cartão nos relatórios e metas">
-            <input type="checkbox" id="toggleCycle"> Ciclo da fatura
-          </label>
-
-        </div>
-      </div>
-    
-      <div class="card" style="margin-top:16px">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <h3>Categorias</h3>
-          <div style="display:flex;gap:8px">
-            <input id="newCatName" placeholder="Nova categoria...">
-            <button class="btn" id="addCat">Adicionar</button>
-          </div>
-        </div>
-        <ul id="listaCats" class="cats-grid" style="margin-top:12px"></ul>
-      </div>
-
-      <!-- METAS: Configuração -->
-      <div class="card" style="margin-top:16px">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <h3>Metas</h3>
-          <button class="btn" id="salvarMetas"><i class="ph ph-check"></i> Salvar metas</button>
-        </div>
-        <div class="form-grid" style="margin-top:8px">
-          <div class="field">
-            <label for="metaTotalInput">Meta mensal de gastos (total)</label>
-            <input id="metaTotalInput" placeholder="Ex.: 3.000,00" inputmode="numeric" autocomplete="off">
-            <div class="helper">Usa o padrão brasileiro. Ex.: 2500,00</div>
-          </div>
-          <div class="field span-2">
-            <label>Metas por categoria (opcional)</label>
-            <table id="tblMetasCat">
-              <thead><tr><th>Categoria</th><th>Meta mensal</th></tr></thead>
-              <tbody></tbody>
-            </table>
-            <div class="helper">Deixe em branco para não aplicar meta por categoria.</div>
-          </div>
-        </div>
-
-      <!-- Cartão: Cartão de crédito (fatura) -->
-      <div class="card" style="margin-top:16px">
-        <h3>Cartão de crédito (fatura)</h3>
-        <div class="form-grid" style="margin-top:8px">
-          <div class="field">
-            <label for="ccDueDay">Dia de vencimento</label>
-            <input id="ccDueDay" type="number" min="1" max="31" placeholder="Ex.: 5">
-            <div class="helper">Dia do mês em que a fatura vence (ex.: 5)</div>
-          </div>
-          <div class="field">
-            <label for="ccClosingDay">Dia de fechamento (opcional)</label>
-            <input id="ccClosingDay" type="number" min="1" max="31" placeholder="Ex.: 27">
-            <div class="helper">Se vazio, será inferido ~8 dias antes do vencimento</div>
-          </div>
-        </div>
-        <div style="margin-top:10px">
-          <button class="btn" id="saveCardPrefs"><i class="ph ph-check"></i> Salvar fatura</button>
-        </div>
-      </div>
-
-
-      </div>
-
-      <!-- Lista de transações recorrentes -->
-      <div class="card" style="margin-top:16px">
-        <h3>Transações recorrentes</h3>
-        <ul id="listaRecorrentes" class="list"></ul>
-      </div>
-    </section>
-  </div>
-
-  <!-- Modal Lançamento (atualizado para recorrência) -->
-  <div class="modal" id="modalLanc" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-    <div class="content" tabindex="-1">
-      <div class="title">
-        <h3 id="modalTitle">Nova Despesa</h3>
-        <button class="close icon" id="closeModal" aria-label="Fechar"><i class="ph ph-x"></i></button>
-      </div>
-
-      <div class="amount-wrap">
-        <label for="mValorBig" class="sr-only">Valor</label>
-        <input id="mValorBig" class="amount" placeholder="R$ 0,00" inputmode="numeric" autocomplete="off" aria-describedby="valorHelp">
-        <div id="valorHelp" class="helper">Use vírgula para centavos. Ex.: 125,90</div>
-
-        <div class="segmented" id="tipoTabs" role="tablist" aria-label="Tipo de lançamento">
-          <button type="button" role="tab" aria-selected="true" data-type="Despesa" class="active"><i class="ph ph-trend-down"></i> Despesa</button>
-          <button type="button" role="tab" aria-selected="false" data-type="Receita"><i class="ph ph-trend-up"></i> Receita</button>
-          <button type="button" role="tab" aria-selected="false" data-type="Transferência"><i class="ph ph-arrows-left-right"></i> Transferência</button>
-        </div>
-      </div>
-
-      <div class="form-grid">
-        <div class="field">
-          <label for="mCategoria">Categoria</label>
-          <select id="mCategoria"></select>
-          <div class="helper">Escolha a categoria (digite para filtrar)</div>
-        </div>
-
-        <div class="field">
-          <label for="mData">Data</label>
-          <input type="date" id="mData">
-          <div class="helper">Padrão: hoje</div>
-        </div>
-
-        <div class="field span-2">
-          <label for="mDesc">Descrição</label>
-          <input type="text" id="mDesc" placeholder="Ex.: Supermercado, salário, TED...">
-        </div>
-
-        <div class="field span-2">
-          <label for="mObs">Observações</label>
-          <textarea id="mObs" rows="3" placeholder="Anotações opcionais"></textarea>
-        </div>
-      </div>
-
-      <!-- Recorrência -->
-      <div class="field span-2" style="margin-top:8px">
-        <label class="switch"><input type="checkbox" id="mRepetir"> Tornar recorrente</label>
-
-        <div id="recurrenceFields" class="rec-card" style="display:none">
-          <div class="form-grid" style="margin-top:8px">
-            <div class="field">
-              <label for="mPeriodicidade">Periodicidade</label>
-              <select id="mPeriodicidade">
-                <option value="Mensal">Mensal</option>
-                <option value="Semanal">Semanal</option>
-                <option value="Anual">Anual</option>
-              </select>
-              <div class="helper">Defina a frequência de repetição</div>
-            </div>
-
-            <div class="field" id="fieldDiaMes">
-              <label for="mDiaMes">Dia do mês</label>
-              <input type="number" id="mDiaMes" min="1" max="31" placeholder="Ex.: 5 para dia 5">
-              <div class="helper">Para Mensal/Anual (1–31)</div>
-            </div>
-
-            <div class="field" id="fieldDiaSemana" style="display:none">
-              <label for="mDiaSemana">Dia da semana</label>
-              <select id="mDiaSemana">
-                <option value="1">Segunda</option>
-                <option value="2">Terça</option>
-                <option value="3">Quarta</option>
-                <option value="4">Quinta</option>
-                <option value="5">Sexta</option>
-                <option value="6">Sábado</option>
-                <option value="0">Domingo</option>
-              </select>
-              <div class="helper">Para Semanal</div>
-            </div>
-
-            <div class="field" id="fieldMes" style="display:none">
-              <label for="mMes">Mês</label>
-              <select id="mMes">
-                <option value="1">Jan</option><option value="2">Fev</option><option value="3">Mar</option>
-                <option value="4">Abr</option><option value="5">Mai</option><option value="6">Jun</option>
-                <option value="7">Jul</option><option value="8">Ago</option><option value="9">Set</option>
-                <option value="10">Out</option><option value="11">Nov</option><option value="12">Dez</option>
-              </select>
-              <div class="helper">Para Anual</div>
-            </div>
-
-            <div class="field">
-              <label for="mInicio">Início</label>
-              <input type="date" id="mInicio">
-              <div class="helper">Primeira ocorrência</div>
-            </div>
-
-            <div class="field">
-              <label for="mFim">Fim (opcional)</label>
-              <input type="date" id="mFim">
-              <div class="helper">Deixe em branco para não expirar</div>
-            </div>
-
-            <div class="field">
-              <label><input type="checkbox" id="mAjusteFimMes" checked> Ajustar p/ último dia do mês</label>
-              <div class="helper">Para meses com menos dias (31 → 30/28)</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="formError" class="error" role="alert" hidden></div>
 
       <div class="actions">
-        <div class="right">
-          <button class="btn secondary" id="cancelar"><i class="ph ph-x"></i> Cancelar</button>
-          <button class="btn" id="salvar"><i class="ph ph-check"></i> Salvar</button>
-        </div>
+        <button class="btn" id="loginBtn" type="submit" data-default-text="Entrar">
+          Entrar
+        </button>
       </div>
-    </div>
-  </div>
 
-  <!-- Botão flutuante -->
-  <button class="fab" id="fab" title="Nova despesa"><i class="ph ph-plus"></i></button>
+      <p id="statusMsg" class="status" aria-live="polite"></p>
 
-  <!-- JS: checagem de sessão -->
-  <script>
-    const supabase = window.supabase.createClient(
-      "https://ppoufxezqmbxzflijmpx.supabase.co",
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwb3VmeGV6cW1ieHpmbGlqbXB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1NzY1MTgsImV4cCI6MjA3MjE1MjUxOH0.7wntt2EbXsb16Zob9F81XFUKognKHKn0jxP6UdfF_ZY"
-    );
-    // Alias para scripts que usam 'supabaseClient'
-    const supabaseClient = supabase;
+      <!-- Opcional: link de recuperação
+      <p class="helper"><a href="recuperar.html">Esqueci minha senha</a></p>
+      -->
+    </form>
+  </main>
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) window.location.href = "index.html";
-    });
-    document.addEventListener("DOMContentLoaded", () => {
-      const btnLogout = document.getElementById("logoutBtn");
-      if (btnLogout) {
-        btnLogout.addEventListener("click", async () => {
-          await supabase.auth.signOut();
-          window.location.href = "index.html";
-        });
-      }
-    });
-  </script>
-  
-  <!-- JS -->
-  <script src="scripts.js"></script>
-  <script>
-  (function(){
-    function parseBRL(s){
-      if (!s) return 0;
-      s = String(s)
-        .replace(/\u00A0/g, ' ') // NBSP -> space
-        .replace(/[^\d,.-]/g, '') // keep digits, comma, dot, minus
-        .replace(/\./g, '')       // remove thousands dot
-        .replace(',', '.');        // decimal comma -> dot
-      var v = parseFloat(s);
-      return isNaN(v) ? 0 : v;
-    }
-    function updatePct(){
-      var recEl = document.getElementById('kpiReceitas');
-      var desEl = document.getElementById('kpiDespesas');
-      var pctEl = document.getElementById('kpiDespesasPct');
-      if (!recEl || !desEl || !pctEl) return;
-      var rec = parseBRL(recEl.textContent);
-      var des = parseBRL(desEl.textContent);
-      var pct = (rec > 0) ? (des / rec * 100) : null;
-      pctEl.textContent = (pct !== null) ? (pct.toFixed(1).replace('.', ',') + '%') : '—';
-      var hide = recEl.classList.contains('blurred') || desEl.classList.contains('blurred');
-      pctEl.classList.toggle('blurred', hide);
-    }
-    function observe(el){
-      if (!el || !window.MutationObserver) return;
-      var obs = new MutationObserver(function(){ updatePct(); });
-      obs.observe(el, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['class'] });
-    }
-    document.addEventListener('DOMContentLoaded', function(){
-      updatePct();
-      observe(document.getElementById('kpiReceitas'));
-      observe(document.getElementById('kpiDespesas'));
-    });
-    window.addEventListener('load', updatePct);
-  })();
-  </script>
+<script defer src="app.js"></script>
 </body>
 </html>
