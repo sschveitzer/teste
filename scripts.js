@@ -404,6 +404,7 @@ try {
   }
 
   async function delTx(id) {
+    try { window.delTx = delTx; } catch(e) {}
     if (confirm("Excluir lançamento?")) {
       await deleteTx(id);
       loadAll();
@@ -435,8 +436,8 @@ try {
     if (!readOnly) {
       const btnEdit = li.querySelector(".edit");
       const btnDel  = li.querySelector(".del");
-      if (btnEdit) btnEdit.onclick = () => openEdit(x.id);
-      if (btnDel)  btnDel.onclick  = () => delTx(x.id);
+      if (btnEdit) btnEdit.onclick = () => window.openEdit && window.openEdit(x.id);
+      if (btnDel)  btnDel.onclick = () => window.delTx && window.delTx(x.id);
     }
     return li;
   }
@@ -543,8 +544,8 @@ try {
       `;
       const btnEdit = li.querySelector('.edit');
       const btnDel  = li.querySelector('.del');
-      if (btnEdit) btnEdit.onclick = ()=> openEdit && openEdit(x.id);
-      if (btnDel)  btnDel.onclick  = ()=> delTx && delTx(x.id);
+      if (btnEdit) btnEdit.onclick = ()=> window.openEdit && window.openEdit(x.id);
+      if (btnDel)  btnDel.onclick  = ()=> window.delTx && window.delTx(x.id);
       ul.append(li);
     });
 
@@ -562,6 +563,29 @@ try {
       renderLancamentos._wired = true;
     }
   }
+
+  function openEdit(id) {
+    const x = (S.tx || []).find(t => t.id === id);
+    if (!x) return;
+    S.editingId = id;
+    modalTipo = x.tipo;
+    syncTipoTabs();
+    rebuildCatSelect(x.categoria);
+    const mData = qs("#mData"); if (mData) mData.value = isIsoDate(x.data) ? x.data : nowYMD();
+    const mDesc = qs("#mDesc"); if (mDesc) mDesc.value = x.descricao || "";
+    const mVal  = qs("#mValorBig"); if (mVal) mVal.value = fmtMoney(Number(x.valor) || 0);
+    const mObs  = qs("#mObs"); if (mObs) mObs.value = x.obs || "";
+    const ttl   = qs("#modalTitle"); if (ttl) ttl.textContent = "Editar lançamento";
+
+    // Edição: esconde blocos de recorrência (edita só esta instância)
+    const chk = qs("#mRepetir");
+    const box = qs("#recurrenceFields");
+    if (chk && box) { chk.checked = false; box.style.display = "none"; }
+
+    const modal = qs("#modalLanc"); if (modal) modal.style.display = "flex";
+    setTimeout(() => qs("#mValorBig")?.focus(), 0);
+  }
+  try { window.openEdit = openEdit; } catch(e) {}
 // ========= CATEGORIAS =========
   function renderCategorias() {
     const ul = qs("#listaCats");
