@@ -1322,20 +1322,29 @@ body.dark textarea:focus {
 
 
 
-/* Botões no topo dos cards */
-#listaLanc .top-actions,
-#listaRecentes .top-actions {
+
+
+
+/* Linha de topo com chip + botões */
+#listaLanc .header-line,
+#listaRecentes .header-line {
   display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-bottom: 8px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
 }
 
-#listaLanc .top-actions button,
-#listaRecentes .top-actions button {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+#listaLanc .header-line .actions,
+#listaRecentes .header-line .actions {
+  display: flex;
+  gap: 6px;
+}
+
+#listaLanc .header-line .actions button,
+#listaRecentes .header-line .actions button {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   display: grid;
   place-items: center;
   border: 1px solid var(--border);
