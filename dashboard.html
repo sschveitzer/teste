@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8">
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sistema de Gestão Financeira - S.Schveitzer</title>
   <link rel="icon" type="image/png" href="img/logo.png">
@@ -16,7 +16,7 @@
 
   <!-- CSS -->
   <link rel="stylesheet" href="styles.css">
-  </head>
+</head>
 <body>
   <div class="nav">
     <div class="wrap">
@@ -35,7 +35,7 @@
         <button class="icon" id="btnConfig" title="Configurações"><i class="ph ph-gear"></i></button>
         <button class="icon" id="logoutBtn" title="Sair"><i class="ph ph-sign-out"></i></button>
       </div>
-	  </div>
+    </div>
   </div>
 
   <div class="container">
@@ -298,7 +298,8 @@
           <label class="switch" title="Usa o ciclo de fechamento/vencimento do cartão nos relatórios e metas">
             <input type="checkbox" id="toggleCycle"> Ciclo da fatura
           </label>
-		  </div>
+
+        </div>
       </div>
     
       <div class="card" style="margin-top:16px">
@@ -477,19 +478,19 @@
       </div>
 
       <div id="formError" class="error" role="alert" hidden></div>
-	  
+
       <div class="actions">
         <div class="right">
           <button class="btn secondary" id="cancelar"><i class="ph ph-x"></i> Cancelar</button>
           <button class="btn" id="salvar"><i class="ph ph-check"></i> Salvar</button>
         </div>
-		
-      <div class="actions">
-        <div class="right">
-          <button class="btn secondary" id="cancelar"><i class="ph ph-x"></i> Cancelar</button>
-          <button class="btn" id="salvar"><i class="ph ph-check"></i> Salvar</button>
-        </div>
-		
+      </div>
+    </div>
+  </div>
+
+  <!-- Botão flutuante -->
+  <button class="fab" id="fab" title="Nova despesa"><i class="ph ph-plus"></i></button>
+
   <!-- JS: checagem de sessão -->
   <script>
     const supabase = window.supabase.createClient(
@@ -498,7 +499,7 @@
     );
     // Alias para scripts que usam 'supabaseClient'
     const supabaseClient = supabase;
-	
+
     supabase.auth.getSession().then(({ data }) => {
       if (!data.session) window.location.href = "index.html";
     });
@@ -552,5 +553,5 @@
     window.addEventListener('load', updatePct);
   })();
   </script>
-  </body>
+</body>
 </html>
