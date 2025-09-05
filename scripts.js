@@ -1577,6 +1577,13 @@ try {
   wireBillingConfig();
 // Start!
   loadAll();
+
+  // Expose some functions for out-of-onload modules
+  try {
+    window.saveCat = saveCat;
+    window.deleteCat = deleteCat;
+    window.loadAll = loadAll;
+  } catch (e) {}
 }
 
   // === Helpers de ciclo da fatura ===
@@ -1627,7 +1634,7 @@ try {
     if (!inp || !btn) return;
 
     const norm = s => (s||'').trim().toLowerCase();
-    const isDup = (name) => Array.isArray(S?.cats) && S.cats.some(c => norm(c?.nome) === norm(name));
+    const isDup = (name) => Array.isArray(window.S?.cats) && window.S.cats.some(c => norm(c?.nome) === norm(name));
 
     function updateState(){
       const v = inp.value.trim();
@@ -1640,10 +1647,10 @@ try {
     btn.addEventListener('click', async () => {
       const v = inp.value.trim();
       if (!v || isDup(v)) { updateState(); return; }
-      await saveCat({ nome: v });
+      await window.saveCat({ nome: v });
       inp.value = '';
       updateState();
-      await loadAll();
+      await window.loadAll();
       // foco de volta para acelerar cadastro em sequência
       setTimeout(() => inp.focus(), 0);
     }, { once: false });
