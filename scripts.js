@@ -378,8 +378,6 @@ function toggleModal(show, titleOverride) {
     if (S.editingId || !chkRepetir?.checked) {
       await saveTx(t);
       await loadAll();
-      return if (window.resetValorInput) window.resetValorInput();
-  if(!keepOpen){ if (!keepOpen) if (!keepOpen) toggleModal(false); } else { if(window.resetValorInput) window.resetValorInput();  toggleModal(true); };
     }
 
     // Criar recorrência
@@ -1143,9 +1141,7 @@ function toggleModal(show, titleOverride) {
   const fab = qs("#fab"); if (fab) fab.onclick = () => toggleModal(true);
   const btnNovo = qs("#btnNovo"); if (btnNovo) btnNovo.onclick = () => toggleModal(true);
   const btnClose = qs("#closeModal"); if (btnClose) btnClose.onclick = () => if (window.resetValorInput) window.resetValorInput();
-  if(!keepOpen){ if (!keepOpen) if (!keepOpen) toggleModal(false); } else { if(window.resetValorInput) window.resetValorInput();  toggleModal(true); };
   const btnCancelar = qs("#cancelar"); if (btnCancelar) btnCancelar.onclick = () => if (window.resetValorInput) window.resetValorInput();
-  if(!keepOpen){ if (!keepOpen) if (!keepOpen) toggleModal(false); } else { if(window.resetValorInput) window.resetValorInput();  toggleModal(true); };
   const btnSalvar = qs("#salvar"); if (btnSalvar) btnSalvar.onclick = addOrUpdate;
 
   qsa("#tipoTabs button").forEach(b =>
