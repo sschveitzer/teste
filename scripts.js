@@ -267,7 +267,14 @@ try {
     qsa("section").forEach(s => s.classList.toggle("active", s.id === name));
   }
 
-  function toggleModal(show, titleOverride) {
+  function clearModalFields(){
+  try{ if (window.resetValorInput) window.resetValorInput(); }catch(e){}
+  const v=document.getElementById('mValorBig'); if(v) v.value='';
+  const d=document.getElementById('mDesc'); if(d) d.value='';
+  const o=document.getElementById('mObs'); if(o) o.value='';
+  const c=document.getElementById('mCategoria'); if(c) c.selectedIndex=0;
+}
+function toggleModal(show, titleOverride) {
     const m = qs("#modalLanc");
     if (!m) return;
     m.style.display = show ? "flex" : "none";
@@ -1714,3 +1721,17 @@ try {
     updateState();
   } catch(e){ console.warn('enhanceNewCategory error:', e); }
 })();
+
+// Bind 'Salvar e novo' after DOM is ready
+(function(){
+  const btnSalvarENovo = document.getElementById('salvarENovo');
+  if (btnSalvarENovo && !btnSalvarENovo._bound) {
+    btnSalvarENovo.addEventListener('click', async () => {
+      await addOrUpdate(true);
+      if (typeof clearModalFields === 'function') clearModalFields();
+      const v = document.getElementById('mValorBig'); if (v) v.focus();
+    });
+    btnSalvarENovo._bound = true;
+  }
+})();
+
