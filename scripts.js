@@ -570,7 +570,7 @@ async function delTx(id) {
         pill(`Itens: ${list.length}`),
         pill(`Receitas: ${fmt(totRec)}`, 'ok'),
         pill(`Despesas: ${fmt(totDesp)}`, 'warn'),
-        pill(`Saldo: ${fmt(saldo)}`)
+        pill(`Saldo: ${fmt(saldo)}`));
     }
 
     if (!ul) return;
