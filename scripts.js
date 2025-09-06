@@ -281,7 +281,9 @@ function toggleModal(show, titleOverride) {
     document.body.classList.toggle("modal-open", !!show);
     if (show) {
       
-    if (window.resetValorInput) window.resetValorInput();
+    
+    try{ window.resetValorInput && window.resetValorInput(); }catch(_){ }
+if (window.resetValorInput) window.resetValorInput();
 const vData = qs("#mData"); if (vData) vData.value = nowYMD();
       rebuildCatSelect();
       const vDesc = qs("#mDesc"); if (vDesc) vDesc.value = "";
