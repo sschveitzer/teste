@@ -1641,27 +1641,33 @@ const br = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' });
 
   // ========= Billing config =========
   function wireBillingConfig() {
-    const inpDue = qs("#ccDueDay");
-    const inpClose = qs("#ccClosingDay");
-    if (inpDue)  inpDue.value  = S.ccDueDay ?? "";
-    if (inpClose) inpClose.value = S.ccClosingDay ?? "";
+  const inpDue = qs("#ccDueDay");
+  const inpClose = qs("#ccClosingDay");
+  const SS = (typeof S !== 'undefined' ? S : (typeof window !== 'undefined' ? window.S : null)) || {};
+  if (inpDue)  inpDue.value  = SS.ccDueDay ?? "";
+  if (inpClose) inpClose.value = SS.ccClosingDay ?? "";
 
-    const btn = qs("#saveCardPrefs");
-    if (btn && !btn._wired) {
-      btn._wired = true;
-      btn.addEventListener("click", async () => {
-        const rawDue = (qs("#ccDueDay")?.value || "").trim();
-        const rawClose = (qs("#ccClosingDay")?.value || "").trim();
-        const d = Number(rawDue);
-        const c = Number(rawClose);
+  const btn = qs("#saveCardPrefs");
+  if (btn && !btn._wired) {
+    btn._wired = true;
+    btn.addEventListener("click", async () => {
+      const rawDue = (qs("#ccDueDay")?.value || "").trim();
+      const rawClose = (qs("#ccClosingDay")?.value || "").trim();
+      const d = Number(rawDue);
+      const c = Number(rawClose);
+      if (typeof S !== 'undefined') {
         S.ccDueDay = (Number.isFinite(d) && d >= 1 && d <= 31) ? d : null;
         S.ccClosingDay = (Number.isFinite(c) && c >= 1 && c <= 31) ? c : null;
         await savePrefs();
-        alert("Fatura salva com sucesso!");
-      });
+      }
+      alert("Fatura salva com sucesso!");
+    });
+  }
+}
+);
     }
   }
-  wireBillingConfig();
+  if (document.readyState === 'complete') wireBillingConfig(); else window.addEventListener('load', wireBillingConfig);
 // Start!
   loadAll();
 
