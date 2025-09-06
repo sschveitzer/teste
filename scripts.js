@@ -1154,6 +1154,7 @@ async function delTx(id) {
 
   qsa("#tipoTabs button").forEach(b =>
     b.addEventListener("click", () => { modalTipo = b.dataset.type; syncTipoTabs(); })
+  );
 
   const btnAddCat = qs("#addCat");
   if (btnAddCat) btnAddCat.onclick = async () => {
