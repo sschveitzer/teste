@@ -1737,3 +1737,13 @@ try { window.addOrUpdate = addOrUpdate; } catch(e){}
   }
 })();
 
+
+// Prevent form submission inside modal (avoid page reload)
+(function(){
+  var modalForm = document.querySelector('#modalLanc form') || document.querySelector('#modalLanc');
+  if (modalForm && !modalForm._prevented) {
+    modalForm.addEventListener('submit', function(e){ e.preventDefault(); return false; });
+    modalForm._prevented = true;
+  }
+})();
+
