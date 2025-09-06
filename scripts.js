@@ -323,9 +323,12 @@ const vData = qs("#mData"); if (vData) vData.value = nowYMD();
 
   let modalTipo = "Despesa";
   function syncTipoTabs() {
-    qsa("#tipoTabs button").forEach(b => b.classList.toggle("active", b.dataset.type === modalTipo));
-    if (!S.editingId) {
-      const ttl = qs("#modalTitle"); if (ttl) ttl.textContent = "Nova " + modalTipo;
+qsa("#tipoTabs button").forEach(b => {
+  b.addEventListener("click", () => {
+    modalTipo = b.dataset.type;
+    syncTipoTabs();
+  });
+});
     }
   }
 
