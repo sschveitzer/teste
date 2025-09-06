@@ -379,7 +379,7 @@ function toggleModal(show, titleOverride) {
       await saveTx(t);
       await loadAll();
       return if (window.resetValorInput) window.resetValorInput();
-  if(!keepOpen){ if (!keepOpen) if (!keepOpen) toggleModal(false); } else { if(window.resetValorInput) window.resetValorInput(); /* clear form for new entry */ toggleModal(true); };
+  if(!keepOpen){ if (!keepOpen) if (!keepOpen) toggleModal(false); } else { if(window.resetValorInput) window.resetValorInput();  toggleModal(true); };
     }
 
     // Criar recorrência
@@ -442,8 +442,11 @@ function toggleModal(show, titleOverride) {
 
     await loadAll();
     if (window.resetValorInput) window.resetValorInput();
-  if(!keepOpen){ if (!keepOpen) if (!keepOpen) toggleModal(false); } else { if(window.resetValorInput) window.resetValorInput(); /* clear form for new entry */ toggleModal(true); };
-  }
+    if (!keepOpen) {
+      return toggleModal(false);
+    }
+    return;
+}
 
   async function delTx(id) {
     try { window.delTx = delTx; } catch(e) {}
@@ -1140,9 +1143,9 @@ function toggleModal(show, titleOverride) {
   const fab = qs("#fab"); if (fab) fab.onclick = () => toggleModal(true);
   const btnNovo = qs("#btnNovo"); if (btnNovo) btnNovo.onclick = () => toggleModal(true);
   const btnClose = qs("#closeModal"); if (btnClose) btnClose.onclick = () => if (window.resetValorInput) window.resetValorInput();
-  if(!keepOpen){ if (!keepOpen) if (!keepOpen) toggleModal(false); } else { if(window.resetValorInput) window.resetValorInput(); /* clear form for new entry */ toggleModal(true); };
+  if(!keepOpen){ if (!keepOpen) if (!keepOpen) toggleModal(false); } else { if(window.resetValorInput) window.resetValorInput();  toggleModal(true); };
   const btnCancelar = qs("#cancelar"); if (btnCancelar) btnCancelar.onclick = () => if (window.resetValorInput) window.resetValorInput();
-  if(!keepOpen){ if (!keepOpen) if (!keepOpen) toggleModal(false); } else { if(window.resetValorInput) window.resetValorInput(); /* clear form for new entry */ toggleModal(true); };
+  if(!keepOpen){ if (!keepOpen) if (!keepOpen) toggleModal(false); } else { if(window.resetValorInput) window.resetValorInput();  toggleModal(true); };
   const btnSalvar = qs("#salvar"); if (btnSalvar) btnSalvar.onclick = addOrUpdate;
 
   qsa("#tipoTabs button").forEach(b =>
@@ -1788,3 +1791,7 @@ const br = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' });
     btn._boundSalvarENovo = true;
   }
 })();
+
+
+var salvar = document.getElementById("salvar");
+if (salvar) salvar.addEventListener("click", () => addOrUpdate());
