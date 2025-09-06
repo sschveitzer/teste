@@ -1125,6 +1125,11 @@ try { window.addOrUpdate = addOrUpdate; } catch(e){}
     toggleModal(false);
   };
   const btnCancelar = qs("#cancelar");
+  const btnSalvar = qs("#salvar");
+  if (btnSalvar) btnSalvar.onclick = (e) => {
+    try { e && e.preventDefault && e.preventDefault(); } catch(_) {}
+    if (typeof window.addOrUpdate === "function") window.addOrUpdate(false);
+  };
   if (btnCancelar) btnCancelar.onclick = () => {
     if (window.resetValorInput) window.resetValorInput();
     toggleModal(false);
@@ -1746,4 +1751,3 @@ try { window.addOrUpdate = addOrUpdate; } catch(e){}
     modalForm._prevented = true;
   }
 })();
-
