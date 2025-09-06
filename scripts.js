@@ -267,34 +267,7 @@ try {
     qsa("section").forEach(s => s.classList.toggle("active", s.id === name));
   }
 
-  
-function clearModalFields(){
-  try{
-    if (window.resetValorInput) window.resetValorInput();
-  }catch(e){}
-  var v = document.querySelector('#mValorBig');
-  if (v) v.value = '';
-  var d = document.querySelector('#mDescricao');
-  if (d) d.value = '';
-  var t = document.querySelector('#mTipo');
-  if (t) t.value = (t.querySelector('option') ? t.querySelector('option').value : '');
-  var data = document.querySelector('#mData');
-  if (data) {
-    // keep current date or set today if empty
-    if (!data.value) {
-      const today = new Date();
-      const yyyy = today.getFullYear();
-      const mm = String(today.getMonth()+1).padStart(2,'0');
-      const dd = String(today.getDate()).padStart(2,'0');
-      data.value = `${yyyy}-${mm}-${dd}`;
-    }
-  }
-  // Any category/selects that may exist
-  var cat = document.querySelector('#mCategoria');
-  if (cat) cat.selectedIndex = 0;
-}
-
-function toggleModal(show, titleOverride) {
+  function toggleModal(show, titleOverride) {
     const m = qs("#modalLanc");
     if (!m) return;
     m.style.display = show ? "flex" : "none";
@@ -359,7 +332,7 @@ function toggleModal(show, titleOverride) {
   }
 
   // ========= TRANSAÇÕES =========
-  async function addOrUpdate(keepOpen=false) {
+  async function addOrUpdate() {
     const valor = parseMoneyMasked(qs("#mValorBig")?.value);
     const t = {
       id: S.editingId || gid(),
@@ -378,6 +351,7 @@ function toggleModal(show, titleOverride) {
     if (S.editingId || !chkRepetir?.checked) {
       await saveTx(t);
       await loadAll();
+      return toggleModal(false);
     }
 
     // Criar recorrência
@@ -439,12 +413,8 @@ function toggleModal(show, titleOverride) {
     }
 
     await loadAll();
-    if (window.resetValorInput) window.resetValorInput();
-    if (!keepOpen) {
-      return toggleModal(false);
-    }
-    return;
-}
+    toggleModal(false);
+  }
 
   async function delTx(id) {
     try { window.delTx = delTx; } catch(e) {}
@@ -1140,9 +1110,17 @@ function toggleModal(show, titleOverride) {
 
   const fab = qs("#fab"); if (fab) fab.onclick = () => toggleModal(true);
   const btnNovo = qs("#btnNovo"); if (btnNovo) btnNovo.onclick = () => toggleModal(true);
-  const btnClose = qs("#closeModal"); if (btnClose) btnClose.onclick = () => if (window.resetValorInput) window.resetValorInput();
-  const btnCancelar = qs("#cancelar"); if (btnCancelar) btnCancelar.onclick = () => if (window.resetValorInput) window.resetValorInput();
-  const btnSalvar = qs("#salvar"); if (btnSalvar) btnSalvar.onclick = addOrUpdate;
+  const btnNovo = qs("#btnNovo"); if (btnNovo) btnNovo.onclick = () => toggleModal(true);
+  const btnClose = qs("#closeModal");
+  if (btnClose) btnClose.onclick = () => {
+    if (window.resetValorInput) window.resetValorInput();
+    toggleModal(false);
+  };
+  const btnCancelar = qs("#cancelar");
+  if (btnCancelar) btnCancelar.onclick = () => {
+    if (window.resetValorInput) window.resetValorInput();
+    toggleModal(false);
+  };
 
   qsa("#tipoTabs button").forEach(b =>
     b.addEventListener("click", () => { modalTipo = b.dataset.type; syncTipoTabs(); })
@@ -1249,13 +1227,7 @@ function toggleModal(show, titleOverride) {
 
     // currency mask with raw cents
     let rawCents = 0;
-    
-window.resetValorInput = function(){
-  try{ rawCents = 0; }catch(e){}
-  var valorInput = document.querySelector('#mValorBig');
-  if (valorInput) valorInput.value = '';
-};
-const br = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' });
+    const br = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' });
     const setAmount = () => { if (valorInput) valorInput.value = rawCents ? br.format(rawCents/100) : ''; };
 
     if (valorInput) {
@@ -1743,51 +1715,3 @@ const br = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' });
     updateState();
   } catch(e){ console.warn('enhanceNewCategory error:', e); }
 })();
-
-
-
-// Handler: Salvar e novo
-(function(){
-  function onSalvarENovo(){
-    (async function(){
-      try{
-        await addOrUpdate(true);
-        // Reopen modal immediately (if addOrUpdate closed it), or just clear fields if it stayed open
-        try { if (typeof toggleModal === 'function') toggleModal(true); } catch(e){}
-        clearModalFields();
-      }catch(e){
-        console.error('Salvar e novo falhou:', e);
-      }
-    })();
-  }
-  var btn = document.getElementById('mSalvarENovo');
-  if (btn && !btn._bound){
-    btn.addEventListener('click', onSalvarENovo);
-    btn._bound = true;
-  }
-})();
-
-
-
-// Handler: Salvar e novo (mantém modal aberto e limpa campos)
-(function(){
-  function onSalvarENovo(){
-    (async function(){
-      try{
-        await addOrUpdate(true); // mantém aberto
-        clearModalFields();
-      }catch(e){
-        console.error('Salvar e novo falhou:', e);
-      }
-    })();
-  }
-  var btn = document.getElementById('salvarENovo');
-  if (btn && !btn._boundSalvarENovo){
-    btn.addEventListener('click', onSalvarENovo);
-    btn._boundSalvarENovo = true;
-  }
-})();
-
-
-var salvar = document.getElementById("salvar");
-if (salvar) salvar.addEventListener("click", () => addOrUpdate());
