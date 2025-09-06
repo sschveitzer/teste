@@ -351,7 +351,8 @@ try {
     if (S.editingId || !chkRepetir?.checked) {
       await saveTx(t);
       await loadAll();
-      return toggleModal(false);
+      return if (window.resetValorInput) window.resetValorInput();
+  toggleModal(false);
     }
 
     // Criar recorrência
@@ -413,7 +414,8 @@ try {
     }
 
     await loadAll();
-    toggleModal(false);
+    if (window.resetValorInput) window.resetValorInput();
+  toggleModal(false);
   }
 
   async function delTx(id) {
@@ -1110,8 +1112,10 @@ try {
 
   const fab = qs("#fab"); if (fab) fab.onclick = () => toggleModal(true);
   const btnNovo = qs("#btnNovo"); if (btnNovo) btnNovo.onclick = () => toggleModal(true);
-  const btnClose = qs("#closeModal"); if (btnClose) btnClose.onclick = () => toggleModal(false);
-  const btnCancelar = qs("#cancelar"); if (btnCancelar) btnCancelar.onclick = () => toggleModal(false);
+  const btnClose = qs("#closeModal"); if (btnClose) btnClose.onclick = () => if (window.resetValorInput) window.resetValorInput();
+  toggleModal(false);
+  const btnCancelar = qs("#cancelar"); if (btnCancelar) btnCancelar.onclick = () => if (window.resetValorInput) window.resetValorInput();
+  toggleModal(false);
   const btnSalvar = qs("#salvar"); if (btnSalvar) btnSalvar.onclick = addOrUpdate;
 
   qsa("#tipoTabs button").forEach(b =>
@@ -1219,7 +1223,13 @@ try {
 
     // currency mask with raw cents
     let rawCents = 0;
-    const br = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' });
+    
+window.resetValorInput = function(){
+  try{ rawCents = 0; }catch(e){}
+  var valorInput = document.querySelector('#mValorBig');
+  if (valorInput) valorInput.value = '';
+};
+const br = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' });
     const setAmount = () => { if (valorInput) valorInput.value = rawCents ? br.format(rawCents/100) : ''; };
 
     if (valorInput) {
