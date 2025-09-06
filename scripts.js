@@ -1110,7 +1110,6 @@ try {
 
   const fab = qs("#fab"); if (fab) fab.onclick = () => toggleModal(true);
   const btnNovo = qs("#btnNovo"); if (btnNovo) btnNovo.onclick = () => toggleModal(true);
-  const btnNovo = qs("#btnNovo"); if (btnNovo) btnNovo.onclick = () => toggleModal(true);
   const btnClose = qs("#closeModal");
   if (btnClose) btnClose.onclick = () => {
     if (window.resetValorInput) window.resetValorInput();
