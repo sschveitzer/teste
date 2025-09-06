@@ -422,6 +422,8 @@ function toggleModal(show, titleOverride) {
     await loadAll();
     toggleModal(false);
   }
+try { window.addOrUpdate = addOrUpdate; } catch(e){}
+
 
   async function delTx(id) {
     try { window.delTx = delTx; } catch(e) {}
