@@ -339,7 +339,7 @@ function toggleModal(show, titleOverride) {
   }
 
   // ========= TRANSAÇÕES =========
-  async function addOrUpdate() {
+  async function addOrUpdate(keepOpen=false) {
     const valor = parseMoneyMasked(qs("#mValorBig")?.value);
     const t = {
       id: S.editingId || gid(),
@@ -358,7 +358,9 @@ function toggleModal(show, titleOverride) {
     if (S.editingId || !chkRepetir?.checked) {
       await saveTx(t);
       await loadAll();
-      return toggleModal(false);
+    if (window.resetValorInput) window.resetValorInput();
+    if (!keepOpen) return toggleModal(false);
+    return;
     }
 
     // Criar recorrência
