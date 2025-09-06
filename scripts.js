@@ -363,7 +363,7 @@ const vData = qs("#mData"); if (vData) vData.value = nowYMD();
       await saveTx(t);
       await loadAll();
     if (window.resetValorInput) window.resetValorInput();
-    if (!keepOpen) if (!keepOpen) { if (!keepOpen) { if (!keepOpen) { toggleModal(false); return; } return; } }
+    toggleModal(false); return;
     return;
     }
 
@@ -426,7 +426,7 @@ const vData = qs("#mData"); if (vData) vData.value = nowYMD();
     }
 
     await loadAll();
-    if (!keepOpen) { toggleModal(false); return; }
+    toggleModal(false); return;
   }
 try { window.addOrUpdate = addOrUpdate; } catch(e){}
 
@@ -1128,7 +1128,7 @@ try { window.addOrUpdate = addOrUpdate; } catch(e){}
   const btnClose = qs("#closeModal");
   if (btnClose) btnClose.onclick = () => {
     if (window.resetValorInput) window.resetValorInput();
-    if (!keepOpen) { toggleModal(false); return; }
+    toggleModal(false); return;
   };
   const btnCancelar = qs("#cancelar");
   const btnSalvar = qs("#salvar");
@@ -1138,7 +1138,7 @@ try { window.addOrUpdate = addOrUpdate; } catch(e){}
   };
   if (btnCancelar) btnCancelar.onclick = () => {
     if (window.resetValorInput) window.resetValorInput();
-    if (!keepOpen) { toggleModal(false); return; }
+    toggleModal(false); return;
   };
 
   qsa("#tipoTabs button").forEach(b =>
