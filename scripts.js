@@ -363,7 +363,7 @@ const vData = qs("#mData"); if (vData) vData.value = nowYMD();
       await saveTx(t);
       await loadAll();
     if (window.resetValorInput) window.resetValorInput();
-    if (!keepOpen) return toggleModal(false);
+    if (!keepOpen) if (!keepOpen) { if (!keepOpen) { if (!keepOpen) { toggleModal(false); return; } return; } }
     return;
     }
 
@@ -426,7 +426,7 @@ const vData = qs("#mData"); if (vData) vData.value = nowYMD();
     }
 
     await loadAll();
-    toggleModal(false);
+    if (!keepOpen) { toggleModal(false); return; }
   }
 try { window.addOrUpdate = addOrUpdate; } catch(e){}
 
@@ -1128,7 +1128,7 @@ try { window.addOrUpdate = addOrUpdate; } catch(e){}
   const btnClose = qs("#closeModal");
   if (btnClose) btnClose.onclick = () => {
     if (window.resetValorInput) window.resetValorInput();
-    toggleModal(false);
+    if (!keepOpen) { toggleModal(false); return; }
   };
   const btnCancelar = qs("#cancelar");
   const btnSalvar = qs("#salvar");
@@ -1138,7 +1138,7 @@ try { window.addOrUpdate = addOrUpdate; } catch(e){}
   };
   if (btnCancelar) btnCancelar.onclick = () => {
     if (window.resetValorInput) window.resetValorInput();
-    toggleModal(false);
+    if (!keepOpen) { toggleModal(false); return; }
   };
 
   qsa("#tipoTabs button").forEach(b =>
@@ -1746,7 +1746,7 @@ const br = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' });
   const btnSalvarENovo = document.getElementById('salvarENovo');
   if (btnSalvarENovo && !btnSalvarENovo._bound) {
     btnSalvarENovo.addEventListener('click', async () => {
-      await addOrUpdate(true);
+      await addOrUpdate(false);
       if (typeof clearModalFields === 'function') clearModalFields();
       const v = document.getElementById('mValorBig'); if (v) v.focus();
     });
