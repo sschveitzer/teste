@@ -571,7 +571,6 @@ async function delTx(id) {
         pill(`Receitas: ${fmt(totRec)}`, 'ok'),
         pill(`Despesas: ${fmt(totDesp)}`, 'warn'),
         pill(`Saldo: ${fmt(saldo)}`)
-      );
     }
 
     if (!ul) return;
@@ -1134,7 +1133,6 @@ async function delTx(id) {
   // ========= EVENTOS =========
   qsa(".tab").forEach(btn =>
     btn.addEventListener("click", () => setTab(btn.dataset.tab))
-  );
 
   const fab = qs("#fab"); if (fab) fab.onclick = () => toggleModal(true);
   const btnNovo = qs("#btnNovo"); if (btnNovo) btnNovo.onclick = () => toggleModal(true);
@@ -1156,7 +1154,6 @@ async function delTx(id) {
 
   qsa("#tipoTabs button").forEach(b =>
     b.addEventListener("click", () => { modalTipo = b.dataset.type; syncTipoTabs(); })
-  );
 
   const btnAddCat = qs("#addCat");
   if (btnAddCat) btnAddCat.onclick = async () => {
@@ -1664,11 +1661,7 @@ const br = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' });
     });
   }
 }
-);
-    }
-  }
-  if (document.readyState === 'complete') wireBillingConfig();
-else window.addEventListener('load', wireBillingConfig);
+  if (document.readyState === 'complete') wireBillingConfig(); else window.addEventListener('load', wireBillingConfig);
 // Start!
   loadAll();
 
