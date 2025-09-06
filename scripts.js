@@ -1,7 +1,3 @@
-// helpers globais para selecionar elementos
-const qs  = (sel) => document.querySelector(sel);
-const qsa = (sel) => document.querySelectorAll(sel);
-
 window.onload = function () {
   // Usa o supabase já criado no dashboard.html
   const supabaseClient = window.supabaseClient || supabase;
@@ -103,6 +99,8 @@ try {
     return toYMD(new Date(yy, mes - 1, day));
   }
 
+  const qs  = (s) => document.querySelector(s);
+  const qsa = (s) => Array.from(document.querySelectorAll(s));
 
   // ========= LOAD DATA =========
   async function loadAll() {
@@ -323,12 +321,9 @@ const vData = qs("#mData"); if (vData) vData.value = nowYMD();
 
   let modalTipo = "Despesa";
   function syncTipoTabs() {
-qsa("#tipoTabs button").forEach(b => {
-  b.addEventListener("click", () => {
-    modalTipo = b.dataset.type;
-    syncTipoTabs();
-  });
-});
+    qsa("#tipoTabs button").forEach(b => b.classList.toggle("active", b.dataset.type === modalTipo));
+    if (!S.editingId) {
+      const ttl = qs("#modalTitle"); if (ttl) ttl.textContent = "Nova " + modalTipo;
     }
   }
 
@@ -434,25 +429,13 @@ qsa("#tipoTabs button").forEach(b => {
 try { window.addOrUpdate = addOrUpdate; } catch(e){}
 
 
-async function delTx(id) {
-  try { window.delTx = delTx; } catch(e) {}
-  try {
-    if (!id) { console.warn('delTx: missing id'); return; }
-    const ok = confirm('Excluir lançamento?');
-    if (!ok) return;
-    const resp = await deleteTx(id);
-    const err = resp?.error || resp?.data?.error;
-    if (err) {
-      console.error('delete failed:', err);
-      alert('Não foi possível excluir: ' + (err.message || err));
-      return;
+  async function delTx(id) {
+    try { window.delTx = delTx; } catch(e) {}
+    if (confirm("Excluir lançamento?")) {
+      await deleteTx(id);
+      loadAll();
     }
-    await loadAll();
-  } catch(e) {
-    console.error('delTx exception:', e);
-    alert('Falha ao excluir: ' + (e?.message || e));
   }
-}
 
   
   // ========= TRANSAÇÕES =========
@@ -572,7 +555,8 @@ async function delTx(id) {
         pill(`Itens: ${list.length}`),
         pill(`Receitas: ${fmt(totRec)}`, 'ok'),
         pill(`Despesas: ${fmt(totDesp)}`, 'warn'),
-        pill(`Saldo: ${fmt(saldo)}`));
+        pill(`Saldo: ${fmt(saldo)}`)
+      );
     }
 
     if (!ul) return;
@@ -1135,6 +1119,7 @@ async function delTx(id) {
   // ========= EVENTOS =========
   qsa(".tab").forEach(btn =>
     btn.addEventListener("click", () => setTab(btn.dataset.tab))
+  );
 
   const fab = qs("#fab"); if (fab) fab.onclick = () => toggleModal(true);
   const btnNovo = qs("#btnNovo"); if (btnNovo) btnNovo.onclick = () => toggleModal(true);
@@ -1641,30 +1626,27 @@ const br = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' });
 
   // ========= Billing config =========
   function wireBillingConfig() {
-  const inpDue = qs("#ccDueDay");
-  const inpClose = qs("#ccClosingDay");
-  const SS = (typeof S !== 'undefined' ? S : (typeof window !== 'undefined' ? window.S : null)) || {};
-  if (inpDue)  inpDue.value  = SS.ccDueDay ?? "";
-  if (inpClose) inpClose.value = SS.ccClosingDay ?? "";
+    const inpDue = qs("#ccDueDay");
+    const inpClose = qs("#ccClosingDay");
+    if (inpDue)  inpDue.value  = S.ccDueDay ?? "";
+    if (inpClose) inpClose.value = S.ccClosingDay ?? "";
 
-  const btn = qs("#saveCardPrefs");
-  if (btn && !btn._wired) {
-    btn._wired = true;
-    btn.addEventListener("click", async () => {
-      const rawDue = (qs("#ccDueDay")?.value || "").trim();
-      const rawClose = (qs("#ccClosingDay")?.value || "").trim();
-      const d = Number(rawDue);
-      const c = Number(rawClose);
-      if (typeof S !== 'undefined') {
+    const btn = qs("#saveCardPrefs");
+    if (btn && !btn._wired) {
+      btn._wired = true;
+      btn.addEventListener("click", async () => {
+        const rawDue = (qs("#ccDueDay")?.value || "").trim();
+        const rawClose = (qs("#ccClosingDay")?.value || "").trim();
+        const d = Number(rawDue);
+        const c = Number(rawClose);
         S.ccDueDay = (Number.isFinite(d) && d >= 1 && d <= 31) ? d : null;
         S.ccClosingDay = (Number.isFinite(c) && c >= 1 && c <= 31) ? c : null;
         await savePrefs();
-      }
-      alert("Fatura salva com sucesso!");
-    });
+        alert("Fatura salva com sucesso!");
+      });
+    }
   }
-}
-  if (document.readyState === 'complete') wireBillingConfig(); else window.addEventListener('load', wireBillingConfig);
+  wireBillingConfig();
 // Start!
   loadAll();
 
@@ -1674,6 +1656,7 @@ const br = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' });
     window.deleteCat = deleteCat;
     window.loadAll = loadAll;
   } catch (e) {}
+}
 
   // === Helpers de ciclo da fatura ===
   // txBucketYM: com S.ccClosingDay (1..31), d <= closing => fica no mês da data; d > closing => vai para mês seguinte.
