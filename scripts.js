@@ -453,7 +453,6 @@ async function delTx(id) {
     alert('Falha ao excluir: ' + (e?.message || e));
   }
 }
-}
 
   
   // ========= TRANSAÇÕES =========
