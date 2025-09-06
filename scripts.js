@@ -280,7 +280,9 @@ function toggleModal(show, titleOverride) {
     m.style.display = show ? "flex" : "none";
     document.body.classList.toggle("modal-open", !!show);
     if (show) {
-      const vData = qs("#mData"); if (vData) vData.value = nowYMD();
+      
+    if (window.resetValorInput) window.resetValorInput();
+const vData = qs("#mData"); if (vData) vData.value = nowYMD();
       rebuildCatSelect();
       const vDesc = qs("#mDesc"); if (vDesc) vDesc.value = "";
       const vObs  = qs("#mObs");  if (vObs)  vObs.value  = "";
@@ -1242,7 +1244,13 @@ try { window.addOrUpdate = addOrUpdate; } catch(e){}
 
     // currency mask with raw cents
     let rawCents = 0;
-    const br = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' });
+    
+window.resetValorInput = function(){
+  try { rawCents = 0; } catch(_) {}
+  const el = document.getElementById('mValorBig');
+  if (el) el.value = '';
+};
+const br = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' });
     const setAmount = () => { if (valorInput) valorInput.value = rawCents ? br.format(rawCents/100) : ''; };
 
     if (valorInput) {
