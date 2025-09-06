@@ -429,7 +429,7 @@ const vData = qs("#mData"); if (vData) vData.value = nowYMD();
 try { window.addOrUpdate = addOrUpdate; } catch(e){}
 
 
-  async function delTx(id) {
+async function delTx(id) {
   try { window.delTx = delTx; } catch(e) {}
   try {
     if (!id) { console.warn('delTx: missing id'); return; }
@@ -443,7 +443,7 @@ try { window.addOrUpdate = addOrUpdate; } catch(e){}
       return;
     }
     await loadAll();
-  } catch(e){
+  } catch(e) {
     console.error('delTx exception:', e);
     alert('Falha ao excluir: ' + (e?.message || e));
   }
