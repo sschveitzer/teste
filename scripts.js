@@ -1667,7 +1667,8 @@ const br = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' });
 );
     }
   }
-  if (document.readyState === 'complete') wireBillingConfig(); else window.addEventListener('load', wireBillingConfig);
+  if (document.readyState === 'complete') wireBillingConfig();
+else window.addEventListener('load', wireBillingConfig);
 // Start!
   loadAll();
 
