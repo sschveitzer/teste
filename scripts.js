@@ -431,13 +431,22 @@ const vData = qs("#mData"); if (vData) vData.value = nowYMD();
 try { window.addOrUpdate = addOrUpdate; } catch(e){}
 
 
+  
+  // ========= EXCLUIR LANÇAMENTO =========
   async function delTx(id) {
-    try { window.delTx = delTx; } catch(e) {}
-    if (confirm("Excluir lançamento?")) {
+    try {
+      if (!id) return;
+      const ok = typeof confirm === 'function' ? confirm("Excluir lançamento?") : true;
+      if (!ok) return;
       await deleteTx(id);
-      loadAll();
+      await loadAll();
+    } catch (err) {
+      console.error("Falha ao excluir lançamento:", err);
+      alert("Não foi possível excluir o lançamento.");
     }
   }
+  try { window.delTx = delTx; } catch (e) {}
+
 
   
   // ========= TRANSAÇÕES =========
