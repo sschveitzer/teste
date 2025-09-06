@@ -430,12 +430,25 @@ try { window.addOrUpdate = addOrUpdate; } catch(e){}
 
 
   async function delTx(id) {
-    try { window.delTx = delTx; } catch(e) {}
-    if (confirm("Excluir lançamento?")) {
-      await deleteTx(id);
-      loadAll();
+  try { window.delTx = delTx; } catch(e) {}
+  try {
+    if (!id) { console.warn('delTx: missing id'); return; }
+    const ok = confirm('Excluir lançamento?');
+    if (!ok) return;
+    const resp = await deleteTx(id);
+    const err = resp?.error || resp?.data?.error;
+    if (err) {
+      console.error('delete failed:', err);
+      alert('Não foi possível excluir: ' + (err.message || err));
+      return;
     }
+    await loadAll();
+  } catch(e){
+    console.error('delTx exception:', e);
+    alert('Falha ao excluir: ' + (e?.message || e));
   }
+}
+}
 
   
   // ========= TRANSAÇÕES =========
