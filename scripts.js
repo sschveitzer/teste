@@ -1,3 +1,7 @@
+// helpers globais para selecionar elementos
+const qs  = (sel) => document.querySelector(sel);
+const qsa = (sel) => document.querySelectorAll(sel);
+
 window.onload = function () {
   // Usa o supabase já criado no dashboard.html
   const supabaseClient = window.supabaseClient || supabase;
@@ -99,8 +103,6 @@ try {
     return toYMD(new Date(yy, mes - 1, day));
   }
 
-  const qs  = (s) => document.querySelector(s);
-  const qsa = (s) => Array.from(document.querySelectorAll(s));
 
   // ========= LOAD DATA =========
   async function loadAll() {
